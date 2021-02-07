@@ -142,7 +142,16 @@ vector<IntersectionIdx> findIntersectionsOfStreet(StreetIdx street_id){
 vector<IntersectionIdx> findIntersectionsOfTwoStreets(pair<StreetIdx, StreetIdx> street_ids){
     
     vector<IntersectionIdx> intersections;
+    vector<IntersectionIdx> firstStreet = findIntersectionsOfStreet(street_ids.first);
+    vector<IntersectionIdx> secondStreet = findIntersectionsOfStreet(street_ids.second);
     
+    
+    for (vector<IntersectionIdx>::iterator i = firstStreet.begin();  i != firstStreet.end(); i++){
+        vector<IntersectionIdx>::iterator common = find(secondStreet.begin(), secondStreet.end(), *i);
+        if (common != secondStreet.end()){
+            intersections.push_back(*i);
+        }
+    }
     return intersections;
 }
 
