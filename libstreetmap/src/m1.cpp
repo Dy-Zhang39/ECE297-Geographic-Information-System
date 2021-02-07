@@ -145,10 +145,7 @@ vector<IntersectionIdx> findIntersectionsOfTwoStreets(pair<StreetIdx, StreetIdx>
     
     return intersections;
 }
-/*
-double findDistanceBetweenTwoPoints(std::pair<LatLon, LatLon> points){
-    return 0;
-}
+
 
 // Returns the length of the given street segment in meters
 // Speed Requirement --> moderate
@@ -156,12 +153,39 @@ double findStreetSegmentLength(StreetSegmentIdx street_segment_id){
     return 0;
 }
 
+
+// Returns the distance between two (latitude,longitude) coordinates in meters
+// Speed Requirement --> moderate
+double findDistanceBetweenTwoPoints(std::pair<LatLon, LatLon> points){
+    double distanceBetweenTwoPoints=0;
+    double latInRadius1,lonInRadius1,latInRadius2,lonInRadius2;
+    //converting longitude and latitude from degree to radius
+    latInRadius1=points.first.latitude()*kDegreeToRadian;
+    lonInRadius1=points.first.longitude()*kDegreeToRadian;
+    latInRadius2=points.second.latitude()*kDegreeToRadian;
+    lonInRadius2=points.second.longitude()*kDegreeToRadian;
+    //convert to position to (x,y) in meters
+    double x1, y1, x2, y2;
+    x1=lonInRadius1*cos((latInRadius2+latInRadius1)/2);
+    y1=latInRadius1;
+    x2=lonInRadius2*cos((latInRadius2+latInRadius1)/2);
+    y2=latInRadius2;
+    //using Pythagora's theorem to calculate distance between two points
+    distanceBetweenTwoPoints=kEarthRadiusInMeters*sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+    return distanceBetweenTwoPoints;
+}
+
+
+
+
 // Returns the travel time to drive from one end of a street segment in 
 // to the other, in seconds, when driving at the speed limit
 // Note: (time = distance/speed_limit)
 // Speed Requirement --> high 
 double findStreetSegmentTravelTime(StreetSegmentIdx street_segment_id){
+
     return 0;
+
 }
 
 // Returns the nearest intersection to the given position
@@ -211,4 +235,5 @@ POIIdx findClosestPOI(LatLon my_position, std::string POIname){
 double findFeatureArea(FeatureIdx feature_id){
     return 0;
 }
- */
+
+
