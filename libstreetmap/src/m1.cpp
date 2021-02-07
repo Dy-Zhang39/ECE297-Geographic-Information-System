@@ -22,6 +22,7 @@
 #include "m1.h"
 #include "StreetsDatabaseAPI.h"
 #include <algorithm>
+#include <math.h>
 
 using namespace std;
 // loadMap will be called with the name of the file that stores the "layer-2"
