@@ -197,21 +197,24 @@ double findStreetSegmentLength(StreetSegmentIdx street_segment_id){
         int i=1;
         for(i; i<streetSegmentID.numCurvePoints; i++){
             pair <LatLon, LatLon> curvePoints (getStreetSegmentCurvePoint( street_segment_id, i-1),getStreetSegmentCurvePoint( street_segment_id, i ));
-            streetSegmentLength=+findDistanceBetweenTwoPoints(curvePoints);
+            streetSegmentLength = streetSegmentLength+findDistanceBetweenTwoPoints(curvePoints);
         }
-        pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, i ),to);
-        streetSegmentLength=+findDistanceBetweenTwoPoints(lastPoints);
+        pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, i-1 ),to);
+        streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(lastPoints);
+        return streetSegmentLength;
        
-    }if(streetSegmentID.numCurvePoints=1){
+    }if(streetSegmentID.numCurvePoints==1){
         pair <LatLon, LatLon> firstPoints (from, getStreetSegmentCurvePoint( street_segment_id, 0 ));
         pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, 0 ),to);
         streetSegmentLength=findDistanceBetweenTwoPoints(firstPoints)+findDistanceBetweenTwoPoints(lastPoints);
+        return streetSegmentLength;
     }else{
         //straight segment
         pair <LatLon, LatLon> points (from, to);
         streetSegmentLength=findDistanceBetweenTwoPoints(points);
+        return streetSegmentLength;
     }
-    return streetSegmentLength;
+    
 }
 
 
@@ -221,7 +224,7 @@ double findStreetSegmentLength(StreetSegmentIdx street_segment_id){
 // Note: (time = distance/speed_limit)
 // Speed Requirement --> high 
 double findStreetSegmentTravelTime(StreetSegmentIdx street_segment_id){
-
+    
     return 0;
 
 }
