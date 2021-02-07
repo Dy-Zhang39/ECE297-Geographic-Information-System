@@ -147,11 +147,6 @@ vector<IntersectionIdx> findIntersectionsOfTwoStreets(pair<StreetIdx, StreetIdx>
 }
 
 
-// Returns the length of the given street segment in meters
-// Speed Requirement --> moderate
-double findStreetSegmentLength(StreetSegmentIdx street_segment_id){
-    return 0;
-}
 
 
 // Returns the distance between two (latitude,longitude) coordinates in meters
@@ -175,6 +170,40 @@ double findDistanceBetweenTwoPoints(std::pair<LatLon, LatLon> points){
     return distanceBetweenTwoPoints;
 }
 
+
+
+// Returns the length of the given street segment in meters
+// Speed Requirement --> moderate
+double findStreetSegmentLength(StreetSegmentIdx street_segment_id){
+    double streetSegmentLength=0;
+    struct StreetSegmentInfo streetSegmentID= getStreetSegmentInfo(street_segment_id);
+    //find the starting and ending position of given street segment
+    auto from=getIntersectionPosition(streetSegmentID.from);
+    auto to=getIntersectionPosition(streetSegmentID.to);
+    //find curve points on the given street segment
+    if(streetSegmentID.numCurvePoints>1){
+        //curve segment
+        pair <LatLon, LatLon> firstPoints (from, getStreetSegmentCurvePoint( street_segment_id, 0 ));
+        streetSegmentLength=findDistanceBetweenTwoPoints(firstPoints);
+        int i=1;
+        for(i; i<streetSegmentID.numCurvePoints; i++){
+            pair <LatLon, LatLon> curvePoints (getStreetSegmentCurvePoint( street_segment_id, i-1),getStreetSegmentCurvePoint( street_segment_id, i ));
+            streetSegmentLength=+findDistanceBetweenTwoPoints(curvePoints);
+        }
+        pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, i ),to);
+        streetSegmentLength=+findDistanceBetweenTwoPoints(lastPoints);
+       
+    }if(streetSegmentID.numCurvePoints=1){
+        pair <LatLon, LatLon> firstPoints (from, getStreetSegmentCurvePoint( street_segment_id, 0 ));
+        pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, 0 ),to);
+        streetSegmentLength=findDistanceBetweenTwoPoints(firstPoints)+findDistanceBetweenTwoPoints(lastPoints);
+    }else{
+        //straight segment
+        pair <LatLon, LatLon> points (from, to);
+        streetSegmentLength=findDistanceBetweenTwoPoints(points);
+    }
+    return streetSegmentLength;
+}
 
 
 
@@ -235,5 +264,4 @@ POIIdx findClosestPOI(LatLon my_position, std::string POIname){
 double findFeatureArea(FeatureIdx feature_id){
     return 0;
 }
-
 
