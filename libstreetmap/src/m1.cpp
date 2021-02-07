@@ -21,8 +21,9 @@
 #include <iostream>
 #include "m1.h"
 #include "StreetsDatabaseAPI.h"
+#include <algorithm>
 
-
+using namespace std;
 // loadMap will be called with the name of the file that stores the "layer-2"
 // map data accessed through StreetsDatabaseAPI: the street and intersection 
 // data that is higher-level than the raw OSM data). 
@@ -40,20 +41,173 @@ bool loadMap(std::string map_streets_database_filename) {
                                   //successfully
 
     std::cout << "loadMap: " << map_streets_database_filename << std::endl;
-
+    
     //
     // Load your map related data structures here.
     //
 
     
 
-    load_successful = true; //Make sure this is updated to reflect whether
+    load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Make sure this is updated to reflect whether
                             //loading the map succeeded or failed
 
     return load_successful;
 }
 
 void closeMap() {
+    closeStreetDatabase();
     //Clean-up your map related data structures here
     
 }
+
+
+//return the duplicates street names of a intersection
+vector<string> findStreetNamesOfIntersection(IntersectionIdx intersection_id){
+    vector<string> streetNames;
+
+  
+    for(StreetSegmentIdx i = 0; i < getNumIntersectionStreetSegment(intersection_id); i++){
+        
+        StreetSegmentIdx ss_id = getIntersectionStreetSegment(intersection_id, i);
+        string nameOfStreet = getStreetName(getStreetSegmentInfo(ss_id).streetID);
+        streetNames.push_back(nameOfStreet);
+        
+    }
+    
+    return streetNames;
+    
+}
+
+
+vector<IntersectionIdx> findAdjacentIntersections(IntersectionIdx intersection_id){
+    
+    vector<IntersectionIdx> adjIntersections;
+    
+    for(StreetSegmentIdx i = 0; i < getNumIntersectionStreetSegment(intersection_id); i++){
+        
+        StreetSegmentIdx ss_id = getIntersectionStreetSegment(intersection_id, i);
+        IntersectionIdx from, to;
+        from = getStreetSegmentInfo(ss_id).from;
+        to = getStreetSegmentInfo(ss_id).to;
+        bool oneWay = getStreetSegmentInfo(ss_id).oneWay;
+        
+        if (!oneWay || to != intersection_id){
+            vector<IntersectionIdx>::iterator exist; 
+            
+            if (from == intersection_id){
+                exist = find(adjIntersections.begin(), adjIntersections.end(), to);
+                
+                if (exist == adjIntersections.end())
+                    adjIntersections.push_back(to);
+                
+            }else{
+                exist = find(adjIntersections.begin(), adjIntersections.end(), from);
+                
+                if (exist == adjIntersections.end())
+                    adjIntersections.push_back(from);
+            }
+        }
+    }
+    
+    return adjIntersections;
+}
+
+
+vector<IntersectionIdx> findIntersectionsOfStreet(StreetIdx street_id){
+   
+    vector<IntersectionIdx> i_ids;
+    
+    for (StreetSegmentIdx ss_id = 0; ss_id < getNumStreetSegments(); ss_id++){
+        StreetSegmentInfo ss_info = getStreetSegmentInfo(ss_id);
+        
+        if (ss_info.streetID == street_id){
+            vector<IntersectionIdx>::iterator fromExist, toExist;
+            
+            fromExist = find(i_ids.begin(), i_ids.end(), ss_info.from);            
+            if (fromExist == i_ids.end())
+                i_ids.push_back(ss_info.from);
+            
+            toExist = find(i_ids.begin(), i_ids.end(), ss_info.to);
+            if (toExist == i_ids.end())
+                i_ids.push_back(ss_info.to);
+        }
+    }
+    
+    return i_ids;
+}
+
+
+
+vector<IntersectionIdx> findIntersectionsOfTwoStreets(pair<StreetIdx, StreetIdx> street_ids){
+    
+    vector<IntersectionIdx> intersections;
+    
+    return intersections;
+}
+/*
+double findDistanceBetweenTwoPoints(std::pair<LatLon, LatLon> points){
+    return 0;
+}
+
+// Returns the length of the given street segment in meters
+// Speed Requirement --> moderate
+double findStreetSegmentLength(StreetSegmentIdx street_segment_id){
+    return 0;
+}
+
+// Returns the travel time to drive from one end of a street segment in 
+// to the other, in seconds, when driving at the speed limit
+// Note: (time = distance/speed_limit)
+// Speed Requirement --> high 
+double findStreetSegmentTravelTime(StreetSegmentIdx street_segment_id){
+    return 0;
+}
+
+// Returns the nearest intersection to the given position
+// Speed Requirement --> none
+IntersectionIdx findClosestIntersection(LatLon my_position){
+    return 0;
+}
+
+// Returns the street segments that connect to the given intersection 
+// Speed Requirement --> high
+std::vector<StreetSegmentIdx> findStreetSegmentsOfIntersection(IntersectionIdx intersection_id){
+    vector<StreetSegmentIdx> ss;
+    return ss;
+}
+
+std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_prefix){
+    vector<StreetIdx> s;
+    return s;
+}
+
+// Returns the length of a given street in meters
+// Speed Requirement --> high 
+double findStreetLength(StreetIdx street_id){
+    return 0;
+}
+
+// Return the smallest rectangle that contains all the intersections and 
+// curve points of the given street (i.e. the min,max lattitude 
+// and longitude bounds that can just contain all points of the street).
+// Speed Requirement --> none 
+LatLonBounds findStreetBoundingBox(StreetIdx street_id){
+    LatLonBounds s;
+    return s;
+}
+
+// Returns the nearest point of interest of the given name to the given position
+// Speed Requirement --> none 
+POIIdx findClosestPOI(LatLon my_position, std::string POIname){
+    POIIdx i;
+    return i;
+}
+
+// Returns the area of the given closed feature in square meters
+// Assume a non self-intersecting polygon (i.e. no holes)
+// Return 0 if this feature is not a closed polygon.
+// Speed Requirement --> moderate
+double findFeatureArea(FeatureIdx feature_id){
+    return 0;
+}
+ */
