@@ -161,21 +161,21 @@ vector<IntersectionIdx> findIntersectionsOfTwoStreets(pair<StreetIdx, StreetIdx>
 // Returns the distance between two (latitude,longitude) coordinates in meters
 // Speed Requirement --> moderate
 double findDistanceBetweenTwoPoints(std::pair<LatLon, LatLon> points){
-    double distanceBetweenTwoPoints=0;
+    double distanceBetweenTwoPoints = 0;
     double latInRadius1,lonInRadius1,latInRadius2,lonInRadius2;
     //converting longitude and latitude from degree to radius
-    latInRadius1=points.first.latitude()*kDegreeToRadian;
-    lonInRadius1=points.first.longitude()*kDegreeToRadian;
-    latInRadius2=points.second.latitude()*kDegreeToRadian;
-    lonInRadius2=points.second.longitude()*kDegreeToRadian;
+    latInRadius1 = points.first.latitude() * kDegreeToRadian;
+    lonInRadius1 = points.first.longitude() * kDegreeToRadian;
+    latInRadius2 = points.second.latitude() * kDegreeToRadian;
+    lonInRadius2 = points.second.longitude() * kDegreeToRadian;
     //convert to position to (x,y) in meters
     double x1, y1, x2, y2;
-    x1=lonInRadius1*cos((latInRadius2+latInRadius1)/2);
-    y1=latInRadius1;
-    x2=lonInRadius2*cos((latInRadius2+latInRadius1)/2);
-    y2=latInRadius2;
+    x1 = lonInRadius1 * cos((latInRadius2+latInRadius1)/2);
+    y1 = latInRadius1;
+    x2 = lonInRadius2 * cos((latInRadius2+latInRadius1)/2);
+    y2 = latInRadius2;
     //using Pythagora's theorem to calculate distance between two points
-    distanceBetweenTwoPoints=kEarthRadiusInMeters*sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+    distanceBetweenTwoPoints = kEarthRadiusInMeters * sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
     return distanceBetweenTwoPoints;
 }
 
@@ -183,35 +183,38 @@ double findDistanceBetweenTwoPoints(std::pair<LatLon, LatLon> points){
 
 // Returns the length of the given street segment in meters
 // Speed Requirement --> moderate
-double findStreetSegmentLength(StreetSegmentIdx street_segment_id){
+double findStreetSegmentLength(StreetSegmentIdx street_segment_id) {
     double streetSegmentLength=0;
-    struct StreetSegmentInfo streetSegmentID= getStreetSegmentInfo(street_segment_id);
+    struct StreetSegmentInfo streetSegmentID = getStreetSegmentInfo(street_segment_id);   
     //find the starting and ending position of given street segment
-    auto from=getIntersectionPosition(streetSegmentID.from);
-    auto to=getIntersectionPosition(streetSegmentID.to);
+    auto from =getIntersectionPosition(streetSegmentID.from);
+    auto to = getIntersectionPosition(streetSegmentID.to);
     //find curve points on the given street segment
-    if(streetSegmentID.numCurvePoints>1){
-        //curve segment
-        pair <LatLon, LatLon> firstPoints (from, getStreetSegmentCurvePoint( street_segment_id, 0 ));
+    if(streetSegmentID.numCurvePoints > 1) {
+        //more than one curve points
+        pair <LatLon, LatLon> firstPoints (from, getStreetSegmentCurvePoint( street_segment_id, 0 ));   //calculate distance between start point and first curve point
         streetSegmentLength=findDistanceBetweenTwoPoints(firstPoints);
-        int i=1;
-        for(i; i<streetSegmentID.numCurvePoints; i++){
-            pair <LatLon, LatLon> curvePoints (getStreetSegmentCurvePoint( street_segment_id, i-1),getStreetSegmentCurvePoint( street_segment_id, i ));
-            streetSegmentLength = streetSegmentLength+findDistanceBetweenTwoPoints(curvePoints);
+        int i = 1;
+        for( ; i < streetSegmentID.numCurvePoints; i++) {
+            pair <LatLon, LatLon> curvePoints (getStreetSegmentCurvePoint( street_segment_id, i - 1),getStreetSegmentCurvePoint( street_segment_id, i ));
+            streetSegmentLength = streetSegmentLength+findDistanceBetweenTwoPoints(curvePoints);    //add the distance between each curve points
         }
-        pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, i-1 ),to);
-        streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(lastPoints);
+        pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, i-1 ), to);
+        streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(lastPoints);       //add the distance between last curve point and end point
+        
         return streetSegmentLength;
        
-    }if(streetSegmentID.numCurvePoints==1){
-        pair <LatLon, LatLon> firstPoints (from, getStreetSegmentCurvePoint( street_segment_id, 0 ));
-        pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, 0 ),to);
-        streetSegmentLength=findDistanceBetweenTwoPoints(firstPoints)+findDistanceBetweenTwoPoints(lastPoints);
+    }if(streetSegmentID.numCurvePoints==1){ //only has one curve point
+        pair <LatLon, LatLon> firstPoints (from, getStreetSegmentCurvePoint ( street_segment_id, 0));   
+        pair <LatLon, LatLon> lastPoints (getStreetSegmentCurvePoint( street_segment_id, 0), to);
+        streetSegmentLength = findDistanceBetweenTwoPoints(firstPoints) + findDistanceBetweenTwoPoints(lastPoints); // add distance from start point to the only curve point to the end point 
+        
         return streetSegmentLength;
     }else{
         //straight segment
         pair <LatLon, LatLon> points (from, to);
-        streetSegmentLength=findDistanceBetweenTwoPoints(points);
+        streetSegmentLength=findDistanceBetweenTwoPoints(points);   //calculate distance between start and end point
+        
         return streetSegmentLength;
     }
     
@@ -224,14 +227,19 @@ double findStreetSegmentLength(StreetSegmentIdx street_segment_id){
 // Note: (time = distance/speed_limit)
 // Speed Requirement --> high 
 double findStreetSegmentTravelTime(StreetSegmentIdx street_segment_id){
-    
-    return 0;
+    double streetSegmentTravelTime = -1;
+    double distance = findStreetSegmentLength(street_segment_id);
+    struct StreetSegmentInfo streetSegmentID = getStreetSegmentInfo(street_segment_id);
+    double speedLimit = streetSegmentID.speedLimit;
+    streetSegmentTravelTime = distance/speedLimit;
+    return streetSegmentTravelTime;
 
 }
 
 // Returns the nearest intersection to the given position
 // Speed Requirement --> none
 IntersectionIdx findClosestIntersection(LatLon my_position){
+    
     return 0;
 }
 
