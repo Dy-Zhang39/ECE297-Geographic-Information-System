@@ -23,6 +23,7 @@
 #include "StreetsDatabaseAPI.h"
 #include <algorithm>
 #include <math.h>
+#include <map>
 
 using namespace std;
 // loadMap will be called with the name of the file that stores the "layer-2"
@@ -62,11 +63,14 @@ void closeMap() {
 }
 
 
-//return the duplicates street names of a intersection
+/// Returns the street names at the given intersection (includes duplicate 
+// street names in the returned vector)
+// Speed Requirement --> high 
 vector<string> findStreetNamesOfIntersection(IntersectionIdx intersection_id){
+    
     vector<string> streetNames;
 
-  
+    //check street segment around the intersection and get the street name
     for(StreetSegmentIdx i = 0; i < getNumIntersectionStreetSegment(intersection_id); i++){
         
         StreetSegmentIdx ss_id = getIntersectionStreetSegment(intersection_id, i);
@@ -79,7 +83,11 @@ vector<string> findStreetNamesOfIntersection(IntersectionIdx intersection_id){
     
 }
 
-
+// Returns all intersections reachable by traveling down one street segment 
+// from the given intersection (hint: you can't travel the wrong way on a 
+// 1-way street)
+// the returned vector should NOT contain duplicate intersections
+// Speed Requirement --> high 
 vector<IntersectionIdx> findAdjacentIntersections(IntersectionIdx intersection_id){
     
     vector<IntersectionIdx> adjIntersections;
@@ -88,14 +96,19 @@ vector<IntersectionIdx> findAdjacentIntersections(IntersectionIdx intersection_i
         
         StreetSegmentIdx ss_id = getIntersectionStreetSegment(intersection_id, i);
         IntersectionIdx from, to;
+        
+        
         from = getStreetSegmentInfo(ss_id).from;
         to = getStreetSegmentInfo(ss_id).to;
         bool oneWay = getStreetSegmentInfo(ss_id).oneWay;
         
+        //only load the intersection that is reachable
         if (!oneWay || to != intersection_id){
-            vector<IntersectionIdx>::iterator exist; 
+            vector<IntersectionIdx>::iterator exist;        //used to check whether the index is already in the vector
             
             if (from == intersection_id){
+                
+                //prevent duplicate intersection index
                 exist = find(adjIntersections.begin(), adjIntersections.end(), to);
                 
                 if (exist == adjIntersections.end())
@@ -113,32 +126,51 @@ vector<IntersectionIdx> findAdjacentIntersections(IntersectionIdx intersection_i
     return adjIntersections;
 }
 
-
+// Returns all intersections along the a given street.
+// There should be no duplicate intersections in the returned vector.
+// Speed Requirement --> high
 vector<IntersectionIdx> findIntersectionsOfStreet(StreetIdx street_id){
    
-    vector<IntersectionIdx> i_ids;
+    vector<IntersectionIdx> i_ids;                                        //final output structure
+    map<IntersectionIdx, int> i_ids_map;                                  //used for faster find(), note that the second data is useless
     
     for (StreetSegmentIdx ss_id = 0; ss_id < getNumStreetSegments(); ss_id++){
+        
         StreetSegmentInfo ss_info = getStreetSegmentInfo(ss_id);
         
         if (ss_info.streetID == street_id){
-            vector<IntersectionIdx>::iterator fromExist, toExist;
             
-            fromExist = find(i_ids.begin(), i_ids.end(), ss_info.from);            
-            if (fromExist == i_ids.end())
-                i_ids.push_back(ss_info.from);
+            map<IntersectionIdx, int>::iterator fromExist, toExist;     //used to prevent duplicate intersections   
             
-            toExist = find(i_ids.begin(), i_ids.end(), ss_info.to);
-            if (toExist == i_ids.end())
-                i_ids.push_back(ss_info.to);
+            fromExist = i_ids_map.find(ss_info.from);                      
+            if (fromExist == i_ids_map.end())
+                i_ids_map.insert(make_pair(ss_info.from,0));
+            
+            toExist = i_ids_map.find(ss_info.to);
+            if (toExist == i_ids_map.end())
+                i_ids_map.insert(make_pair(ss_info.to, 0));
+             
         }
     }
     
+    //put all the data from the map structure to the vector structure
+    i_ids.resize(i_ids_map.size());
+    int index = 0;
+    for (map<IntersectionIdx, int>::iterator i = i_ids_map.begin(); i != i_ids_map.end(); i++){
+        i_ids[index] = i->first;
+        index++;
+    }
     return i_ids;
 }
 
 
-
+// Return all intersection ids at which the two given streets intersect
+// This function will typically return one intersection id for streets
+// that intersect and a length 0 vector for streets that do not. For unusual 
+// curved streets it is possible to have more than one intersection at which 
+// two streets cross.
+// There should be no duplicate intersections in the returned vector.
+// Speed Requirement --> high
 vector<IntersectionIdx> findIntersectionsOfTwoStreets(pair<StreetIdx, StreetIdx> street_ids){
     
     vector<IntersectionIdx> intersections;
@@ -147,7 +179,10 @@ vector<IntersectionIdx> findIntersectionsOfTwoStreets(pair<StreetIdx, StreetIdx>
     
     
     for (vector<IntersectionIdx>::iterator i = firstStreet.begin();  i != firstStreet.end(); i++){
+        
+        //found the common item from these two vector
         vector<IntersectionIdx>::iterator common = find(secondStreet.begin(), secondStreet.end(), *i);
+        
         if (common != secondStreet.end()){
             intersections.push_back(*i);
         }
