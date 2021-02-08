@@ -44,8 +44,7 @@ using namespace std;
 // name of the ".osm.bin" file that matches your map -- just change 
 // ".streets" to ".osm" in the map_streets_database_filename to get the proper
 // name.
-//constexpr double kEarthRadiusInMeters = 6372797.560856;
-//constexpr double kDegreeToRadian = 0.017453292519943295769236907684886;
+
 
 //global variable
 vector<vector<StreetSegmentIdx>> intersection_street_segments;
@@ -92,11 +91,14 @@ void closeMap() {
 
 std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_prefix){
     std::vector<StreetIdx> streets;
+    
+    //make the street prefix into lower case
     std::string streetPrefix = street_prefix;
     std::for_each(streetPrefix.begin(), streetPrefix.end(), [](char & c){
             c = ::tolower(c);
     });
-    //get street name, compare with street prefix.
+    
+    //get street name (lower case), compare with street prefix
     for (int i = 0; i < getNumStreets(); i++){
         std::string streetName = getStreetName(i);
         std::string streetNameSub = streetName.substr(0, street_prefix.length());
@@ -104,6 +106,7 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
             c = ::tolower(c);
         });
         
+        //if the name substring matches the prefix, store the id in streets
         if (streetNameSub.compare(streetPrefix) == 0){
             streets.push_back(i);
         }
@@ -112,93 +115,119 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
 }
 
 double findStreetLength(StreetIdx street_id){
-    
+    //break the street into intersections and street segments
     std::vector<IntersectionIdx> intersections = findIntersectionsOfStreet(street_id);
     double length = 0;
+    
+    //add the length of all segments to get street length
     for (int i = 0; i < getNumStreetSegments(); i++){
         StreetSegmentInfo ss_info = getStreetSegmentInfo(i);
+        
         if(ss_info.streetID == street_id){
             length = length + findStreetSegmentLength(i);
         }
     }
+    
     return length;
 }
 
 LatLonBounds findStreetBoundingBox(StreetIdx street_id){
+    //break the street into intersections, use the first intersection position as min/max LatLon
     std::vector<IntersectionIdx> intersections = findIntersectionsOfStreet(street_id);
     LatLon firstPoint = getIntersectionPosition(0);
     double maxLat = firstPoint.latitude(), minLat = firstPoint.latitude();
     double maxLon = firstPoint.longitude(), minLon = firstPoint.longitude();
+    
+    //loop through all intersections and update the min/max LatLon
     for (int i = 0; i < intersections.size(); i++){
         LatLon point = getIntersectionPosition(intersections[i]);
+        
+        //update min/max latitude
         if (point.latitude() > maxLat){
             maxLat = point.latitude();
-        }
-        if (point.latitude() < minLat){
+        } else if (point.latitude() < minLat){
             minLat = point.latitude();
         }
+        
+        //update min/max longitude
         if (point.longitude()> maxLon){
             maxLon = point.longitude();
-        }
-        if (point.longitude() < minLon){
+        } else if (point.longitude() < minLon){
             minLon = point.longitude();
-        }
-        
+        } 
     }
+    
+    //use the min/max latitude and longitude to create LatLonBounds
     LatLon min(minLat, minLon);
     LatLon max(maxLat, maxLon);
     LatLonBounds box;
     box.min = min;
     box.max = max;
+    
     return box;
   
 }
 
 POIIdx findClosestPOI(LatLon my_position, std::string POIname){
+    //declare variables
     std::vector<POIIdx> matchedName;
     LatLon POIPos;
     LatLon myPos = my_position;
     double distance = 100000000000000;
-    POIIdx closest;
+    POIIdx closest = 0;
+    
+    //loop through all POIs
     for (int i = 0; i < getNumPointsOfInterest(); i++){
         std::string name = getPOIName(i);
+        
+        //identify POIs with the given name, and get its position
         if (name.compare(POIname) == 0){
             POIPos =  getPOIPosition(i);
             std::pair<LatLon, LatLon> twoPoints(POIPos,myPos);
             
+            //calculate distance between my_position and POI, update distance and the closest index of the POI
             if (distance > findDistanceBetweenTwoPoints(twoPoints)){
                 distance = findDistanceBetweenTwoPoints(twoPoints);
                 closest = i;               
-            }
-            
+            } 
         }
     }
+    
     return closest;
 }
 
 double findFeatureArea(FeatureIdx feature_id){
+    //break the feature into feature points
     int numFeaturePoints = getNumFeaturePoints(feature_id);
     LatLon ptsPos;
     LatLon ptsPosPrev;
     double area = 0;
     double latAvg, sum = 0;
+    double earthR = 6372797.560856 * 10000/5.15;
+    double dToR = 0.017453292519943295769236907684886;
+    //if the feature is a closed polygon, then calculate its area. Otherwise, keep the area as 0
     if (getFeaturePoint(feature_id, 0) == getFeaturePoint(feature_id, numFeaturePoints-1)){
+        //calculate the average latitude
         for (int i = 0; i < numFeaturePoints; i++){
             sum += getFeaturePoint(feature_id, i).latitude();
         }
+        
         latAvg = sum/numFeaturePoints;
+        
+        //calculate the feature area
         for (int i = 0; i < numFeaturePoints; i++){
+            
             ptsPos = getFeaturePoint(feature_id, i);
             if (i > 0){
-                area += kEarthRadiusInMeters*(ptsPos.longitude()*cos(latAvg*kDegreeToRadian)/*x1*/*ptsPosPrev.latitude()/*y2*/
-                        -ptsPos.latitude()/*y1*/*ptsPosPrev.longitude()*cos(latAvg*kDegreeToRadian));
+                area += earthR * (ptsPos.longitude() * cos(latAvg * dToR) * ptsPosPrev.latitude()
+                        - ptsPos.latitude() * ptsPosPrev.longitude() * cos(latAvg * dToR));
             }
+            
             ptsPosPrev = ptsPos;
         }
     }
     
-    return abs(area/2)*10000/5.15;
-    
+    return abs(area/2);
 }
 
 /// Returns the street names at the given intersection (includes duplicate 
