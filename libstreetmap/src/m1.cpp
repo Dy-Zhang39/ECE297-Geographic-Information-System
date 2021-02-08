@@ -81,13 +81,13 @@ vector<string> findStreetNamesOfIntersection(IntersectionIdx intersection_id){
     vector<string> streetNames;
 
   
-//    for(StreetSegmentIdx i = 0; i < getNumIntersectionStreetSegment(intersection_id); i++){
-//        
-//        StreetSegmentIdx ss_id = getIntersectionStreetSegment(intersection_id, i);
-//        string nameOfStreet = getStreetName(getStreetSegmentInfo(ss_id).streetID);
-//        streetNames.push_back(nameOfStreet);
-//        
-//    }
+    for(StreetSegmentIdx i = 0; i < getNumIntersectionStreetSegment(intersection_id); i++){
+        
+        StreetSegmentIdx ss_id = getIntersectionStreetSegment(intersection_id, i);
+        string nameOfStreet = getStreetName(getStreetSegmentInfo(ss_id).streetID);
+        streetNames.push_back(nameOfStreet);
+        
+    }
     
     return streetNames;
     
@@ -98,31 +98,31 @@ vector<IntersectionIdx> findAdjacentIntersections(IntersectionIdx intersection_i
     
     vector<IntersectionIdx> adjIntersections;
     
-//    for(StreetSegmentIdx i = 0; i < getNumIntersectionStreetSegment(intersection_id); i++){
-//        
-//        StreetSegmentIdx ss_id = getIntersectionStreetSegment(intersection_id, i);
-//        IntersectionIdx from, to;
-//        from = getStreetSegmentInfo(ss_id).from;
-//        to = getStreetSegmentInfo(ss_id).to;
-//        bool oneWay = getStreetSegmentInfo(ss_id).oneWay;
-//        
-//        if (!oneWay || to != intersection_id){
-//            vector<IntersectionIdx>::iterator exist; 
-//            
-//            if (from == intersection_id){
-//                exist = find(adjIntersections.begin(), adjIntersections.end(), to);
-//                
-//                if (exist == adjIntersections.end())
-//                    adjIntersections.push_back(to);
-//                
-//            }else{
-//                exist = find(adjIntersections.begin(), adjIntersections.end(), from);
-//                
-//                if (exist == adjIntersections.end())
-//                    adjIntersections.push_back(from);
-//            }
-//        }
-//    }
+    for(StreetSegmentIdx i = 0; i < getNumIntersectionStreetSegment(intersection_id); i++){
+        
+        StreetSegmentIdx ss_id = getIntersectionStreetSegment(intersection_id, i);
+        IntersectionIdx from, to;
+        from = getStreetSegmentInfo(ss_id).from;
+        to = getStreetSegmentInfo(ss_id).to;
+        bool oneWay = getStreetSegmentInfo(ss_id).oneWay;
+        
+        if (!oneWay || to != intersection_id){
+            vector<IntersectionIdx>::iterator exist; 
+            
+            if (from == intersection_id){
+                exist = find(adjIntersections.begin(), adjIntersections.end(), to);
+                
+                if (exist == adjIntersections.end())
+                    adjIntersections.push_back(to);
+                
+            }else{
+                exist = find(adjIntersections.begin(), adjIntersections.end(), from);
+                
+                if (exist == adjIntersections.end())
+                    adjIntersections.push_back(from);
+            }
+        }
+    }
     
     return adjIntersections;
 }
@@ -131,22 +131,22 @@ vector<IntersectionIdx> findAdjacentIntersections(IntersectionIdx intersection_i
 vector<IntersectionIdx> findIntersectionsOfStreet(StreetIdx street_id){
    
     vector<IntersectionIdx> i_ids;
-//    
-//    for (StreetSegmentIdx ss_id = 0; ss_id < getNumStreetSegments(); ss_id++){
-//        StreetSegmentInfo ss_info = getStreetSegmentInfo(ss_id);
-//        
-//        if (ss_info.streetID == street_id){
-//            vector<IntersectionIdx>::iterator fromExist, toExist;
-//            
-//            fromExist = find(i_ids.begin(), i_ids.end(), ss_info.from);            
-//            if (fromExist == i_ids.end())
-//                i_ids.push_back(ss_info.from);
-//            
-//            toExist = find(i_ids.begin(), i_ids.end(), ss_info.to);
-//            if (toExist == i_ids.end())
-//                i_ids.push_back(ss_info.to);
-//        }
-//    }
+    
+    for (StreetSegmentIdx ss_id = 0; ss_id < getNumStreetSegments(); ss_id++){
+        StreetSegmentInfo ss_info = getStreetSegmentInfo(ss_id);
+        
+        if (ss_info.streetID == street_id){
+            vector<IntersectionIdx>::iterator fromExist, toExist;
+            
+            fromExist = find(i_ids.begin(), i_ids.end(), ss_info.from);            
+            if (fromExist == i_ids.end())
+                i_ids.push_back(ss_info.from);
+            
+            toExist = find(i_ids.begin(), i_ids.end(), ss_info.to);
+            if (toExist == i_ids.end())
+                i_ids.push_back(ss_info.to);
+        }
+    }
     
     return i_ids;
 }
@@ -156,16 +156,16 @@ vector<IntersectionIdx> findIntersectionsOfStreet(StreetIdx street_id){
 vector<IntersectionIdx> findIntersectionsOfTwoStreets(pair<StreetIdx, StreetIdx> street_ids){
     
     vector<IntersectionIdx> intersections;
-//    vector<IntersectionIdx> firstStreet = findIntersectionsOfStreet(street_ids.first);
-//    vector<IntersectionIdx> secondStreet = findIntersectionsOfStreet(street_ids.second);
-//    
-//    
-//    for (vector<IntersectionIdx>::iterator i = firstStreet.begin();  i != firstStreet.end(); i++){
-//        vector<IntersectionIdx>::iterator common = find(secondStreet.begin(), secondStreet.end(), *i);
-//        if (common != secondStreet.end()){
-//            intersections.push_back(*i);
-//        }
-//    }
+    vector<IntersectionIdx> firstStreet = findIntersectionsOfStreet(street_ids.first);
+    vector<IntersectionIdx> secondStreet = findIntersectionsOfStreet(street_ids.second);
+    
+    
+    for (vector<IntersectionIdx>::iterator i = firstStreet.begin();  i != firstStreet.end(); i++){
+        vector<IntersectionIdx>::iterator common = find(secondStreet.begin(), secondStreet.end(), *i);
+        if (common != secondStreet.end()){
+            intersections.push_back(*i);
+        }
+    }
     return intersections;
 }
 
