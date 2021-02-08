@@ -14,13 +14,13 @@
 using ece297test::relative_error;
 using ece297test::sorted;
 
-SUITE(distance_time_queries_public_saint_helena) {
+SUITE(distance_time_queries_perf_public_toronto_canada) {
 
     struct BaseMapFixture {
         BaseMapFixture() {
             //Load the map
             try {
-                loadMap("/cad2/ece297s/public/maps/saint-helena.streets.bin");
+                loadMap("/cad2/ece297s/public/maps/toronto_canada.streets.bin");
             } catch (...) {
                 std::cout << "!!!! BaseMapFixture test setup: loadMap threw an exceptinon !!!!" << std::endl;
                 throw; // re-throw exceptinon
@@ -42,296 +42,581 @@ SUITE(distance_time_queries_public_saint_helena) {
     };
 
 
-    struct MapFixture : BaseMapFixture {};
+    struct MapFixture : BaseMapFixture {
+        MapFixture()
+            : BaseMapFixture()
+            , rng(3)
+            , rand_intersection(0, getNumIntersections()-1)
+            , rand_street(1, getNumStreets()-1) // Start from 1 to avoid getting id 0 (<unknown>)
+            , rand_segment(0, getNumStreetSegments()-1)
+            , rand_poi(0, getNumPointsOfInterest()-1)
+            , rand_feature(0, getNumFeatures()-1)
+            , rand_node(0, 7780698)
+            , rand_way(0, 975994)
+            , rand_relation(0, 7144)
+            , rand_lat(43.479999542, 43.919982910)
+            , rand_lon(-79.789985657, -79.000000000)
+        { }
 
-    TEST_FIXTURE(MapFixture, distance_between_two_points) {
+        std::minstd_rand rng;
+        std::uniform_int_distribution<int> rand_intersection;
+        std::uniform_int_distribution<int> rand_street;
+        std::uniform_int_distribution<int> rand_segment;
+        std::uniform_int_distribution<int> rand_poi;
+        std::uniform_int_distribution<int> rand_feature;
+        std::uniform_int_distribution<int> rand_node;
+        std::uniform_int_distribution<int> rand_way;
+        std::uniform_int_distribution<int> rand_relation;
+        std::uniform_real_distribution<double> rand_lat;
+        std::uniform_real_distribution<double> rand_lon;
+    };
+
+    TEST_FIXTURE(MapFixture, distance_between_two_points_perf) {
+        //Verify Functionality
         double expected;
 
-        expected = 518.56996111314856535;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.94796562194824219, -5.71199750900268555), LatLon(-15.94898891448974609, -5.70726680755615234))), 0.001000000);
+        expected = 2356.64505946482040599;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.79279708862304688, -79.40152740478515625), LatLon(43.78813934326171875, -79.37289428710937500))), 0.001000000);
 
-        expected = 533.67273782537722582;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.96500301361083984, -5.73743915557861328), LatLon(-15.96105766296386719, -5.73459911346435547))), 0.001000000);
+        expected = 2427.80270119967008213;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.71529388427734375, -79.55553436279296875), LatLon(43.73324203491210938, -79.53834533691406250))), 0.001000000);
 
-        expected = 646.81417546958221010;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.99211502075195312, -5.70818281173706055), LatLon(-15.99165058135986328, -5.71421289443969727))), 0.001000000);
+        expected = 2949.60709968117043900;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.59196853637695312, -79.37844085693359375), LatLon(43.59408187866210938, -79.41493988037109375))), 0.001000000);
 
-        expected = 781.04487220694420557;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.94136810302734375, -5.67632865905761719), LatLon(-15.93824386596679688, -5.66978836059570312))), 0.001000000);
+        expected = 3548.76272402025188057;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.82280731201171875, -79.18561553955078125), LatLon(43.83702087402343750, -79.14601898193359375))), 0.001000000);
 
-        expected = 1555.20541039505997105;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.98100376129150391, -5.70508718490600586), LatLon(-15.98956108093261719, -5.69358444213867188))), 0.001000000);
+        expected = 7082.94972707004035328;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.64250946044921875, -79.35969543457031250), LatLon(43.60358810424804688, -79.29006958007812500))), 0.001000000);
 
-        expected = 2032.03825974654228048;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-16.00237464904785156, -5.66382551193237305), LatLon(-15.99907398223876953, -5.68251848220825195))), 0.001000000);
+        expected = 9273.46528542371379444;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.54529571533203125, -79.10992431640625000), LatLon(43.56031417846679688, -79.22308349609375000))), 0.001000000);
 
-        expected = 2087.76344887593995736;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.96608734130859375, -5.74632930755615234), LatLon(-15.97782325744628906, -5.76156663894653320))), 0.001000000);
+        expected = 9502.16744354860202293;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.71036148071289062, -79.60935211181640625), LatLon(43.65697860717773438, -79.70158386230468750))), 0.001000000);
 
-        expected = 2252.14965549958787960;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.99122619628906250, -5.66430997848510742), LatLon(-16.00613975524902344, -5.67855787277221680))), 0.001000000);
+        expected = 10259.27792697115364717;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.59600830078125000, -79.11286163330078125), LatLon(43.52816772460937500, -79.19910430908203125))), 0.001000000);
 
-        expected = 2381.66534915951342555;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.92990398406982422, -5.73861217498779297), LatLon(-15.93484401702880859, -5.71694469451904297))), 0.001000000);
+        expected = 10811.38925209360422741;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.87495803833007812, -79.56263732910156250), LatLon(43.85248565673828125, -79.43147277832031250))), 0.001000000);
 
-        expected = 3133.25003460576863290;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.98634910583496094, -5.68228387832641602), LatLon(-15.96215629577636719, -5.69729471206665039))), 0.001000000);
+        expected = 14256.83954341826029122;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.61819839477539062, -79.22166442871093750), LatLon(43.72824859619140625, -79.31252288818359375))), 0.001000000);
 
-        expected = 3180.64645869247715382;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.95084381103515625, -5.74608373641967773), LatLon(-15.96496868133544922, -5.72022294998168945))), 0.001000000);
+        expected = 14466.80948114287093631;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.77970123291015625, -79.60786437988281250), LatLon(43.71545028686523438, -79.45131683349609375))), 0.001000000);
 
-        expected = 3550.67153415110124115;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.96121406555175781, -5.66072654724121094), LatLon(-15.99313545227050781, -5.66105508804321289))), 0.001000000);
+        expected = 16151.57112973360381147;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.73253250122070312, -79.09116363525390625), LatLon(43.58732604980468750, -79.09315490722656250))), 0.001000000);
 
-        expected = 3788.70268015585224930;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.99737358093261719, -5.77325439453125000), LatLon(-15.96873569488525391, -5.75406932830810547))), 0.001000000);
+        expected = 17244.38714028189860983;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.56804275512695312, -79.77233886718750000), LatLon(43.69831848144531250, -79.65620422363281250))), 0.001000000);
 
-        expected = 5076.00033060668738472;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.93628978729248047, -5.67535591125488281), LatLon(-15.97572994232177734, -5.69923639297485352))), 0.001000000);
+        expected = 23088.23867834949487587;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.84590911865234375, -79.17972564697265625), LatLon(43.66650009155273438, -79.32427978515625000))), 0.001000000);
 
-        expected = 5876.92045638761555892;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.95098114013671875, -5.66044139862060547), LatLon(-15.92677211761474609, -5.70928430557250977))), 0.001000000);
+        expected = 26697.57579962744057411;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.77907943725585938, -79.08943939208984375), LatLon(43.88920593261718750, -79.38510131835937500))), 0.001000000);
 
-        expected = 6228.83780151572682371;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.99687480926513672, -5.75948953628540039), LatLon(-15.95215511322021484, -5.72442626953125000))), 0.001000000);
+        expected = 28346.94087889042202733;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.57031250000000000, -79.68901824951171875), LatLon(43.77373886108398438, -79.47676086425781250))), 0.001000000);
 
-        expected = 6415.10359920979317394;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.97750759124755859, -5.77512168884277344), LatLon(-15.97665786743164062, -5.71513462066650391))), 0.001000000);
+        expected = 29222.10386375499729184;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.65841293334960938, -79.78363800048828125), LatLon(43.66227722167968750, -79.42051696777343750))), 0.001000000);
 
-        expected = 6778.89342495606342709;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.95145702362060547, -5.74287843704223633), LatLon(-15.99796295166015625, -5.70190429687500000))), 0.001000000);
+        expected = 30851.74677904916461557;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.77691650390625000, -79.58846282958984375), LatLon(43.56536865234375000, -79.34043121337890625))), 0.001000000);
 
-        expected = 6997.49198010715008422;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.96410846710205078, -5.73165512084960938), LatLon(-15.92557716369628906, -5.67993307113647461))), 0.001000000);
+        expected = 31806.78265816414932488;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.71936416625976562, -79.52052307128906250), LatLon(43.89463806152343750, -79.20742797851562500))), 0.001000000);
 
-        expected = 7559.06104934466657141;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.95892238616943359, -5.65125846862792969), LatLon(-15.98017883300781250, -5.71840095520019531))), 0.001000000);
+        expected = 34409.99452569775894517;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.74295806884765625, -79.03385162353515625), LatLon(43.64626312255859375, -79.44029235839843750))), 0.001000000);
 
-        expected = 8081.72585648078984377;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.92456054687500000, -5.64697933197021484), LatLon(-15.99687576293945312, -5.65433502197265625))), 0.001000000);
+        expected = 36763.18711706031172071;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.89926528930664062, -79.00794982910156250), LatLon(43.57030868530273438, -79.05247497558593750))), 0.001000000);
 
-        expected = 8405.38987461763281317;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.93031978607177734, -5.65248680114746094), LatLon(-15.92865848541259766, -5.73105573654174805))), 0.001000000);
+        expected = 38140.77731261219742009;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.87306594848632812, -79.04129028320312500), LatLon(43.88062286376953125, -79.51689147949218750))), 0.001000000);
 
-        expected = 8438.23250511763762916;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.92604541778564453, -5.71941566467285156), LatLon(-15.99553680419921875, -5.68775653839111328))), 0.001000000);
+        expected = 38384.63474691180454101;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.89250946044921875, -79.44643402099609375), LatLon(43.57640457153320312, -79.25479125976562500))), 0.001000000);
 
-        expected = 8874.92889832758010016;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.93802452087402344, -5.68293094635009766), LatLon(-15.92058086395263672, -5.76390171051025391))), 0.001000000);
+        expected = 40275.83257943762146169;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.83801651000976562, -79.22557830810546875), LatLon(43.91736984252929688, -79.71572113037109375))), 0.001000000);
 
-        expected = 9137.86513847491914930;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.99896049499511719, -5.64768314361572266), LatLon(-15.96355056762695312, -5.72479629516601562))), 0.001000000);
+        expected = 41625.99285252964182291;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.56082916259765625, -79.01220703125000000), LatLon(43.72190475463867188, -79.47900390625000000))), 0.001000000);
 
-        expected = 9890.39729273709417612;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.92969417572021484, -5.64759063720703125), LatLon(-15.92397212982177734, -5.73987007141113281))), 0.001000000);
+        expected = 44870.51818089283915469;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.87591171264648438, -79.01165008544921875), LatLon(43.90194320678710938, -79.57025146484375000))), 0.001000000);
 
-        expected = 10024.82079483745292237;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.97967052459716797, -5.67991113662719727), LatLon(-15.96545028686523438, -5.77248620986938477))), 0.001000000);
+        expected = 45647.26265787136071594;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.64857482910156250, -79.20729827880859375), LatLon(43.71326065063476562, -79.76768493652343750))), 0.001000000);
 
-        expected = 11053.46618153271447227;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.92223834991455078, -5.74537706375122070), LatLon(-16.01629066467285156, -5.71199226379394531))), 0.001000000);
+        expected = 50284.51768783960142173;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.90982818603515625, -79.60358428955078125), LatLon(43.48199844360351562, -79.40149688720703125))), 0.001000000);
 
-        expected = 11256.16647222144638363;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.97748279571533203, -5.75416374206542969), LatLon(-16.00191307067871094, -5.65200376510620117))), 0.001000000);
+        expected = 51319.73420976037596120;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.65852737426757812, -79.65677642822265625), LatLon(43.54740142822265625, -79.03836059570312500))), 0.001000000);
 
-        expected = 13419.90131970157017349;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(-15.95754241943359375, -5.64926624298095703), LatLon(-15.94291782379150391, -5.77382612228393555))), 0.001000000);
+        expected = 60998.75850568081659731;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.74923324584960938, -79.02179718017578125), LatLon(43.81575775146484375, -79.77580261230468750))), 0.001000000);
 
-    } //distance_between_two_points
+        //Generate random inputs
+        std::vector<LatLon> latlons_1;
+        std::vector<LatLon> latlons_2;
+        for(size_t i = 0; i < 30000000; i++) {
+            latlons_1.push_back(LatLon(rand_lat(rng), rand_lon(rng)));
+            latlons_2.push_back(LatLon(rand_lat(rng), rand_lon(rng)));
+        }
+        {
+            //Timed Test
+            ECE297_TIME_CONSTRAINT(877);
+            double result;
+            for(size_t i = 0; i < 30000000; i++) {
+                result += findDistanceBetweenTwoPoints(std::make_pair(latlons_1[i], latlons_2[i]));
+            }
+        }
+    } //distance_between_two_points_perf
 
-    TEST_FIXTURE(MapFixture, street_segment_length) {
+    TEST_FIXTURE(MapFixture, street_segment_length_perf) {
+        //Verify Functionality
         double expected;
 
-        expected = 6.01499246631190587;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(266), 0.001000000);
+        expected = 4.31280873966657730;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(193330), 0.001000000);
 
-        expected = 10.06006162205377308;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(83), 0.001000000);
+        expected = 9.51348675579425773;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(93960), 0.001000000);
 
-        expected = 15.11445034174861135;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(349), 0.001000000);
+        expected = 11.78072151740800244;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(119434), 0.001000000);
 
-        expected = 28.88258988369799596;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(413), 0.001000000);
+        expected = 15.71349032996043960;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(39152), 0.001000000);
 
-        expected = 32.09710091414628153;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(268), 0.001000000);
+        expected = 17.36607119585176306;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(60964), 0.001000000);
 
-        expected = 37.39519121424380188;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(0), 0.001000000);
+        expected = 17.99349788432688513;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(157923), 0.001000000);
 
-        expected = 40.21689070648031361;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(315), 0.001000000);
+        expected = 18.86090475545442047;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(149295), 0.001000000);
 
-        expected = 55.65102123739954720;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(448), 0.001000000);
+        expected = 20.38139778527202139;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(147907), 0.001000000);
 
-        expected = 57.06124089315957804;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(119), 0.001000000);
+        expected = 20.62569373896849712;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(117289), 0.001000000);
 
-        expected = 97.37768341259490512;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(125), 0.001000000);
+        expected = 22.05094202135635939;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(193882), 0.001000000);
 
-        expected = 98.32375752653975098;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(337), 0.001000000);
+        expected = 22.46923560183619628;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(163656), 0.001000000);
 
-        expected = 119.85954426732284617;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(461), 0.001000000);
+        expected = 23.32245156621486615;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(195352), 0.001000000);
 
-        expected = 126.27513995861261265;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(318), 0.001000000);
+        expected = 25.94955128609908357;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(170026), 0.001000000);
 
-        expected = 137.03950545999404653;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(231), 0.001000000);
+        expected = 29.10016435138784630;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(172867), 0.001000000);
 
-        expected = 207.20894630133020087;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(107), 0.001000000);
+        expected = 32.79992338435404520;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(154431), 0.001000000);
 
-        expected = 250.08658964238307476;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(130), 0.001000000);
+        expected = 42.36715806538496309;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(124726), 0.001000000);
 
-        expected = 254.32475817565372722;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(423), 0.001000000);
+        expected = 43.35451533048303219;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(138059), 0.001000000);
 
-        expected = 297.66580288127738640;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(363), 0.001000000);
+        expected = 43.89667046573810438;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(210188), 0.001000000);
 
-        expected = 319.45995523208523537;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(200), 0.001000000);
+        expected = 45.01237278631888472;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(215943), 0.001000000);
 
-        expected = 335.37363800636410360;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(417), 0.001000000);
+        expected = 46.61367907230290797;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(197221), 0.001000000);
 
-        expected = 351.31106607031216527;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(255), 0.001000000);
+        expected = 47.51506246278246692;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(176229), 0.001000000);
 
-        expected = 424.71310416024385859;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(412), 0.001000000);
+        expected = 47.94623084470583763;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(198105), 0.001000000);
 
-        expected = 580.07266661545077113;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(90), 0.001000000);
+        expected = 62.30570654538148290;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(108303), 0.001000000);
 
-        expected = 591.87589918236017184;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(376), 0.001000000);
+        expected = 122.27786259614822484;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(153092), 0.001000000);
 
-        expected = 717.27502527137244215;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(329), 0.001000000);
+        expected = 188.98141998662543983;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(50528), 0.001000000);
 
-        expected = 764.42021396600011940;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(326), 0.001000000);
+        expected = 223.77606192597608015;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(42525), 0.001000000);
 
-        expected = 874.73561340888795712;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(250), 0.001000000);
+        expected = 238.92309859297819230;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(55911), 0.001000000);
 
-        expected = 964.85577290594585520;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(369), 0.001000000);
+        expected = 242.52749386327775483;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(14), 0.001000000);
 
-        expected = 1252.14243964988850166;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(294), 0.001000000);
+        expected = 261.85450993295478384;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(125798), 0.001000000);
 
-        expected = 1555.50688775104481465;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(421), 0.001000000);
+        expected = 388.37572511922161311;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(58880), 0.001000000);
 
-    } //street_segment_length
+        //Generate random inputs
+        std::vector<StreetSegmentIdx> segment_ids;
+        for(size_t i = 0; i < 1600000; i++) {
+            segment_ids.push_back(rand_segment(rng));
+        }
+        {
+            //Timed Test
+            ECE297_TIME_CONSTRAINT(865);
+            double result;
+            for(size_t i = 0; i < 1600000; i++) {
+                result += findStreetSegmentLength(segment_ids[i]);
+            }
+        }
+    } //street_segment_length_perf
 
-    
-
-    TEST_FIXTURE(MapFixture, street_segment_travel_time) {
+    TEST_FIXTURE(MapFixture, street_length_perf) {
+        //Verify Functionality
         double expected;
 
-        expected = 0.12029984932623812;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(266), 0.001000000);
+        expected = 93.07334090613004207;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(12410), 0.001000000);
 
-        expected = 0.25150154055134433;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(83), 0.001000000);
+        expected = 125.28853353475008703;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(12960), 0.001000000);
 
-        expected = 0.37786125854371527;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(349), 0.001000000);
+        expected = 164.49682745984065946;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(15513), 0.001000000);
 
-        expected = 0.57765179767395991;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(413), 0.001000000);
+        expected = 200.61563603314465354;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20298), 0.001000000);
 
-        expected = 0.64194201828292563;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(268), 0.001000000);
+        expected = 206.64428235332405848;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(22438), 0.001000000);
 
-        expected = 0.93487978035609509;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(0), 0.001000000);
+        expected = 214.94020172395775603;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(11254), 0.001000000);
 
-        expected = 1.39127553093498868;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(448), 0.001000000);
+        expected = 222.99840361452817206;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(18311), 0.001000000);
 
-        expected = 1.42653102232898954;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(119), 0.001000000);
+        expected = 230.01405153585452013;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20493), 0.001000000);
 
-        expected = 2.43444208531487272;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(125), 0.001000000);
+        expected = 256.54110131468996769;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(4069), 0.001000000);
 
-        expected = 2.45809393816349386;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(337), 0.001000000);
+        expected = 259.14929220348693661;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(4419), 0.001000000);
 
-        expected = 2.99648860668307115;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(461), 0.001000000);
+        expected = 275.55296396373290690;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(12187), 0.001000000);
 
-        expected = 2.99883947471881118;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(315), 0.001000000);
+        expected = 319.14146299211256519;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(14345), 0.001000000);
 
-        expected = 3.42598763649985116;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(231), 0.001000000);
+        expected = 330.89974831586062010;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(15369), 0.001000000);
 
-        expected = 5.18022365753325520;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(107), 0.001000000);
+        expected = 335.14712314012967909;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(13071), 0.001000000);
 
-        expected = 5.95331605762554794;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(363), 0.001000000);
+        expected = 357.89878663703865413;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(6118), 0.001000000);
 
-        expected = 6.25216474105957687;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(130), 0.001000000);
+        expected = 366.08307611424879724;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(17005), 0.001000000);
 
-        expected = 6.35811895439134300;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(423), 0.001000000);
+        expected = 381.49679509792264298;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(16409), 0.001000000);
 
-        expected = 6.70747276012728211;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(417), 0.001000000);
+        expected = 389.29983212986877561;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20088), 0.001000000);
 
-        expected = 7.02622132140624345;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(255), 0.001000000);
+        expected = 409.16064472401035346;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(5251), 0.001000000);
 
-        expected = 7.98649888080213088;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(200), 0.001000000);
+        expected = 417.19186507197258607;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20146), 0.001000000);
 
-        expected = 8.49426208320487675;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(412), 0.001000000);
+        expected = 548.33384680555775503;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(6335), 0.001000000);
 
-        expected = 9.41591624144409955;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(318), 0.001000000);
+        expected = 633.38944802786579658;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(15907), 0.001000000);
 
-        expected = 14.50181666538626857;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(90), 0.001000000);
+        expected = 728.43434942414228317;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(21840), 0.001000000);
 
-        expected = 14.79689747955900359;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(376), 0.001000000);
+        expected = 750.66151510553083881;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(17962), 0.001000000);
 
-        expected = 17.93187563178431176;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(329), 0.001000000);
+        expected = 807.60529228814266389;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(5810), 0.001000000);
 
-        expected = 19.29711545811891682;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(369), 0.001000000);
+        expected = 900.87256582271174921;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(16047), 0.001000000);
 
-        expected = 21.86839033522219822;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(250), 0.001000000);
+        expected = 925.27005821933244079;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(9763), 0.001000000);
 
-        expected = 25.04284879299776989;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(294), 0.001000000);
+        expected = 1098.72154526266263019;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(17667), 0.001000000);
 
-        expected = 31.11013775502089729;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(421), 0.001000000);
+        expected = 1209.66563725881701430;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20584), 0.001000000);
 
-        expected = 57.00026711773771382;
-        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(326), 0.001000000);
+        expected = 39128.53764451635652222;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(2), 0.001000000);
 
-    } //street_segment_travel_time
+        //Generate random inputs
+        std::vector<StreetIdx> street_ids;
+        for(size_t i = 0; i < 400000; i++) {
+            street_ids.push_back(rand_street(rng));
+        }
+        {
+            //Timed Test
+            ECE297_TIME_CONSTRAINT(1177);
+            double result;
+            for(size_t i = 0; i < 400000; i++) {
+                result += findStreetLength(street_ids[i]);
+            }
+        }
+    } //street_length_perf
 
-    
+    TEST_FIXTURE(MapFixture, street_segment_travel_time_perf) {
+        //Verify Functionality
+        double expected;
 
-} //distance_time_queries_public_saint_helena
+        expected = 0.08625617479333154;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(193330), 0.001000000);
+
+        expected = 0.23561443034816004;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(119434), 0.001000000);
+
+        expected = 0.23783716889485645;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(93960), 0.001000000);
+
+        expected = 0.31426980659920878;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(39152), 0.001000000);
+
+        expected = 0.34732142391703524;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(60964), 0.001000000);
+
+        expected = 0.35986995768653768;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(157923), 0.001000000);
+
+        expected = 0.37721809510908844;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(149295), 0.001000000);
+
+        expected = 0.40762795570544041;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(147907), 0.001000000);
+
+        expected = 0.41251387477936996;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(117289), 0.001000000);
+
+        expected = 0.44101884042712719;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(193882), 0.001000000);
+
+        expected = 0.44938471203672392;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(163656), 0.001000000);
+
+        expected = 0.46644903132429733;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(195352), 0.001000000);
+
+        expected = 0.51899102572198164;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(170026), 0.001000000);
+
+        expected = 0.58200328702775694;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(172867), 0.001000000);
+
+        expected = 0.65599846768708092;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(154431), 0.001000000);
+
+        expected = 0.72257525550805057;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(138059), 0.001000000);
+
+        expected = 0.84734316130769927;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(124726), 0.001000000);
+
+        expected = 0.87793340931476205;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(210188), 0.001000000);
+
+        expected = 0.90024745572637765;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(215943), 0.001000000);
+
+        expected = 0.93227358144605821;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(197221), 0.001000000);
+
+        expected = 0.95030124925564929;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(176229), 0.001000000);
+
+        expected = 0.95892461689411679;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(198105), 0.001000000);
+
+        expected = 1.24611413090762957;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(108303), 0.001000000);
+
+        expected = 2.03796437660247021;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(153092), 0.001000000);
+
+        expected = 4.47552123851952199;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(42525), 0.001000000);
+
+        expected = 4.72453549966563635;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(50528), 0.001000000);
+
+        expected = 4.85054987726555531;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(14), 0.001000000);
+
+        expected = 5.97307746482445445;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(55911), 0.001000000);
+
+        expected = 6.54636274832386977;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(125798), 0.001000000);
+
+        expected = 9.70939312798054033;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(58880), 0.001000000);
+
+        //Generate random inputs
+        std::vector<StreetSegmentIdx> segment_ids;
+        for(size_t i = 0; i < 250000000; i++) {
+            segment_ids.push_back(rand_segment(rng));
+        }
+        {
+            //Timed Test
+            ECE297_TIME_CONSTRAINT(3742);
+            double result;
+            for(size_t i = 0; i < 250000000; i++) {
+                result += findStreetSegmentTravelTime(segment_ids[i]);
+            }
+        }
+    } //street_segment_travel_time_perf
+
+    TEST_FIXTURE(MapFixture, feature_area_perf) {
+        //Verify Functionality
+        double expected;
+
+        expected = 0.00000000000000000;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(16421), 0.001000000);
+
+        expected = 0.00000000000000000;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(16488), 0.001000000);
+
+        expected = 0.00000000000000000;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(49749), 0.001000000);
+
+        expected = 124.96187222517821169;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(559983), 0.001000000);
+
+        expected = 188.61399476763219241;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(72481), 0.001000000);
+
+        expected = 202.74939210209373641;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(50657), 0.001000000);
+
+        expected = 275.56810564325911628;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(336), 0.001000000);
+
+        expected = 294.40177539319398647;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(54844), 0.001000000);
+
+        expected = 371.24918989714763029;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(55128), 0.001000000);
+
+        expected = 382.13592573895226678;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(60866), 0.001000000);
+
+        expected = 422.13887475054474407;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(36988), 0.001000000);
+
+        expected = 528.63680691683305213;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(17892), 0.001000000);
+
+        expected = 533.97308849429236943;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(49638), 0.001000000);
+
+        expected = 598.82006918463548573;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(277301), 0.001000000);
+
+        expected = 685.45179380526599289;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(57640), 0.001000000);
+
+        expected = 744.65137890983135094;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(20226), 0.001000000);
+
+        expected = 766.38201605606332123;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(23988), 0.001000000);
+
+        expected = 873.15499104129969510;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(53278), 0.001000000);
+
+        expected = 979.97981836125575228;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(18672), 0.001000000);
+
+        expected = 1238.52908596976999434;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(11947), 0.001000000);
+
+        expected = 1911.79558111590267799;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(10148), 0.001000000);
+
+        expected = 2221.56368318081740654;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(71818), 0.001000000);
+
+        expected = 2558.81803154585259108;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(31880), 0.001000000);
+
+        expected = 4498.56878442368906690;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(6045), 0.001000000);
+
+        expected = 8075.19854863216824015;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(59984), 0.001000000);
+
+        expected = 10396.36380346155237930;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(72353), 0.001000000);
+
+        expected = 11531.07775197444425430;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(68692), 0.001000000);
+
+        expected = 17635.11881403398001567;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(7747), 0.001000000);
+
+        expected = 101534.86114964804437477;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(373), 0.001000000);
+
+        expected = 122695.76964092248817906;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(10616), 0.001000000);
+
+        //Generate random inputs
+        std::vector<FeatureIdx> feature_ids;
+        for(size_t i = 0; i < 100000; i++) {
+            feature_ids.push_back(rand_feature(rng));
+        }
+        {
+            //Timed Test
+            ECE297_TIME_CONSTRAINT(100);
+            double result;
+            for(size_t i = 0; i < 100000; i++) {
+                result += findFeatureArea(feature_ids[i]);
+            }
+        }
+    } //feature_area_perf
+
+} //distance_time_queries_perf_public_toronto_canada
 
