@@ -91,11 +91,6 @@ void closeMap() {
     
 }
 
-
-
-
-
-
 // Returns all street ids corresponding to street names that start with the given prefix
 std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_prefix){
     std::vector<StreetIdx> streets;
@@ -103,17 +98,25 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
     //make the street prefix into lower case
     std::string streetPrefix = street_prefix;
     std::for_each(streetPrefix.begin(), streetPrefix.end(), [](char & c){
-            c = ::tolower(c);
+        c = ::tolower(c);
     });
+    
+    // remove white spaces in string streetPrefix
+    streetPrefix.erase(std::remove(streetPrefix.begin(), streetPrefix.end(), ' '), streetPrefix.end());
     
     //get street name (lower case), compare with street prefix
     for (int i = 0; i < getNumStreets(); i++){
         std::string streetName = getStreetName(i);
-        std::string streetNameSub = streetName.substr(0, street_prefix.length());
+
+        // remove white spaces in string streetNameSub
+        streetName.erase(std::remove(streetName.begin(), streetName.end(), ' '), streetName.end());
+
+        // find the same length of string from streetName and convert to lower cases.
+        std::string streetNameSub = streetName.substr(0, streetPrefix.length());
         std::for_each(streetNameSub.begin(), streetNameSub.end(), [](char & c){
             c = ::tolower(c);
         });
-        
+          
         //if the name substring matches the prefix, store the id in streets
         if (streetNameSub.compare(streetPrefix) == 0){
             streets.push_back(i);
