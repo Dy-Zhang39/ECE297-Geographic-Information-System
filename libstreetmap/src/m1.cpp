@@ -47,7 +47,8 @@ using namespace std;
 
 
 //global variable
-vector<vector<StreetSegmentIdx>> intersection_street_segments;
+vector<vector<StreetSegmentIdx>> INTERSECTION_STREET_SEGMENT;
+vector<vector<IntersectionIdx>> STREET_INTERSECTION;
 
 
 bool loadMap(std::string map_streets_database_filename) {
@@ -59,14 +60,21 @@ bool loadMap(std::string map_streets_database_filename) {
     //
     // Load your map related data structures here.
     //
-    intersection_street_segments.resize(getNumIntersections()); //create empty vector for each intersection
-    
+    // Given a intersection find all street segments connect to it
+    INTERSECTION_STREET_SEGMENT.resize(getNumIntersections()); //create empty vector for each intersection
+    STREET_INTERSECTION.resize(getNumStreets());
     for( int intersection = 0; intersection < getNumIntersections(); ++intersection){
         //iterate through all intersections
         for( int i = 0; i < getNumIntersectionStreetSegment(intersection); ++i) {
             //iterate through all segments at intersection
-            int ss_id = getIntersectionStreetSegment(intersection, i);
-            intersection_street_segments[intersection].push_back(ss_id);        //save segments connected to intersection
+            int streetSegID = getIntersectionStreetSegment(intersection, i);
+            auto streetSegInfo = getStreetSegmentInfo(streetSegID);
+            auto streetID = streetSegInfo.streetID;
+            auto existed = find(STREET_INTERSECTION[streetID].begin(), STREET_INTERSECTION[streetID].end(), intersection);
+            if(existed == STREET_INTERSECTION[streetID].end()){
+                STREET_INTERSECTION[streetID].push_back(intersection);
+            }
+            INTERSECTION_STREET_SEGMENT[intersection].push_back(streetSegID);        //save segments connected to intersection
         }
     }
 
@@ -331,8 +339,8 @@ vector<IntersectionIdx> findAdjacentIntersections(IntersectionIdx intersection_i
 // There should be no duplicate intersections in the returned vector.
 // Speed Requirement --> high
 vector<IntersectionIdx> findIntersectionsOfStreet(StreetIdx street_id){
-   
-    vector<IntersectionIdx> i_ids;                                        //final output structure
+    return STREET_INTERSECTION[street_id];
+    /*vector<IntersectionIdx> i_ids;                                        //final output structure
     map<IntersectionIdx, int> i_ids_map;                                  //used for faster find(), note that the second data is useless
     
     for (StreetSegmentIdx ss_id = 0; ss_id < getNumStreetSegments(); ss_id++){
@@ -360,8 +368,8 @@ vector<IntersectionIdx> findIntersectionsOfStreet(StreetIdx street_id){
     for (map<IntersectionIdx, int>::iterator i = i_ids_map.begin(); i != i_ids_map.end(); i++){
         i_ids[index] = i->first;
         index++;
-    }
-    return i_ids;
+    }*/
+
 }
 
 
@@ -502,6 +510,6 @@ IntersectionIdx findClosestIntersection(LatLon my_position){
 // Speed Requirement --> high
 std::vector<StreetSegmentIdx> findStreetSegmentsOfIntersection(IntersectionIdx intersection_id){
  
-    return intersection_street_segments[intersection_id];
+    return INTERSECTION_STREET_SEGMENT[intersection_id];
     
 }
