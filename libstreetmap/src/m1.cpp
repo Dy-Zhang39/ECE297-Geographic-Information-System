@@ -152,7 +152,7 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
         }
         
         //update min/max longitude
-        if (point.longitude()> maxLon){
+        if (point.longitude() > maxLon){
             maxLon = point.longitude();
         } else {
             minLon = point.longitude();
@@ -172,7 +172,7 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
                     }
 
                     //update min/max longitude
-                    if (point.longitude()> maxLon){
+                    if (point.longitude() > maxLon){
                         maxLon = point.longitude();
                     } else {
                         minLon = point.longitude();
@@ -181,7 +181,6 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
             }
         }
     }
-    
     
     //use the min/max latitude and longitude to create LatLonBounds
     LatLon min(minLat, minLon);
@@ -199,7 +198,10 @@ POIIdx findClosestPOI(LatLon my_position, std::string POIname){
     std::vector<POIIdx> matchedName;
     LatLon POIPos;
     LatLon myPos = my_position;
-    double distance = 100000000000000;
+    
+    //use the farthest distance of two points on earth in meters as the initial distance.  This value will be updated.  Data retrieved from Wikipedia.
+    const double farthestDistanceOfTwoPointsOnEarth = 19996000;
+    double distance = farthestDistanceOfTwoPointsOnEarth;
     POIIdx closest = 0;
     
     //loop through all POIs
