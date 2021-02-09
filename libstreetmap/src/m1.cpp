@@ -245,8 +245,7 @@ double findFeatureArea(FeatureIdx feature_id){
     LatLon ptsPosPrev;
     double area = 0;
     double latAvg, sum = 0;
-    double earthR = kEarthRadiusInMeters * 10000/5.15;
-    double dToR = 0.017453292519943295769236907684886;
+    const double polygonFormulaMultConstant = 0.5;
     //if the feature is a closed polygon, then calculate its area. Otherwise, keep the area as 0
     if (getFeaturePoint(feature_id, 0) == getFeaturePoint(feature_id, numFeaturePoints-1)){
         //calculate the average latitude
@@ -261,16 +260,17 @@ double findFeatureArea(FeatureIdx feature_id){
             
             ptsPos = getFeaturePoint(feature_id, i);
             if (i > 0){
-                area += earthR * (ptsPos.longitude() * cos(latAvg * dToR) * ptsPosPrev.latitude()
-                        - ptsPos.latitude() * ptsPosPrev.longitude() * cos(latAvg * dToR));
+                area += polygonFormulaMultConstant * kEarthRadiusInMeters * kEarthRadiusInMeters * kDegreeToRadian * kDegreeToRadian * cos(latAvg * kDegreeToRadian) *
+                        (ptsPos.longitude() * ptsPosPrev.latitude() - ptsPos.latitude() * ptsPosPrev.longitude());
             }
             
             ptsPosPrev = ptsPos;
         }
     }
     
-    return abs(area/2);
+    return abs(area);
 }
+
 
 /// Returns the street names at the given intersection (includes duplicate 
 // street names in the returned vector)
