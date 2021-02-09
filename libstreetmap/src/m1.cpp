@@ -88,7 +88,7 @@ void closeMap() {
 
 
 
-
+// Returns all street ids corresponding to street names that start with the given prefix
 std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_prefix){
     std::vector<StreetIdx> streets;
     
@@ -114,9 +114,9 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
     return streets;
 }
 
+// Returns the length of a given street in meters
 double findStreetLength(StreetIdx street_id){
     //break the street into intersections and street segments
-    std::vector<IntersectionIdx> intersections = findIntersectionsOfStreet(street_id);
     double length = 0;
     
     //add the length of all segments to get street length
@@ -131,10 +131,11 @@ double findStreetLength(StreetIdx street_id){
     return length;
 }
 
+// Return the smallest axis-aligned rectangle that contains all the intersections and curve points of the given street
 LatLonBounds findStreetBoundingBox(StreetIdx street_id){
     //break the street into intersections, use the first intersection position as min/max LatLon
     std::vector<IntersectionIdx> intersections = findIntersectionsOfStreet(street_id);
-    LatLon firstPoint = getIntersectionPosition(0);
+    LatLon firstPoint = getIntersectionPosition(intersections[0]);
     double maxLat = firstPoint.latitude();
     double minLat = firstPoint.latitude();
     double maxLon = firstPoint.longitude();
@@ -147,34 +148,37 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
         //update min/max latitude
         if (point.latitude() > maxLat){
             maxLat = point.latitude();
-        } else {
+        } else if (point.latitude() < minLat) {
             minLat = point.latitude();
         }
         
         //update min/max longitude
         if (point.longitude() > maxLon){
             maxLon = point.longitude();
-        } else {
+        } else if (point.longitude() < minLon) {
             minLon = point.longitude();
         }
 
+        //loop through the all the Street Segments
         for (int j = 0; j < getNumStreetSegments(); j++){
             StreetSegmentInfo ss_info = getStreetSegmentInfo(j);
         
+            //locate the street id and loop through all the related curve points
             if(ss_info.streetID == street_id){
                 for (int k = 0; k < ss_info.numCurvePoints; k++){
                     point = getStreetSegmentCurvePoint(j, k);
                     
+                    //update min/max latitude
                     if (point.latitude() > maxLat){
                         maxLat = point.latitude();
-                    } else {
+                    } else if (point.latitude() < minLat) {
                         minLat = point.latitude();
                     }
 
                     //update min/max longitude
                     if (point.longitude() > maxLon){
                         maxLon = point.longitude();
-                    } else {
+                    } else if (point.longitude() < minLon) {
                         minLon = point.longitude();
                     }
                 }
@@ -193,6 +197,7 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
   
 }
 
+// Returns the nearest point of interest of the given name to the given position
 POIIdx findClosestPOI(LatLon my_position, std::string POIname){
     //declare variables
     std::vector<POIIdx> matchedName;
@@ -224,6 +229,7 @@ POIIdx findClosestPOI(LatLon my_position, std::string POIname){
     return closest;
 }
 
+// Returns the area of the given closed feature in square meters. Return 0 if this feature is not a closed polygon.
 double findFeatureArea(FeatureIdx feature_id){
     //break the feature into feature points
     int numFeaturePoints = getNumFeaturePoints(feature_id);
@@ -231,7 +237,7 @@ double findFeatureArea(FeatureIdx feature_id){
     LatLon ptsPosPrev;
     double area = 0;
     double latAvg, sum = 0;
-    double earthR = 6372797.560856 * 10000/5.15;
+    double earthR = kEarthRadiusInMeters * 10000/5.15;
     double dToR = 0.017453292519943295769236907684886;
     //if the feature is a closed polygon, then calculate its area. Otherwise, keep the area as 0
     if (getFeaturePoint(feature_id, 0) == getFeaturePoint(feature_id, numFeaturePoints-1)){
