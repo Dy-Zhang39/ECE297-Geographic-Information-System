@@ -135,8 +135,10 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
     //break the street into intersections, use the first intersection position as min/max LatLon
     std::vector<IntersectionIdx> intersections = findIntersectionsOfStreet(street_id);
     LatLon firstPoint = getIntersectionPosition(0);
-    double maxLat = firstPoint.latitude(), minLat = firstPoint.latitude();
-    double maxLon = firstPoint.longitude(), minLon = firstPoint.longitude();
+    double maxLat = firstPoint.latitude();
+    double minLat = firstPoint.latitude();
+    double maxLon = firstPoint.longitude();
+    double minLon = firstPoint.longitude();
     
     //loop through all intersections and update the min/max LatLon
     for (int i = 0; i < intersections.size(); i++){
@@ -145,17 +147,41 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
         //update min/max latitude
         if (point.latitude() > maxLat){
             maxLat = point.latitude();
-        } else if (point.latitude() < minLat){
+        } else {
             minLat = point.latitude();
         }
         
         //update min/max longitude
         if (point.longitude()> maxLon){
             maxLon = point.longitude();
-        } else if (point.longitude() < minLon){
+        } else {
             minLon = point.longitude();
-        } 
+        }
+
+        for (int j = 0; j < getNumStreetSegments(); j++){
+            StreetSegmentInfo ss_info = getStreetSegmentInfo(j);
+        
+            if(ss_info.streetID == street_id){
+                for (int k = 0; k < ss_info.numCurvePoints; k++){
+                    point = getStreetSegmentCurvePoint(j, k);
+                    
+                    if (point.latitude() > maxLat){
+                        maxLat = point.latitude();
+                    } else {
+                        minLat = point.latitude();
+                    }
+
+                    //update min/max longitude
+                    if (point.longitude()> maxLon){
+                        maxLon = point.longitude();
+                    } else {
+                        minLon = point.longitude();
+                    }
+                }
+            }
+        }
     }
+    
     
     //use the min/max latitude and longitude to create LatLonBounds
     LatLon min(minLat, minLon);
