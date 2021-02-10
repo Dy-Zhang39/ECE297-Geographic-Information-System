@@ -61,7 +61,9 @@ vector<double>streetLength;
 bool loadMap(std::string map_streets_database_filename) {
     bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded 
                                   //successfully
-
+    if(!load_successful)
+        return load_successful;
+    
     std::cout << "loadMap: " << map_streets_database_filename << std::endl;
 
     //
@@ -71,7 +73,7 @@ bool loadMap(std::string map_streets_database_filename) {
 
     //    initialize vector<double> streetSegLength;
     streetLength.resize(getNumStreets());
-        for (int i = 0; i < getNumStreets(); i++) {
+        for (int i = 0; i < getNumStreets(); i++) { 
             streetLength[i] = 0;
         }
 
@@ -180,12 +182,15 @@ bool loadMap(std::string map_streets_database_filename) {
 void closeMap() {
     closeStreetDatabase();
     //Clean-up your map related data structures here
+
     
 }
 
 // Returns all street ids corresponding to street names that start with the given prefix
-std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_prefix){
+
+std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_prefix) {
     std::vector<StreetIdx> streets;
+
     
     //create a new string streetPrefix and remove space of street_prefix, then change to lower case
     std::string streetPrefix = "";
@@ -228,8 +233,7 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
                 }    
             }
 
-        }
-    }
+
     return streets;
 }
 
