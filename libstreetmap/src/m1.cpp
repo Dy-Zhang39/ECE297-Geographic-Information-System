@@ -49,14 +49,15 @@ using namespace std;
 //global variable
 vector<vector<StreetSegmentIdx>> INTERSECTION_STREET_SEGMENT;
 vector<vector<IntersectionIdx>> STREET_INTERSECTION;
-
+vector<vector<StreetIdx>> STREET_NAMES;
+int CHAR_SIZE = 256;
 
 bool loadMap(std::string map_streets_database_filename) {
     bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded 
                                   //successfully
 
     std::cout << "loadMap: " << map_streets_database_filename << std::endl;
-    
+
     //
     // Load your map related data structures here.
     //
@@ -81,7 +82,28 @@ bool loadMap(std::string map_streets_database_filename) {
 
      //Make sure this is updated to reflect whether
                             //loading the map succeeded or failed
+    
+    // Load street name into the first vector using first 2 characters as index
+    
+    STREET_NAMES.resize(CHAR_SIZE * CHAR_SIZE);
 
+    for (int i = 0; i < getNumStreets(); i++){
+        // Get street name, remove space and convert to lower cases. Got only the first 2 letters.
+        std::string streetName = getStreetName(i);
+        std::string streetNameSub = "";
+    
+        for (int j = 0; j < streetName.length(); j++) {
+            if (streetName[j] != ' ') {
+                streetNameSub.push_back(tolower(streetName[j]));
+            }
+            
+            if (streetNameSub.length() > 2) break;
+        }
+
+        // Store the street id into the index vector: STREET_NAMES
+        STREET_NAMES[tolower(streetName[0]) * CHAR_SIZE + tolower(streetName[1])].push_back(i);
+    }
+    
     return load_successful;
 }
 
@@ -95,6 +117,7 @@ void closeMap() {
 std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_prefix){
     std::vector<StreetIdx> streets;
     
+    //create a new string streetPrefix and remove space of street_prefix, then change to lower case
     std::string streetPrefix = "";
     
     for (int i = 0; i < street_prefix.length(); i++) {
@@ -102,39 +125,37 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
             streetPrefix.push_back(tolower(street_prefix[i]));
         }
     }
-    
-    //make the street prefix into lower case
-    //std::string streetPrefix = street_prefix;
-    //std::for_each(streetPrefix.begin(), streetPrefix.end(), [](char & c){
-    //    c = ::tolower(c);
-    //});
-
-    // remove white spaces in string streetPrefix
-    //streetPrefix.erase(std::remove(streetPrefix.begin(), streetPrefix.end(), ' '), streetPrefix.end());
-    
+  
+    //if streetPrefix is not empty
     if (streetPrefix.length() > 0) {
+        
         //get street name (lower case), compare with street prefix
-        for (int i = 0; i < getNumStreets(); i++){
-            std::string streetName = getStreetName(i);
+        vector <int> adjustedNameList = STREET_NAMES[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
+        for (int i = 0; i < adjustedNameList.size(); i++){
+            std::string streetName = getStreetName(adjustedNameList[i]);
 
-
-
-            // find the same length of string from streetName and convert to lower cases.
-            int k = 0;
+            //compare streetName and streetPrefix character by character
+            int k = 1;
             
-            for (int j = 0; j < streetName.length(); j++) {
+            //loop through all characters in streetName
+            for (int j = 1; j < streetName.length(); j++) {
+                
+                //if character is a space, skip to the next character
                 if (streetName[j] != ' ') {
+                    
+                    //if the character does not match, break out of the loop
                     if (tolower(streetName[j]) != streetPrefix[k]) {
                         break;
                     }
-                if (streetPrefix.length() <= k + 1) {
-                    streets.push_back(i);
-                    break;
-                }  
+                    
+                    //if all characters in streetPrefix has been compared and matched, store the street id
+                    if (streetPrefix.length() <= k + 1) {
+                        streets.push_back(adjustedNameList[i]);
+                        break;
+                    }  
                                         
                     k++;
-                }
-                
+                }    
             }
 
         }
