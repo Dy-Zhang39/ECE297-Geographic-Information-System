@@ -14,7 +14,7 @@
 using ece297test::relative_error;
 using ece297test::sorted;
 
-SUITE(street_queries_perf_public_toronto_canada) {
+SUITE(distance_time_queries_perf_public_toronto_canada) {
 
     struct BaseMapFixture {
         BaseMapFixture() {
@@ -71,338 +71,552 @@ SUITE(street_queries_perf_public_toronto_canada) {
         std::uniform_real_distribution<double> rand_lon;
     };
 
-    TEST_FIXTURE(MapFixture, all_street_intersections_perf) {
+    TEST_FIXTURE(MapFixture, distance_between_two_points_perf) {
         //Verify Functionality
-        std::vector<IntersectionIdx> expected;
+        double expected;
 
-        expected = {2, 3, 10, 747, 748, 751, 752, 753, 754, 757, 758, 762, 763, 766, 767, 775, 776, 777, 779, 780, 1924, 1943, 7130, 9987, 9992, 9993, 10105, 10261, 10262, 10269, 10270, 10314, 10315, 13309, 13316, 13321, 14890, 14891, 14892, 14924, 14925, 15018, 15019, 15020, 16935, 16936, 19252, 20209, 24442, 24463, 24464, 29254, 29549, 29550, 29551, 29560, 39266, 39267, 58608, 58609, 58941, 58942, 58955, 73821, 73835, 73836, 73837, 73850, 74698, 74699, 89294, 89516, 89520, 95111, 110416};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(2)));
+        expected = 2356.64505946482040599;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.79279708862304688, -79.40152740478515625), LatLon(43.78813934326171875, -79.37289428710937500))), 0.001000000);
 
-        expected = {1783, 5704, 52919, 97534, 97535, 97536, 97537};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(20584)));
+        expected = 2427.80270119967008213;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.71529388427734375, -79.55553436279296875), LatLon(43.73324203491210938, -79.53834533691406250))), 0.001000000);
 
-        expected = {11483, 11486, 75620, 95988};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(20493)));
+        expected = 2949.60709968117043900;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.59196853637695312, -79.37844085693359375), LatLon(43.59408187866210938, -79.41493988037109375))), 0.001000000);
 
-        expected = {16049, 93850};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(20298)));
+        expected = 3548.76272402025188057;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.82280731201171875, -79.18561553955078125), LatLon(43.83702087402343750, -79.14601898193359375))), 0.001000000);
 
-        expected = {16144, 64389};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(14345)));
+        expected = 7082.94972707004035328;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.64250946044921875, -79.35969543457031250), LatLon(43.60358810424804688, -79.29006958007812500))), 0.001000000);
 
-        expected = {16963, 16972, 16973, 16974, 16975, 72491, 108589};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(4069)));
+        expected = 9273.46528542371379444;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.54529571533203125, -79.10992431640625000), LatLon(43.56031417846679688, -79.22308349609375000))), 0.001000000);
 
-        expected = {18199, 18200, 18201};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(4419)));
+        expected = 9502.16744354860202293;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.71036148071289062, -79.60935211181640625), LatLon(43.65697860717773438, -79.70158386230468750))), 0.001000000);
 
-        expected = {21475, 21476};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(5251)));
+        expected = 10259.27792697115364717;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.59600830078125000, -79.11286163330078125), LatLon(43.52816772460937500, -79.19910430908203125))), 0.001000000);
 
-        expected = {23657, 23659, 23660, 23661, 23662, 23669, 23673, 23675, 23679, 23686, 30814, 53050};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(5810)));
+        expected = 10811.38925209360422741;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.87495803833007812, -79.56263732910156250), LatLon(43.85248565673828125, -79.43147277832031250))), 0.001000000);
 
-        expected = {25354, 26368, 26371, 26372, 26373};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(6335)));
+        expected = 14256.83954341826029122;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.61819839477539062, -79.22166442871093750), LatLon(43.72824859619140625, -79.31252288818359375))), 0.001000000);
 
-        expected = {25452, 25455};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(6118)));
+        expected = 14466.80948114287093631;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.77970123291015625, -79.60786437988281250), LatLon(43.71545028686523438, -79.45131683349609375))), 0.001000000);
 
-        expected = {46278, 73371, 73397};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(17005)));
+        expected = 16151.57112973360381147;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.73253250122070312, -79.09116363525390625), LatLon(43.58732604980468750, -79.09315490722656250))), 0.001000000);
 
-        expected = {48816, 49449, 50368, 51650, 58156, 58175, 58193, 58220};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(9763)));
+        expected = 17244.38714028189860983;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.56804275512695312, -79.77233886718750000), LatLon(43.69831848144531250, -79.65620422363281250))), 0.001000000);
 
-        expected = {53976, 53981};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(11254)));
+        expected = 23088.23867834949487587;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.84590911865234375, -79.17972564697265625), LatLon(43.66650009155273438, -79.32427978515625000))), 0.001000000);
 
-        expected = {56567, 56667};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(12187)));
+        expected = 26697.57579962744057411;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.77907943725585938, -79.08943939208984375), LatLon(43.88920593261718750, -79.38510131835937500))), 0.001000000);
 
-        expected = {57751, 57753};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(12410)));
+        expected = 28346.94087889042202733;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.57031250000000000, -79.68901824951171875), LatLon(43.77373886108398438, -79.47676086425781250))), 0.001000000);
 
-        expected = {59378, 59379};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(12960)));
+        expected = 29222.10386375499729184;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.65841293334960938, -79.78363800048828125), LatLon(43.66227722167968750, -79.42051696777343750))), 0.001000000);
 
-        expected = {59722, 59868};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(13071)));
+        expected = 30851.74677904916461557;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.77691650390625000, -79.58846282958984375), LatLon(43.56536865234375000, -79.34043121337890625))), 0.001000000);
 
-        expected = {68220, 68350, 68632, 68774};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(15369)));
+        expected = 31806.78265816414932488;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.71936416625976562, -79.52052307128906250), LatLon(43.89463806152343750, -79.20742797851562500))), 0.001000000);
 
-        expected = {68360, 68830};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(15513)));
+        expected = 34409.99452569775894517;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.74295806884765625, -79.03385162353515625), LatLon(43.64626312255859375, -79.44029235839843750))), 0.001000000);
 
-        expected = {69617, 116982, 129107, 129108, 136849};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(21840)));
+        expected = 36763.18711706031172071;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.89926528930664062, -79.00794982910156250), LatLon(43.57030868530273438, -79.05247497558593750))), 0.001000000);
 
-        expected = {69987, 69988, 69989};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(15907)));
+        expected = 38140.77731261219742009;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.87306594848632812, -79.04129028320312500), LatLon(43.88062286376953125, -79.51689147949218750))), 0.001000000);
 
-        expected = {70533, 70540, 70564, 70567, 70586, 70598, 70599};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(16047)));
+        expected = 38384.63474691180454101;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.89250946044921875, -79.44643402099609375), LatLon(43.57640457153320312, -79.25479125976562500))), 0.001000000);
 
-        expected = {71615, 71616, 71617, 71618, 71619, 71620};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(16409)));
+        expected = 40275.83257943762146169;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.83801651000976562, -79.22557830810546875), LatLon(43.91736984252929688, -79.71572113037109375))), 0.001000000);
 
-        expected = {78599, 78600, 78610, 78611, 78617, 78618, 78619, 78620, 78621, 78623, 78627, 78636};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(17667)));
+        expected = 41625.99285252964182291;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.56082916259765625, -79.01220703125000000), LatLon(43.72190475463867188, -79.47900390625000000))), 0.001000000);
 
-        expected = {80386, 80387, 80393, 80394};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(17962)));
+        expected = 44870.51818089283915469;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.87591171264648438, -79.01165008544921875), LatLon(43.90194320678710938, -79.57025146484375000))), 0.001000000);
 
-        expected = {81235, 81236, 81392};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(18311)));
+        expected = 45647.26265787136071594;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.64857482910156250, -79.20729827880859375), LatLon(43.71326065063476562, -79.76768493652343750))), 0.001000000);
 
-        expected = {88273, 91691, 91702};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(20146)));
+        expected = 50284.51768783960142173;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.90982818603515625, -79.60358428955078125), LatLon(43.48199844360351562, -79.40149688720703125))), 0.001000000);
 
-        expected = {91287, 91314};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(20088)));
+        expected = 51319.73420976037596120;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.65852737426757812, -79.65677642822265625), LatLon(43.54740142822265625, -79.03836059570312500))), 0.001000000);
 
-        expected = {133906, 136983, 136985, 136986, 136987, 136988};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfStreet(22438)));
+        expected = 60998.75850568081659731;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findDistanceBetweenTwoPoints(std::make_pair(LatLon(43.74923324584960938, -79.02179718017578125), LatLon(43.81575775146484375, -79.77580261230468750))), 0.001000000);
+
+        //Generate random inputs
+        std::vector<LatLon> latlons_1;
+        std::vector<LatLon> latlons_2;
+        for(size_t i = 0; i < 30000000; i++) {
+            latlons_1.push_back(LatLon(rand_lat(rng), rand_lon(rng)));
+            latlons_2.push_back(LatLon(rand_lat(rng), rand_lon(rng)));
+        }
+        {
+            //Timed Test
+            ECE297_TIME_CONSTRAINT(877);
+            double result;
+            for(size_t i = 0; i < 30000000; i++) {
+                result += findDistanceBetweenTwoPoints(std::make_pair(latlons_1[i], latlons_2[i]));
+            }
+        }
+    } //distance_between_two_points_perf
+
+    TEST_FIXTURE(MapFixture, street_segment_length_perf) {
+        //Verify Functionality
+        double expected;
+
+        expected = 4.31280873966657730;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(193330), 0.001000000);
+
+        expected = 9.51348675579425773;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(93960), 0.001000000);
+
+        expected = 11.78072151740800244;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(119434), 0.001000000);
+
+        expected = 15.71349032996043960;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(39152), 0.001000000);
+
+        expected = 17.36607119585176306;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(60964), 0.001000000);
+
+        expected = 17.99349788432688513;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(157923), 0.001000000);
+
+        expected = 18.86090475545442047;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(149295), 0.001000000);
+
+        expected = 20.38139778527202139;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(147907), 0.001000000);
+
+        expected = 20.62569373896849712;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(117289), 0.001000000);
+
+        expected = 22.05094202135635939;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(193882), 0.001000000);
+
+        expected = 22.46923560183619628;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(163656), 0.001000000);
+
+        expected = 23.32245156621486615;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(195352), 0.001000000);
+
+        expected = 25.94955128609908357;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(170026), 0.001000000);
+
+        expected = 29.10016435138784630;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(172867), 0.001000000);
+
+        expected = 32.79992338435404520;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(154431), 0.001000000);
+
+        expected = 42.36715806538496309;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(124726), 0.001000000);
+
+        expected = 43.35451533048303219;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(138059), 0.001000000);
+
+        expected = 43.89667046573810438;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(210188), 0.001000000);
+
+        expected = 45.01237278631888472;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(215943), 0.001000000);
+
+        expected = 46.61367907230290797;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(197221), 0.001000000);
+
+        expected = 47.51506246278246692;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(176229), 0.001000000);
+
+        expected = 47.94623084470583763;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(198105), 0.001000000);
+
+        expected = 62.30570654538148290;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(108303), 0.001000000);
+
+        expected = 122.27786259614822484;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(153092), 0.001000000);
+
+        expected = 188.98141998662543983;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(50528), 0.001000000);
+
+        expected = 223.77606192597608015;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(42525), 0.001000000);
+
+        expected = 238.92309859297819230;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(55911), 0.001000000);
+
+        expected = 242.52749386327775483;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(14), 0.001000000);
+
+        expected = 261.85450993295478384;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(125798), 0.001000000);
+
+        expected = 388.37572511922161311;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentLength(58880), 0.001000000);
+
+        //Generate random inputs
+        std::vector<StreetSegmentIdx> segment_ids;
+        for(size_t i = 0; i < 1600000; i++) {
+            segment_ids.push_back(rand_segment(rng));
+        }
+        {
+            //Timed Test
+            ECE297_TIME_CONSTRAINT(865);
+            double result;
+            for(size_t i = 0; i < 1600000; i++) {
+                result += findStreetSegmentLength(segment_ids[i]);
+            }
+        }
+    } //street_segment_length_perf
+
+    TEST_FIXTURE(MapFixture, street_length_perf) {
+        //Verify Functionality
+        double expected;
+
+        expected = 93.07334090613004207;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(12410), 0.001000000);
+
+        expected = 125.28853353475008703;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(12960), 0.001000000);
+
+        expected = 164.49682745984065946;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(15513), 0.001000000);
+
+        expected = 200.61563603314465354;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20298), 0.001000000);
+
+        expected = 206.64428235332405848;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(22438), 0.001000000);
+
+        expected = 214.94020172395775603;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(11254), 0.001000000);
+
+        expected = 222.99840361452817206;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(18311), 0.001000000);
+
+        expected = 230.01405153585452013;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20493), 0.001000000);
+
+        expected = 256.54110131468996769;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(4069), 0.001000000);
+
+        expected = 259.14929220348693661;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(4419), 0.001000000);
+
+        expected = 275.55296396373290690;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(12187), 0.001000000);
+
+        expected = 319.14146299211256519;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(14345), 0.001000000);
+
+        expected = 330.89974831586062010;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(15369), 0.001000000);
+
+        expected = 335.14712314012967909;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(13071), 0.001000000);
+
+        expected = 357.89878663703865413;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(6118), 0.001000000);
+
+        expected = 366.08307611424879724;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(17005), 0.001000000);
+
+        expected = 381.49679509792264298;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(16409), 0.001000000);
+
+        expected = 389.29983212986877561;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20088), 0.001000000);
+
+        expected = 409.16064472401035346;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(5251), 0.001000000);
+
+        expected = 417.19186507197258607;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20146), 0.001000000);
+
+        expected = 548.33384680555775503;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(6335), 0.001000000);
+
+        expected = 633.38944802786579658;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(15907), 0.001000000);
+
+        expected = 728.43434942414228317;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(21840), 0.001000000);
+
+        expected = 750.66151510553083881;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(17962), 0.001000000);
+
+        expected = 807.60529228814266389;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(5810), 0.001000000);
+
+        expected = 900.87256582271174921;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(16047), 0.001000000);
+
+        expected = 925.27005821933244079;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(9763), 0.001000000);
+
+        expected = 1098.72154526266263019;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(17667), 0.001000000);
+
+        expected = 1209.66563725881701430;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(20584), 0.001000000);
+
+        expected = 39128.53764451635652222;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetLength(2), 0.001000000);
 
         //Generate random inputs
         std::vector<StreetIdx> street_ids;
-        for(size_t i = 0; i < 1600000; i++) {
+        for(size_t i = 0; i < 400000; i++) {
             street_ids.push_back(rand_street(rng));
         }
         {
             //Timed Test
-            ECE297_TIME_CONSTRAINT(1529);
-            std::vector<IntersectionIdx> result;
-            for(size_t i = 0; i < 1600000; i++) {
-                result = findIntersectionsOfStreet(street_ids[i]);
+            ECE297_TIME_CONSTRAINT(1177);
+            double result;
+            for(size_t i = 0; i < 400000; i++) {
+                result += findStreetLength(street_ids[i]);
             }
         }
-    } //all_street_intersections_perf
+    } //street_length_perf
 
-    TEST_FIXTURE(MapFixture, intersection_ids_from_street_ids_perf) {
+    TEST_FIXTURE(MapFixture, street_segment_travel_time_perf) {
         //Verify Functionality
-        std::vector<IntersectionIdx> expected;
+        double expected;
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(4307, 6554))));
+        expected = 0.08625617479333154;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(193330), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(6382, 4558))));
+        expected = 0.23561443034816004;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(119434), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(7759, 13936))));
+        expected = 0.23783716889485645;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(93960), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(8546, 10335))));
+        expected = 0.31426980659920878;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(39152), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(9037, 17744))));
+        expected = 0.34732142391703524;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(60964), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(10310, 17423))));
+        expected = 0.35986995768653768;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(157923), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(11344, 3857))));
+        expected = 0.37721809510908844;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(149295), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(13040, 11300))));
+        expected = 0.40762795570544041;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(147907), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(13524, 18480))));
+        expected = 0.41251387477936996;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(117289), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(15713, 18564))));
+        expected = 0.44101884042712719;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(193882), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(16785, 509))));
+        expected = 0.44938471203672392;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(163656), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(19179, 17379))));
+        expected = 0.46644903132429733;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(195352), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(19739, 409))));
+        expected = 0.51899102572198164;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(170026), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(19942, 22145))));
+        expected = 0.58200328702775694;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(172867), 0.001000000);
 
-        expected = {};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(21504, 20443))));
+        expected = 0.65599846768708092;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(154431), 0.001000000);
 
-        expected = {16049};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(20298, 3842))));
+        expected = 0.72257525550805057;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(138059), 0.001000000);
 
-        expected = {17590};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(4243, 4242))));
+        expected = 0.84734316130769927;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(124726), 0.001000000);
 
-        expected = {25452, 25455};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(6118, 980))));
+        expected = 0.87793340931476205;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(210188), 0.001000000);
 
-        expected = {30850, 30854, 36602, 36604};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(7409, 0))));
+        expected = 0.90024745572637765;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(215943), 0.001000000);
 
-        expected = {33460, 33461, 33464, 33466, 33469};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(7209, 0))));
+        expected = 0.93227358144605821;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(197221), 0.001000000);
 
-        expected = {43810};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(8366, 8361))));
+        expected = 0.95030124925564929;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(176229), 0.001000000);
 
-        expected = {57751};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(12410, 12406))));
+        expected = 0.95892461689411679;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(198105), 0.001000000);
 
-        expected = {64389};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(14345, 14342))));
+        expected = 1.24611413090762957;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(108303), 0.001000000);
 
-        expected = {67930};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(15277, 15276))));
+        expected = 2.03796437660247021;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(153092), 0.001000000);
 
-        expected = {70599};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(16047, 16077))));
+        expected = 4.47552123851952199;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(42525), 0.001000000);
 
-        expected = {71620};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(16409, 4507))));
+        expected = 4.72453549966563635;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(50528), 0.001000000);
 
-        expected = {72383};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(16652, 16649))));
+        expected = 4.85054987726555531;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(14), 0.001000000);
 
-        expected = {78729};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(17700, 20337))));
+        expected = 5.97307746482445445;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(55911), 0.001000000);
 
-        expected = {81079};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(18188, 18179))));
+        expected = 6.54636274832386977;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(125798), 0.001000000);
 
-        expected = {81392};
-        ECE297_CHECK_EQUAL(expected, sorted(findIntersectionsOfTwoStreets(std::make_pair(18311, 18217))));
+        expected = 9.70939312798054033;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findStreetSegmentTravelTime(58880), 0.001000000);
 
         //Generate random inputs
-        std::vector<StreetIdx> street_ids_1;
-        std::vector<StreetIdx> street_ids_2;
-        for(size_t i = 0; i < 900000; i++) {
-            StreetIdx street_id1 = rand_street(rng);
-            StreetIdx street_id2 = rand_street(rng);
-            street_ids_1.push_back(street_id1);
-            street_ids_2.push_back(street_id2);
+        std::vector<StreetSegmentIdx> segment_ids;
+        for(size_t i = 0; i < 250000000; i++) {
+            segment_ids.push_back(rand_segment(rng));
         }
         {
             //Timed Test
-            ECE297_TIME_CONSTRAINT(514);
-            std::vector<IntersectionIdx> result;
-            for(size_t i = 0; i < 900000; i++) {
-                result = findIntersectionsOfTwoStreets(std::make_pair(street_ids_1[i], street_ids_2[i]));
+            ECE297_TIME_CONSTRAINT(3742);
+            double result;
+            for(size_t i = 0; i < 250000000; i++) {
+                result += findStreetSegmentTravelTime(segment_ids[i]);
             }
         }
-    } //intersection_ids_from_street_ids_perf
+    } //street_segment_travel_time_perf
 
-    TEST_FIXTURE(MapFixture, street_ids_from_partial_street_name_perf) {
+    TEST_FIXTURE(MapFixture, feature_area_perf) {
         //Verify Functionality
-        std::vector<StreetIdx> expected;
+        double expected;
 
-        expected = {1, 2, 3, 4, 9, 31, 42, 61, 62, 119, 123, 124, 125, 128, 129, 130, 132, 133, 142, 143, 144, 145, 146, 147, 148, 149, 313, 314, 390, 507, 567, 570, 621, 622, 755, 900, 901, 902, 967, 1389, 1395, 1694, 1721, 1850, 1851, 1852, 1853, 1854, 2081, 2082, 2083, 2155, 2169, 2276, 2444, 2576, 2638, 2639, 2725, 2759, 3069, 3084, 3388, 3505, 3796, 3934, 4001, 5028, 5052, 5219, 5572, 5807, 5955, 5992, 6127, 6229, 6230, 6573, 6698, 6773, 6774, 6775, 7166, 7932, 8592, 8605, 8715, 8924, 9915, 10485, 10678, 11046, 11053, 11445, 11501, 11904, 11998, 12024, 12295, 12315, 12505, 12777, 12819, 13309, 13673, 13793, 13909, 14434, 15243, 15608, 15939, 16602, 16614, 16869, 17481, 17523, 18408, 18879, 18961, 19576, 20167, 21340, 21600, 21656, 21738, 21774, 21801, 21802, 22746};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("High")));
+        expected = 0.00000000000000000;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(16421), 0.001000000);
 
-        expected = {30, 59, 99, 246, 257, 263, 356, 427, 434, 454, 781, 846, 863, 878, 910, 1295, 1297, 1299, 1301, 1603, 1605, 1651, 1682, 1758, 1828, 1830, 1868, 1982, 2089, 2333, 2430, 2513, 2522, 2546, 2556, 2716, 2720, 2755, 2816, 2851, 2881, 3075, 3152, 3218, 3275, 3382, 3410, 3413, 3460, 3485, 3542, 3547, 3595, 3665, 3731, 3734, 3840, 4011, 4022, 4073, 4127, 4268, 4269, 4357, 4363, 4377, 4457, 4509, 4589, 4724, 4878, 5015, 5084, 5274, 5278, 5504, 5517, 5645, 5716, 5725, 6017, 6018, 6030, 6252, 6270, 6282, 6297, 6369, 6397, 6552, 6613, 6646, 6809, 6818, 6857, 6897, 6996, 7006, 7110, 7277, 7286, 7344, 7390, 7391, 7411, 7533, 7561, 7723, 7755, 7756, 7988, 8021, 8025, 8151, 8180, 8488, 8538, 8588, 8706, 8819, 8866, 9096, 9136, 9285, 9363, 9399, 9429, 9434, 9457, 9540, 9647, 9660, 9788, 9820, 9964, 10044, 10067, 10077, 10118, 10120, 10165, 10201, 10225, 10278, 10317, 10319, 10513, 10640, 10654, 10694, 10731, 10746, 10795, 10847, 10870, 11022, 11039, 11089, 11128, 11160, 11231, 11333, 11447, 11468, 11471, 11491, 11561, 11625, 11706, 11799, 11882, 11974, 12018, 12033, 12062, 12080, 12113, 12184, 12379, 12410, 12472, 12525, 12535, 12656, 12884, 12910, 12952, 13009, 13037, 13333, 13402, 13435, 13451, 13545, 13561, 13580, 13720, 13984, 13993, 14032, 14089, 14404, 14445, 14448, 14485, 14568, 14570, 14641, 14775, 14803, 14910, 14922, 14946, 15223, 15293, 15387, 15456, 15637, 15704, 15760, 15806, 15836, 15844, 16059, 16195, 16318, 16412, 16425, 16451, 16491, 16520, 16624, 16637, 16642, 16663, 16757, 16857, 17030, 17033, 17043, 17181, 17271, 17280, 17448, 17539, 17560, 17580, 17598, 17671, 17687, 17733, 17768, 17770, 17843, 17848, 18100, 18387, 18506, 18525, 18534, 18550, 18562, 18574, 18613, 18616, 18634, 18640, 18675, 18710, 18892, 19060, 19171, 19300, 19523, 19587, 19745, 20014, 20047, 20143, 20155, 20225, 20351, 20390, 20443, 20504, 20606, 20740, 20754, 20776, 20883, 20887, 20888, 20889, 20907, 21176, 21210, 21386, 21424, 21437, 21478, 21579, 21633, 21675, 21685, 21851, 21852, 21853, 21908, 21996, 22012, 22066, 22368, 22369, 22707, 22729, 22739, 22753, 22759, 22763};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Pa")));
+        expected = 0.00000000000000000;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(16488), 0.001000000);
 
-        expected = {94, 100, 104, 105, 1273, 5454, 5463, 6642, 6643, 7388, 9039, 16653, 20161, 20446, 21182, 22713, 22715};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Lake Shor")));
+        expected = 0.00000000000000000;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(49749), 0.001000000);
 
-        expected = {354, 379, 484, 722, 744, 1070, 1072, 1203, 1211, 1361, 1545, 1585, 1592, 1814, 1837, 1912, 2062, 2619, 2870, 2981, 3096, 3142, 3297, 3524, 3525, 3526, 3792, 3861, 3895, 4331, 4367, 4596, 4629, 4765, 4910, 4925, 5071, 5281, 5411, 5430, 5438, 5730, 5768, 5779, 5857, 5916, 6075, 6172, 6463, 6496, 6564, 6621, 6705, 7130, 7177, 7199, 7574, 7620, 8515, 8622, 8664, 8750, 8813, 8876, 9030, 9070, 9236, 9345, 9383, 9495, 9521, 9596, 9615, 9724, 9763, 9772, 9796, 9802, 9895, 10075, 10203, 10224, 10419, 10549, 10627, 10913, 10939, 11150, 11273, 11348, 11350, 11492, 11499, 11647, 11675, 11785, 12041, 12405, 12482, 12485, 12523, 12577, 12683, 12754, 12940, 13114, 13180, 13431, 13606, 13635, 13749, 13835, 13971, 14100, 14265, 14388, 14778, 14863, 14871, 15112, 15333, 15337, 15368, 15442, 15545, 15634, 15748, 15827, 15848, 15969, 16022, 16106, 16133, 16193, 16232, 16264, 16495, 16714, 16739, 16801, 16974, 17090, 17207, 17424, 17439, 17490, 17493, 17589, 17606, 17654, 17981, 18024, 18219, 18383, 18390, 18476, 18641, 19095, 19234, 19407, 19528, 20042, 20049, 20083, 20112, 20190, 20313, 20524, 20584, 20849, 20919, 21119, 21388, 21612, 21668, 21785, 21823, 21844, 21850, 21923, 22328, 22352, 22638};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Fa")));
+        expected = 124.96187222517821169;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(559983), 0.001000000);
 
-        expected = {549, 550, 1535, 1536, 6124};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Linsmore Crescent")));
+        expected = 188.61399476763219241;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(72481), 0.001000000);
 
-        expected = {1110, 4069};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Eglinton Square")));
+        expected = 202.74939210209373641;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(50657), 0.001000000);
 
-        expected = {1960, 17379};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Saint Clements Avenue")));
+        expected = 275.56810564325911628;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(336), 0.001000000);
 
-        expected = {2021, 4558, 7205, 10744, 11131, 11612, 15774, 17548, 20118};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Cove")));
+        expected = 294.40177539319398647;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(54844), 0.001000000);
 
-        expected = {2549, 3680, 17648};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Sutherla")));
+        expected = 371.24918989714763029;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(55128), 0.001000000);
 
-        expected = {2917, 5092, 5392, 5861, 6488, 6641, 7237, 7424, 7508, 10285, 10406, 11867, 11975, 13574, 13766, 15277, 15538, 15846, 15851, 16322, 16541, 16999, 18823, 18832, 18839, 18950, 20082, 20650, 21068};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Apple ")));
+        expected = 382.13592573895226678;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(60866), 0.001000000);
 
-        expected = {4964};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Lane South Dundas East Beaconsfi")));
+        expected = 422.13887475054474407;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(36988), 0.001000000);
 
-        expected = {5228, 5518, 5520, 8065, 9203, 11614, 11949, 12016, 12902, 13626, 16344, 16347, 18418, 20021, 20198};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Tree")));
+        expected = 528.63680691683305213;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(17892), 0.001000000);
 
-        expected = {5251};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Director Court")));
+        expected = 533.97308849429236943;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(49638), 0.001000000);
 
-        expected = {5374, 6923, 21263, 22623};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Woodbine Track ")));
+        expected = 598.82006918463548573;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(277301), 0.001000000);
 
-        expected = {6335};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Grand Highland Way")));
+        expected = 685.45179380526599289;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(57640), 0.001000000);
 
-        expected = {6397};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Park Aven")));
+        expected = 744.65137890983135094;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(20226), 0.001000000);
 
-        expected = {7255};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Hiawatha Parkway")));
+        expected = 766.38201605606332123;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(23988), 0.001000000);
 
-        expected = {8369, 22145};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Crestview Road")));
+        expected = 873.15499104129969510;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(53278), 0.001000000);
 
-        expected = {8794, 16652};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Cristi")));
+        expected = 979.97981836125575228;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(18672), 0.001000000);
 
-        expected = {8800};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Via Nova Drive")));
+        expected = 1238.52908596976999434;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(11947), 0.001000000);
 
-        expected = {9037};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Rideau Gate")));
+        expected = 1911.79558111590267799;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(10148), 0.001000000);
 
-        expected = {11067, 17005};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Basildon Crescent")));
+        expected = 2221.56368318081740654;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(71818), 0.001000000);
 
-        expected = {12187};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Caddy Drive")));
+        expected = 2558.81803154585259108;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(31880), 0.001000000);
 
-        expected = {12390};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Graybark Crescent")));
+        expected = 4498.56878442368906690;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(6045), 0.001000000);
 
-        expected = {13040};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Kendlet")));
+        expected = 8075.19854863216824015;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(59984), 0.001000000);
 
-        expected = {13071};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Davistow Cre")));
+        expected = 10396.36380346155237930;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(72353), 0.001000000);
 
-        expected = {15369};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Shelford Terra")));
+        expected = 11531.07775197444425430;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(68692), 0.001000000);
 
-        expected = {16047};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Brookhurst Road")));
+        expected = 17635.11881403398001567;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(7747), 0.001000000);
 
-        expected = {18188};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Basilic")));
+        expected = 101534.86114964804437477;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(373), 0.001000000);
 
-        expected = {19739};
-        ECE297_CHECK_EQUAL(expected, sorted(findStreetIdsFromPartialStreetName("Callaway Lane")));
+        expected = 122695.76964092248817906;
+        ECE297_CHECK_RELATIVE_ERROR(expected, findFeatureArea(10616), 0.001000000);
 
         //Generate random inputs
-        std::vector<std::string> street_names_prefixes;
-        for(size_t i = 0; i < 1000000; i++) {
-            std::string rand_street_name = getStreetName(rand_street(rng));
-            unsigned rand_prefix_end_pos = (1.0*rng()/rng.max())*rand_street_name.length();
-            street_names_prefixes.push_back(rand_street_name.substr(0, rand_prefix_end_pos));
+        std::vector<FeatureIdx> feature_ids;
+        for(size_t i = 0; i < 100000; i++) {
+            feature_ids.push_back(rand_feature(rng));
         }
         {
             //Timed Test
-            ECE297_TIME_CONSTRAINT(21413);
-            std::vector<StreetIdx> result;
-            for(size_t i = 0; i < 1000000; i++) {
-                result = findStreetIdsFromPartialStreetName(street_names_prefixes[i]);
+            ECE297_TIME_CONSTRAINT(100);
+            double result;
+            for(size_t i = 0; i < 100000; i++) {
+                result += findFeatureArea(feature_ids[i]);
             }
         }
-    } //street_ids_from_partial_street_name_perf
+    } //feature_area_perf
 
-} //street_queries_perf_public_toronto_canada
+} //distance_time_queries_perf_public_toronto_canada
 
