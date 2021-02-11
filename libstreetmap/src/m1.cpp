@@ -238,7 +238,11 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
 
                     //if all characters in streetPrefix has been compared and matched, store the street id
                     if (streetPrefix.length() <= k + 1) {
-                        streets.push_back(adjustedNameList[i]);
+                        if (std::find(streets.begin(), streets.end(), adjustedNameList[i]) == streets.end()) {
+                                streets.push_back(adjustedNameList[i]);
+                            }
+
+                     
                         break;
                     }
 
