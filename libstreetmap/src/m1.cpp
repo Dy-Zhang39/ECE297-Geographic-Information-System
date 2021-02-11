@@ -94,7 +94,7 @@ bool loadMap(std::string map_streets_database_filename) {
             INTERSECTION_STREET_SEGMENT[intersection].push_back(streetSegID);        //save segments connected to intersection
         }
     }
-    
+
     //Find streets length and their corresponding travel time
     streetSegLength.resize(getNumStreetSegments());
     streetSegTravelTime.resize(getNumStreetSegments());
@@ -109,51 +109,44 @@ bool loadMap(std::string map_streets_database_filename) {
         //find curve points on the given street segment
         if (streetSegmentID.numCurvePoints > 1) {
             //more than one curve points
-            pair <LatLon, LatLon> firstPoints(from, getStreetSegmentCurvePoint(street_segment_id, 0)); //calculate distance between start point and first curve point
+            pair <LatLon, LatLon> firstPoints(from, getStreetSegmentCurvePoint(street_segment_id, 0));
+            //calculate distance between start point and first curve point
             streetSegmentLength = findDistanceBetweenTwoPoints(firstPoints);
 
             int i = 1;
             for (; i < streetSegmentID.numCurvePoints; i++) {
                 pair <LatLon, LatLon> curvePoints(getStreetSegmentCurvePoint(street_segment_id, i - 1), getStreetSegmentCurvePoint(street_segment_id, i));
-
-                streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(curvePoints); //add the distance between each curve points
+                //add the distance between each curve points
+                streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(curvePoints);
             }
 
             pair <LatLon, LatLon> lastPoints(getStreetSegmentCurvePoint(street_segment_id, i - 1), to);
+            //add the distance between last curve point and end point
+            streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(lastPoints);
+            streetSegLength[street_segment_id] = streetSegmentLength;
 
-            streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(lastPoints); //add the distance between last curve point and end point
-            streetSegLength[street_segment_id]=streetSegmentLength;           
-        }
-        else if (streetSegmentID.numCurvePoints == 1) { //only has one curve point
+        } else if (streetSegmentID.numCurvePoints == 1) { //only has one curve point
             pair <LatLon, LatLon> firstPoints(from, getStreetSegmentCurvePoint(street_segment_id, 0));
             pair <LatLon, LatLon> lastPoints(getStreetSegmentCurvePoint(street_segment_id, 0), to);
-
-            streetSegmentLength = findDistanceBetweenTwoPoints(firstPoints) + findDistanceBetweenTwoPoints(lastPoints); // add distance from start point to the only curve point to the end point 
-            streetSegLength[street_segment_id]=streetSegmentLength;
+            
+            // add distance from start point to the only curve point to the end point 
+            streetSegmentLength = findDistanceBetweenTwoPoints(firstPoints) + findDistanceBetweenTwoPoints(lastPoints);
+            streetSegLength[street_segment_id] = streetSegmentLength;
 
         } else {
             //straight segment
             pair <LatLon, LatLon> points(from, to);
-
-            streetSegmentLength = findDistanceBetweenTwoPoints(points); //calculate distance between start and end point
+            //calculate distance between start and end point
+            streetSegmentLength = findDistanceBetweenTwoPoints(points);
             streetSegLength[street_segment_id] = streetSegmentLength;
         }
-        //find street segment travel tinme
+        //find street segment travel time
         double speedLimit = streetSegmentID.speedLimit;
         streetSegTravelTime[street_segment_id] = streetSegmentLength / speedLimit;
         
         //find street length
         streetLength[streetSegmentID.streetID] += streetSegmentLength;
-    }
-
-   
-
-     
-     
-
-    
-     //Make sure this is updated to reflect whether
-                            //loading the map succeeded or failed
+ 
     
     // Load street name into the first vector using first 2 characters as index
     
@@ -191,50 +184,54 @@ void closeMap() {
 std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_prefix) {
     std::vector<StreetIdx> streets;
 
-    
+
     //create a new string streetPrefix and remove space of street_prefix, then change to lower case
     std::string streetPrefix = "";
-    
+
     for (int i = 0; i < street_prefix.length(); i++) {
         if (street_prefix[i] != ' ') {
             streetPrefix.push_back(tolower(street_prefix[i]));
         }
     }
-  
+
     //if streetPrefix is not empty
     if (streetPrefix.length() > 0) {
-        
+
         //get street name (lower case), compare with street prefix
         vector <int> adjustedNameList = STREET_NAMES[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
-        for (int i = 0; i < adjustedNameList.size(); i++){
+        for (int i = 0; i < adjustedNameList.size(); i++) {
             std::string streetName = getStreetName(adjustedNameList[i]);
 
             //compare streetName and streetPrefix character by character
             int k = 1;
-            
+
             //loop through all characters in streetName
             for (int j = 1; j < streetName.length(); j++) {
-                
+
                 //if character is a space, skip to the next character
                 if (streetName[j] != ' ') {
-                    
+
                     //if the character does not match, break out of the loop
                     if (tolower(streetName[j]) != streetPrefix[k]) {
                         break;
                     }
-                    
+
                     //if all characters in streetPrefix has been compared and matched, store the street id
                     if (streetPrefix.length() <= k + 1) {
                         streets.push_back(adjustedNameList[i]);
                         break;
-                    }  
-                                        
+                    }
+
                     k++;
-                }    
+                }
             }
+        }
+    }
+
 
 
     return streets;
+
 }
 
 // Returns the length of a given street in meters
@@ -536,6 +533,7 @@ double findDistanceBetweenTwoPoints(std::pair<LatLon, LatLon> points){
 // Returns the length of the given street segment in meters
 // Speed Requirement --> moderate
 double findStreetSegmentLength(StreetSegmentIdx street_segment_id) {
+    
     return streetSegLength[street_segment_id];
     
 }
@@ -557,8 +555,10 @@ double findStreetSegmentTravelTime(StreetSegmentIdx street_segment_id){
 IntersectionIdx findClosestIntersection(LatLon my_position){
     IntersectionIdx closestIntersection_id = -1;
     double distance=2*3.15*kEarthRadiusInMeters;
+    
     for(int i = 0; i < getNumIntersections(); i++) {
         pair <LatLon, LatLon> points (my_position, getIntersectionPosition(i));
+        
         if(findDistanceBetweenTwoPoints(points) < distance){
             distance = findDistanceBetweenTwoPoints(points);
             closestIntersection_id = i;
