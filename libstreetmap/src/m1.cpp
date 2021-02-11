@@ -49,8 +49,10 @@ using namespace std;
 //global variable
 vector<vector<StreetSegmentIdx>> INTERSECTION_STREET_SEGMENT;
 vector<vector<IntersectionIdx>> STREET_INTERSECTION;
-vector<vector<StreetIdx>> STREET_NAMES;
+vector<vector<StreetIdx>> STREET_NAMES;         //index vector using the first two characters of the street name
+vector<vector<StreetIdx>> STREET_NAMES_3_CHAR;  //index vector using the first three characters of the street name
 int CHAR_SIZE = 256;
+int PREFIX_NUM_CHAR = 2;    //for searches with partial name: if partial name is longer than this number, then use 3-character index (STREET_NAMES_3_CHAR), otherwise use STREET_NAMES as index
 
 vector<double> streetSegLength;
 vector<double>streetSegTravelTime;
@@ -146,11 +148,13 @@ bool loadMap(std::string map_streets_database_filename) {
         
         //find street length
         streetLength[streetSegmentID.streetID] += streetSegmentLength;
+    }
  
     
-    // Load street name into the first vector using first 2 characters as index
-    
+    // Load street name into the first vector using first 2 characters as index for STREET_NAMES,
+    // Load street name into the first vector using first 3 characters as index for STREET_NAMES_3_CHAR
     STREET_NAMES.resize(CHAR_SIZE * CHAR_SIZE);
+    STREET_NAMES_3_CHAR.resize(CHAR_SIZE * CHAR_SIZE * CHAR_SIZE);
 
     for (int i = 0; i < getNumStreets(); i++){
         // Get street name, remove space and convert to lower cases. Got only the first 2 letters.
@@ -162,16 +166,20 @@ bool loadMap(std::string map_streets_database_filename) {
                 streetNameSub.push_back(tolower(streetName[j]));
             }
             
-            if (streetNameSub.length() > 2) break;
+            if (streetNameSub.length() > PREFIX_NUM_CHAR) break;
         }
 
-        // Store the street id into the index vector: STREET_NAMES
+        // Store the street id into the index vector: STREET_NAMES and STREET_NAMES_3_CHAR
         STREET_NAMES[tolower(streetName[0]) * CHAR_SIZE + tolower(streetName[1])].push_back(i);
+        STREET_NAMES_3_CHAR[tolower(streetName[0]) * CHAR_SIZE * CHAR_SIZE + tolower(streetName[1]) * CHAR_SIZE + tolower(streetName[2])].push_back(i);
     }
     
     return load_successful;
 }
 
+    
+    
+    
 void closeMap() {
     closeStreetDatabase();
     //Clean-up your map related data structures here
@@ -197,9 +205,21 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
     //if streetPrefix is not empty
     if (streetPrefix.length() > 0) {
 
-        //get street name (lower case), compare with street prefix
-        vector <int> adjustedNameList = STREET_NAMES[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
-        for (int i = 0; i < adjustedNameList.size(); i++) {
+
+        
+
+        vector <int> adjustedNameList;
+        
+        //according to the length of streetPrefix, use the correct index vector to retrieve the street names starting with the first 2 or 3 characters of streetPrefix
+        if (streetPrefix.length() > PREFIX_NUM_CHAR) {
+            adjustedNameList = STREET_NAMES_3_CHAR[tolower(streetPrefix[0]) * CHAR_SIZE * CHAR_SIZE + tolower(streetPrefix[1]) * CHAR_SIZE + tolower(streetPrefix[2])];    
+        } else {
+            adjustedNameList = STREET_NAMES[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
+        }
+        
+        //loop through the street names within the index vector
+        for (int i = 0; i < adjustedNameList.size(); i++){
+
             std::string streetName = getStreetName(adjustedNameList[i]);
 
             //compare streetName and streetPrefix character by character
