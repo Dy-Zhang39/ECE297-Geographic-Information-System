@@ -64,8 +64,9 @@ int main(int argc, char** argv) {
     std::cout << "Successfully loaded map '" << map_path << "'\n";
 
     //You can now do something with the map data
- 
-
+    std::vector<StreetIdx> i = findStreetIdsFromPartialStreetName("c");
+    for(int j = 0; j < i.size(); j++)
+        std::cout << i[j] <<' ';
     //Clean-up the map data and related data structures
     std::cout << "Closing map\n";
     closeMap(); 
