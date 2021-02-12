@@ -49,16 +49,14 @@ using namespace std;
 //global variable
 vector<vector<StreetSegmentIdx>> INTERSECTION_STREET_SEGMENT;
 vector<vector<IntersectionIdx>> STREET_INTERSECTION;
-vector<string> MAP_LOADED;                              //list of map file names
 vector<vector<StreetIdx>> STREET_NAMES_1_CHAR;          //index vector using the first one characters of the street name
 vector<vector<StreetIdx>> STREET_NAMES_2_CHAR;          //index vector using the first two characters of the street name
-vector<vector<StreetIdx>> STREET_NAMES_3_CHAR;          //index vector using the first three characters of the street name
 int CHAR_SIZE = 256;
 int PREFIX_NUM_CHAR = 1;                                //for searches with partial name: if partial name is longer than this number, then use 3-character index (STREET_NAMES_3_CHAR), otherwise use STREET_NAMES as index
 
 vector<double> streetSegLength;
-vector<double>streetSegTravelTime;
-vector<double>streetLength;
+vector<double> streetSegTravelTime;
+vector<double> streetLength;
 
 
 
@@ -69,21 +67,10 @@ bool loadMap(std::string map_streets_database_filename) {
         return load_successful;
 
     std::cout << "loadMap: " << map_streets_database_filename << std::endl;
-    
-    // Check whether the map has been loaded already. If yes, do not load again.
-    if (MAP_LOADED.size() > 0) {
-        auto mapExisted = find(MAP_LOADED.begin(), MAP_LOADED.end(), map_streets_database_filename);
-        if(mapExisted != MAP_LOADED.end()) {
-            return load_successful;
-        }
-    }
+
     
     // Clear index if a new map has been loaded
-    STREET_NAMES_1_CHAR.clear();
-    STREET_NAMES_2_CHAR.clear();
-    STREET_NAMES_3_CHAR.clear();
-    MAP_LOADED.clear();
-    STREET_INTERSECTION.clear();
+ 
     
     //
     // Load your map related data structures here.
@@ -100,10 +87,10 @@ bool loadMap(std::string map_streets_database_filename) {
     // Load street name into the vector using first 3 characters as index for STREET_NAMES_3_CHAR
     STREET_NAMES_1_CHAR.resize(CHAR_SIZE);
     STREET_NAMES_2_CHAR.resize(CHAR_SIZE * CHAR_SIZE);
-    //STREET_NAMES_3_CHAR.resize(CHAR_SIZE * CHAR_SIZE * CHAR_SIZE);
+
 
     for (int i = 0; i < getNumStreets(); i++){
-        
+        //initialize all the element in the street length to 0 to prevent undefined variable
         streetLength[i] = 0;
         
         // Get street name, remove space and convert to lower cases. Got only the first 2 letters.
@@ -124,9 +111,6 @@ bool loadMap(std::string map_streets_database_filename) {
         
         if (streetNameSub.length() > 1)
             STREET_NAMES_2_CHAR[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
-        
-        /*if (streetNameSub.length() > PREFIX_NUM_CHAR)
-            STREET_NAMES_3_CHAR[tolower(streetNameSub[0]) * CHAR_SIZE * CHAR_SIZE + tolower(streetNameSub[1]) * CHAR_SIZE + tolower(streetNameSub[2])].push_back(i);*/
 
     }
 
@@ -150,6 +134,7 @@ bool loadMap(std::string map_streets_database_filename) {
     //Find streets length and their corresponding travel time
     streetSegLength.resize(getNumStreetSegments());
     streetSegTravelTime.resize(getNumStreetSegments());
+    
     for (int street_segment_id = 0; street_segment_id < getNumStreetSegments(); street_segment_id++) {
         double streetSegmentLength = 0;
         struct StreetSegmentInfo streetSegmentID = getStreetSegmentInfo(street_segment_id);
@@ -200,7 +185,7 @@ bool loadMap(std::string map_streets_database_filename) {
         streetLength[streetSegmentID.streetID] += streetSegmentLength;
     }
  
-    MAP_LOADED.push_back(map_streets_database_filename);
+    //MAP_LOADED.push_back(map_streets_database_filename);
     return load_successful;
 }
 
@@ -208,6 +193,15 @@ bool loadMap(std::string map_streets_database_filename) {
     
     
 void closeMap() {
+    
+    STREET_NAMES_1_CHAR.clear();
+    STREET_NAMES_2_CHAR.clear();
+    STREET_INTERSECTION.clear();
+    INTERSECTION_STREET_SEGMENT.clear();
+    streetSegLength.clear();
+    streetSegTravelTime.clear();
+    streetLength.clear();
+    
     closeStreetDatabase();
     //Clean-up your map related data structures here
 
