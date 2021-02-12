@@ -54,7 +54,8 @@ Intersection* INTERSECTIONS;
 
 int CHAR_SIZE = 256;
 int PREFIX_NUM_CHAR = 2;      //for searches with partial name: if partial name is longer than this number, then use 2-character index index, otherwise use 1-character index
-char SEPARATE_CHAR = 'p';
+char SEPARATE_CHAR = 'k';
+char SEPARATE_CHAR_AFTER = 's';
 bool loadMap(std::string map_streets_database_filename) {
     bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded 
                                                                                   //successfully
@@ -74,10 +75,10 @@ bool loadMap(std::string map_streets_database_filename) {
     // Load index vectors used to quick search street names
     // Load street name into the vector using first 1 characters as index for STREETS->streetNamesOneChar,
     // Load street name into the vector using first 2 characters as index for STREETS->streetNamedTwoChar,
-    // Load street name into the vector using first 3 characters as index for STREETS->streetNamesThreeChar. Due to memory limitation, everything before 'p' will be put into one index, and anything else will be in another.
+    // Load street name into the vector using first 3 characters as index for STREETS->streetNamesThreeChar.
     STREETS->streetNamesOneChar.resize(CHAR_SIZE);
     STREETS->streetNamesTwoChar.resize(CHAR_SIZE * CHAR_SIZE);
-    STREETS->streetNamesThreeChar.resize(CHAR_SIZE * CHAR_SIZE * 2);
+    STREETS->streetNamesThreeChar.resize(CHAR_SIZE * CHAR_SIZE * 3);
 
     for (int i = 0; i < getNumStreets(); i++){
         //initialize all the element in the street length to 0 to prevent undefined variable
@@ -104,11 +105,13 @@ bool loadMap(std::string map_streets_database_filename) {
             STREETS->streetNamesTwoChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
 
         if (streetNameSub.length() > PREFIX_NUM_CHAR && PREFIX_NUM_CHAR > 1) {
-            // Anything before SEPARATE_CHAR will be in one index, otherwise it will be in another.
+            // Due to the memory limit, anything with the third character before SEPARATE_CHAR will be in one index, otherwise if it is before SEPARATE_CHAR_AFTER, will be in another, else it will be in the remained index.
             if (tolower(streetNameSub[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR)) {
                 STREETS->streetNamesThreeChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
-            } else {
+            } else if (tolower(streetNameSub[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR_AFTER)) {
                 STREETS->streetNamesThreeChar[(tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])) + CHAR_SIZE * CHAR_SIZE].push_back(i);
+            } else {
+                STREETS->streetNamesThreeChar[(tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])) + CHAR_SIZE * CHAR_SIZE + CHAR_SIZE * CHAR_SIZE].push_back(i);
             }
         }
     }
@@ -230,8 +233,10 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
         if (streetPrefix.length() > PREFIX_NUM_CHAR && PREFIX_NUM_CHAR > 1) {
             if (tolower(streetPrefix[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR)) {
                 adjustedNameList = STREETS->streetNamesThreeChar[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
-            } else {
+            } else if (tolower(streetPrefix[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR_AFTER)) {
                 adjustedNameList = STREETS->streetNamesThreeChar[(tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])) + CHAR_SIZE * CHAR_SIZE];
+            } else {
+                adjustedNameList = STREETS->streetNamesThreeChar[(tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])) + CHAR_SIZE * CHAR_SIZE + CHAR_SIZE * CHAR_SIZE];
             }
         } else if (streetPrefix.length() > 1) {
             adjustedNameList = STREETS->streetNamesTwoChar[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
