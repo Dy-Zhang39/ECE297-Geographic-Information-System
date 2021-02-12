@@ -52,10 +52,19 @@ Street* STREETS;
 StreetSegment* STREET_SEGMENTS;
 Intersection* INTERSECTIONS;
 
+// Number of different characters possible.
 int CHAR_SIZE = 256;
-int PREFIX_NUM_CHAR = 2;      //for searches with partial name: if partial name is longer than this number, then use 2-character index index, otherwise use 1-character index
+
+//for searches with partial name: if partial name is longer than this number, then use additional 3-character index.
+int PREFIX_NUM_CHAR = 2;
+
+// Global variables to create index for the third character if exist. Due to the memory limit, anything with the third character
+// 1. before SEPARATE_CHAR will be in one index
+// 2. between SPEARATE_CHAR and SEPARATE_CHAR_AFTER including SEPARATE_CHAR itself, it will be in another index.
+// 3. after and include SEPARATE_CHAR_AFTER will be in the third index
 char SEPARATE_CHAR = 'k';
 char SEPARATE_CHAR_AFTER = 's';
+
 bool loadMap(std::string map_streets_database_filename) {
     bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded 
                                                                                   //successfully
@@ -105,7 +114,6 @@ bool loadMap(std::string map_streets_database_filename) {
             STREETS->streetNamesTwoChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
 
         if (streetNameSub.length() > PREFIX_NUM_CHAR && PREFIX_NUM_CHAR > 1) {
-            // Due to the memory limit, anything with the third character before SEPARATE_CHAR will be in one index, otherwise if it is before SEPARATE_CHAR_AFTER, will be in another, else it will be in the remained index.
             if (tolower(streetNameSub[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR)) {
                 STREETS->streetNamesThreeChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
             } else if (tolower(streetNameSub[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR_AFTER)) {
