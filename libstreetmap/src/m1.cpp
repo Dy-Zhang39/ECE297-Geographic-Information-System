@@ -257,7 +257,7 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
         std::vector <int> adjustedNameList;
         
         //according to the length of streetPrefix, use the correct index vector to retrieve the street names starting with the first 1, 2 or 3 characters of streetPrefix
-        if (streetPrefix.length() > PREFIX_NUM_CHAR && PREFIX_NUM_CHAR > 1) {
+        if (streetPrefix.length() > PREFIX_NUM_CHAR) {
             if (tolower(streetPrefix[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR)) {
                 adjustedNameList = STREETS->streetNamesThreeChar[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
             } else if (tolower(streetPrefix[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR_AFTER)) {
@@ -617,7 +617,7 @@ double findStreetSegmentTravelTime(StreetSegmentIdx street_segment_id) {
 // Speed Requirement --> none
 IntersectionIdx findClosestIntersection(LatLon my_position){
     IntersectionIdx closestIntersection_id = -1;
-    double distance=2*3.15*kEarthRadiusInMeters;
+    double distance=2*M_PI*kEarthRadiusInMeters;
     
     for(int i = 0; i < getNumIntersections(); i++) {
         std::pair <LatLon, LatLon> points (my_position, getIntersectionPosition(i));
