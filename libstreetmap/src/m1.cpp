@@ -65,6 +65,12 @@ int PREFIX_NUM_CHAR = 2;
 char SEPARATE_CHAR = 'k';
 char SEPARATE_CHAR_AFTER = 's';
 
+//helper function
+void street_Intersection();
+void street_Info();
+void streetPartialName();
+void resizeData();
+
 bool loadMap(std::string map_streets_database_filename) {
     bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded 
                                                                                   //successfully
@@ -78,9 +84,18 @@ bool loadMap(std::string map_streets_database_filename) {
     STREET_SEGMENTS = new StreetSegment;
     INTERSECTIONS = new Intersection;
     
+    resizeData();               //resize the global vectors
+    streetPartialName();        //pre-load partial name index
+    street_Intersection();      //pre-load street intersections
+    street_Info();              //pre-load information about street length; street travel time; street segment length
+    return load_successful;
+}
+
+
+void resizeData(){
     //    initialize vector<double> streetSegLength;
     STREETS->streetLength.resize(getNumStreets());
-
+    
     // Load index vectors used to quick search street names
     // Load street name into the vector using first 1 characters as index for STREETS->streetNamesOneChar,
     // Load street name into the vector using first 2 characters as index for STREETS->streetNamedTwoChar,
@@ -88,7 +103,15 @@ bool loadMap(std::string map_streets_database_filename) {
     STREETS->streetNamesOneChar.resize(CHAR_SIZE);
     STREETS->streetNamesTwoChar.resize(CHAR_SIZE * CHAR_SIZE);
     STREETS->streetNamesThreeChar.resize(CHAR_SIZE * CHAR_SIZE * 3);
+    
+    //Find streets length and their corresponding travel time
+    STREET_SEGMENTS->streetSegLength.resize(getNumStreetSegments());
+    STREET_SEGMENTS->streetSegTravelTime.resize(getNumStreetSegments());
+    
+}
 
+void streetPartialName(){
+    
     for (int i = 0; i < getNumStreets(); i++){
         //initialize all the element in the street length to 0 to prevent undefined variable
         STREETS->streetLength[i] = 0;
@@ -123,7 +146,8 @@ bool loadMap(std::string map_streets_database_filename) {
             }
         }
     }
-
+}
+void street_Intersection(){
     INTERSECTIONS->intersectionStreetSegments.resize(getNumIntersections()); //create empty vector for each intersection
     STREETS->streetIntersections.resize(getNumStreets());
     
@@ -144,10 +168,9 @@ bool loadMap(std::string map_streets_database_filename) {
             INTERSECTIONS->intersectionStreetSegments[intersection].push_back(streetSegID);  //save segments connected to intersection
         }
     }
-
-    //Find streets length and their corresponding travel time
-    STREET_SEGMENTS->streetSegLength.resize(getNumStreetSegments());
-    STREET_SEGMENTS->streetSegTravelTime.resize(getNumStreetSegments());
+}
+//street length; street travel time; street segment length
+void street_Info(){
     
     for (int street_segment_id = 0; street_segment_id < getNumStreetSegments(); street_segment_id++) {
         double streetSegmentLength = 0;
@@ -200,11 +223,7 @@ bool loadMap(std::string map_streets_database_filename) {
         //find street length
         STREETS->streetLength[streetSegmentID.streetID] += streetSegmentLength;
     }
- 
-    //MAP_LOADED.push_back(map_streets_database_filename);
-    return load_successful;
 }
-
     
     
 //clear all the global data structure to prevent it get bigger and bigger    
