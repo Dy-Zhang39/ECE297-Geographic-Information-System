@@ -22,7 +22,7 @@
 #include <string>
 
 #include "m1.h"
-
+#include "m2.h"
 //Program exit codes
 constexpr int SUCCESS_EXIT_CODE = 0;        //Everyting went OK
 constexpr int ERROR_EXIT_CODE = 1;          //An error occured
@@ -67,6 +67,9 @@ int main(int argc, char** argv) {
     std::vector<StreetIdx> i = findStreetIdsFromPartialStreetName("c");
     for(int j = 0; j < i.size(); j++)
         std::cout << i[j] << " ";
+    
+    drawMap();
+    
     //Clean-up the map data and related data structures
     std::cout << "Closing map\n";
     closeMap(); 
