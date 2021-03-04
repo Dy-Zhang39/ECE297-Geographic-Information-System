@@ -79,10 +79,10 @@ void draw_main_canvas (ezgl::renderer *g){
         float width = 100;
         float height = width;
         
-        if (intersections[i].isHighlight == false)
-            g->set_color(ezgl::GREY_55);
-        else
+        if (intersections[i].isHighlight)
             g->set_color(ezgl::RED);
+        else
+            g->set_color(ezgl::GREY_55);
         
         g->fill_rectangle({x - width/2, y - height/2},
                           {x + width/2, y + height/2});
