@@ -1,6 +1,8 @@
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
+
+#include "StreetsDatabaseAPI.h"
 class Street {
 public:
     std::vector<std::vector<IntersectionIdx>> streetIntersections; //store all intersection in one specific street for every street
@@ -15,6 +17,8 @@ class StreetSegment{
 public:
     std::vector<double> streetSegLength;                                    //the length of every street segment
     std::vector<double> streetSegTravelTime;                                //the time required to tavel every street segment
+    std::vector<std::vector<LatLon>> streetSegPoint;                         //the outside vector has the content of each street segment
+                                                                            //the vector insides store the position of each point on the street segment such as start point, curve points, and end points
 };
 
 //class for global variables about intersection

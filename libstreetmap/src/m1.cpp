@@ -107,6 +107,7 @@ void resizeData(){
     //Find streets length and their corresponding travel time
     STREET_SEGMENTS->streetSegLength.resize(getNumStreetSegments());
     STREET_SEGMENTS->streetSegTravelTime.resize(getNumStreetSegments());
+    STREET_SEGMENTS->streetSegPoint.resize(getNumStreetSegments());
     
 }
 
@@ -175,25 +176,38 @@ void street_Info(){
     for (int street_segment_id = 0; street_segment_id < getNumStreetSegments(); street_segment_id++) {
         double streetSegmentLength = 0;
         struct StreetSegmentInfo streetSegmentID = getStreetSegmentInfo(street_segment_id);
-
+        int twoTerminals = 2;
+        STREET_SEGMENTS->streetSegPoint[street_segment_id].resize(twoTerminals + streetSegmentID.numCurvePoints);
         //find the starting and ending position of given street segment
         auto from = getIntersectionPosition(streetSegmentID.from);
         auto to = getIntersectionPosition(streetSegmentID.to);
-
+        
+        STREET_SEGMENTS->streetSegPoint[street_segment_id][0] = from;
+        STREET_SEGMENTS->streetSegPoint[street_segment_id][twoTerminals + streetSegmentID.numCurvePoints - 1] = to;
+        
         //find curve points on the given street segment (more than one curve point)
         if (streetSegmentID.numCurvePoints > 1) {
 
             std::pair <LatLon, LatLon> firstPoints(from, getStreetSegmentCurvePoint(street_segment_id, 0));
             //calculate distance between start point and first curve point
             streetSegmentLength = findDistanceBetweenTwoPoints(firstPoints);
-
+            
+            STREET_SEGMENTS->streetSegPoint[street_segment_id][1] = getStreetSegmentCurvePoint(street_segment_id, 0);
             int i = 1;
             for (; i < streetSegmentID.numCurvePoints; i++) {
                 std::pair <LatLon, LatLon> curvePoints(getStreetSegmentCurvePoint(street_segment_id, i - 1), getStreetSegmentCurvePoint(street_segment_id, i));
+                
+                STREET_SEGMENTS->streetSegPoint[street_segment_id][i+1] = getStreetSegmentCurvePoint(street_segment_id, i);
                 //add the distance between each curve points
                 streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(curvePoints);
             }
-
+            
+            //check if the STREET_SEGMENTS vector is properly filled
+            if(STREET_SEGMENTS->streetSegPoint[street_segment_id][i+1].latitude()!= to.latitude()){
+                std::cout<<"STREEET_SEGMENTS not properly filled"<<std::endl;
+                exit (-1);
+            }
+             
             //add the distance between last curve point and end point
             std::pair <LatLon, LatLon> lastPoints(getStreetSegmentCurvePoint(street_segment_id, i - 1), to);
             streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(lastPoints);
@@ -202,6 +216,8 @@ void street_Info(){
         } else if (streetSegmentID.numCurvePoints == 1) { //only has one curve point
             std::pair <LatLon, LatLon> firstPoints(from, getStreetSegmentCurvePoint(street_segment_id, 0));
             std::pair <LatLon, LatLon> lastPoints(getStreetSegmentCurvePoint(street_segment_id, 0), to);
+            
+            STREET_SEGMENTS->streetSegPoint[street_segment_id][1] = getStreetSegmentCurvePoint(street_segment_id, 0);
             
             // add distance from start point to the only curve point to the end point 
             streetSegmentLength = findDistanceBetweenTwoPoints(firstPoints) + findDistanceBetweenTwoPoints(lastPoints);

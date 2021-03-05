@@ -9,6 +9,7 @@
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
 #include "m1.h"
+#include "global.h"
 #include "StreetsDatabaseAPI.h"
 
 
@@ -16,10 +17,14 @@ double xFromLon(double lon);  //convert longitude to meter
 double yFromLat(double lat);  //convert latitude to meter
 double lonFromX(double x);    //convert meter to longitude
 double latFromY(double y);    //convert meter to latitude
+double avgLat;                  //the average latitude of the map
+extern StreetSegment* STREET_SEGMENTS;
+IntersectionIdx previousHighlight = -1;
+
+//helper functions
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 void clickToHighlightClosestIntersection(LatLon pos);
-double avgLat;                  //the average latitude of the map
-IntersectionIdx previousHighlight = -1;
+void drawStreet(ezgl::renderer *g);
 
 struct intersection_data {
   LatLon position;
@@ -76,7 +81,7 @@ void draw_main_canvas (ezgl::renderer *g){
         float x = xFromLon(intersections[i].position.longitude());
         float y = yFromLat(intersections[i].position.latitude());
 
-        float width = 100;
+        float width = 10;
         float height = width;
         
         if (intersections[i].isHighlight)
@@ -88,6 +93,7 @@ void draw_main_canvas (ezgl::renderer *g){
                           {x + width/2, y + height/2});
     }
     
+    drawStreet(g);
     
 
 }
@@ -130,4 +136,21 @@ void clickToHighlightClosestIntersection(LatLon pos){
     previousHighlight = id;
 
     std::cout << "Closest Intersection: " << intersections[id].name << "\n";
+}
+
+void drawStreet(ezgl::renderer *g){
+    for(int StreetSegmentsID=0; StreetSegmentsID<getNumStreetSegments(); StreetSegmentsID++ ){
+        for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[StreetSegmentsID].size(); pointsID++){
+            g->set_color(ezgl::BLACK);
+            g->set_line_width(0);
+            double x1, x2 ,y1,y2;
+            x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID - 1].longitude());
+            y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID- 1].latitude());
+            
+            x2 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].longitude());
+            y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].latitude());
+            
+            g->draw_line({x1,y1}, {x2, y2});
+        }
+    }
 }
