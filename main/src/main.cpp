@@ -28,9 +28,18 @@ constexpr int SUCCESS_EXIT_CODE = 0;        //Everyting went OK
 constexpr int ERROR_EXIT_CODE = 1;          //An error occured
 constexpr int BAD_ARGUMENTS_EXIT_CODE = 2;  //Invalid command-line usage
 
+void getCityName(std::string* s);        //get city name from the user
+
+std::vector<std::string> cityNames = {
+    "beijing_china", "cairo_egypt", "cape-town_south-africa", "golden-horseshoe_canada",
+    "hamilton_canada", "hong-kong_china", "iceland", "interlaken_switzerland",
+    "london_england", "moscow_russia", "new-delhi_india", "new-york_usa",
+    "rio-de-janeiro_brazil", "saint-helena", "singapore", "sydney_australia",
+    "tehran_iran", "tokyo_japan", "toronto_canada"
+};
 //The default map to load if none is specified
 std::string default_map_path = "/cad2/ece297s/public/maps/toronto_canada.streets.bin";
-
+std::string map_path_prefix = "/cad2/ece297s/public/maps/";
 
 // The start routine of your program (main) when you are running your standalone
 // mapper program. This main routine is *never called* when you are running 
@@ -41,9 +50,12 @@ std::string default_map_path = "/cad2/ece297s/public/maps/toronto_canada.streets
 int main(int argc, char** argv) {
 
     std::string map_path;
+    
+    
+    
     if(argc == 1) {
         //Use a default map
-        map_path = default_map_path;
+        getCityName(&map_path);
     } else if (argc == 2) {
         //Get the map from the command line
         map_path = argv[1];
@@ -72,4 +84,11 @@ int main(int argc, char** argv) {
     closeMap(); 
 
     return SUCCESS_EXIT_CODE;
+}
+
+void getCityName(std::string* s){
+    std::string name;
+    std::cout << "Please enter the name of the city: ";
+    std::cin >> name;
+    *s = map_path_prefix + name + ".streets.bin";
 }
