@@ -95,7 +95,7 @@ bool loadMap(std::string map_streets_database_filename) {
 void resizeData(){
     //    initialize vector<double> streetSegLength;
     STREETS->streetLength.resize(getNumStreets());
-    
+    STREETS->streetSegments.resize(getNumStreets());
     // Load index vectors used to quick search street names
     // Load street name into the vector using first 1 characters as index for STREETS->streetNamesOneChar,
     // Load street name into the vector using first 2 characters as index for STREETS->streetNamedTwoChar,
@@ -181,6 +181,9 @@ void street_Info(){
         //find the starting and ending position of given street segment
         auto from = getIntersectionPosition(streetSegmentID.from);
         auto to = getIntersectionPosition(streetSegmentID.to);
+        
+        //put the street segment into the street that it belong to
+        STREETS->streetSegments[streetSegmentID.streetID].push_back(street_segment_id);  
         
         STREET_SEGMENTS->streetSegPoint[street_segment_id][0] = from;
         STREET_SEGMENTS->streetSegPoint[street_segment_id][twoTerminals + streetSegmentID.numCurvePoints - 1] = to;
