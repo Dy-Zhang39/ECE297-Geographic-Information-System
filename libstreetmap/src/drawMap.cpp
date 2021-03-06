@@ -29,9 +29,13 @@ IntersectionIdx previousHighlight = -1;
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 void clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g);
+
 void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
-void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id, double visibleArea, double featureArea);
+void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id);
 void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea);
+
+void drawFeature(ezgl::renderer *g);
+void displayStreetName(ezgl::renderer *g);
 
 struct intersection_data {
   LatLon position;
@@ -88,7 +92,7 @@ void draw_main_canvas (ezgl::renderer *g){
         float x = xFromLon(intersections[i].position.longitude());
         float y = yFromLat(intersections[i].position.latitude());
 
-        float width = 10;
+        float width = 5;
         float height = width;
         
         if (intersections[i].isHighlight)
@@ -103,6 +107,10 @@ void draw_main_canvas (ezgl::renderer *g){
     ezgl::rectangle world = g->get_visible_world();
     drawStreet(g);
     drawFeature(g, world);
+
+  
+
+    displayStreetName(g);
 
 }
 
@@ -147,18 +155,45 @@ void clickToHighlightClosestIntersection(LatLon pos){
 }
 
 void drawStreet(ezgl::renderer *g){
+    double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    
     for(int StreetSegmentsID=0; StreetSegmentsID<getNumStreetSegments(); StreetSegmentsID++ ){
         for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[StreetSegmentsID].size(); pointsID++){
-            g->set_color(ezgl::BLACK);
-            g->set_line_width(0);
-            double x1, x2 ,y1,y2;
+            g->set_color(210,223,227,255);
+            g->set_line_width(3);
             x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID - 1].longitude());
             y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID- 1].latitude());
             
             x2 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].longitude());
             y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].latitude());
             
+          
             g->draw_line({x1,y1}, {x2, y2});
+        }
+        
+        
+    }
+    return;
+}
+
+
+void displayStreetName(ezgl::renderer *g){
+    int streetIdUsed = -1;
+    for(int StreetSegmentsID=0; StreetSegmentsID<getNumStreetSegments(); StreetSegmentsID++ ){
+        auto streetID = getStreetSegmentInfo(StreetSegmentsID).streetID;
+        //find a location to draw street text
+        
+        if(streetID!=streetIdUsed){
+            auto streetName = getStreetName(streetID);
+            streetIdUsed = streetID;
+            double x, y;
+            x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(StreetSegmentsID).from).longitude());
+            
+            y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(StreetSegmentsID).from).latitude());
+            ezgl::point2d center (x, y);
+            g->set_font_size(10);
+            g->set_color(ezgl::BLACK);
+            g->draw_text(center, streetName);
         }
     }
 }
@@ -170,7 +205,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
         double featureArea = findFeatureArea(featureID);
         if (featureArea >= visibleArea * featureToWorldRatio){
-            drawFeatureByID(g, featureID, visibleArea, featureArea);
+            drawFeatureByID(g, featureID);
         }
     }
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
@@ -181,41 +216,33 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     }
 }
 
-void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id, double visibleArea, double featureArea){
+void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
     std::vector<ezgl::point2d> points;
-    bool displayName = false;
     FeatureType featureType = getFeatureType(id);
     switch (featureType) {
         case PARK:
             g->set_color(ezgl::GREEN);
-            displayName = true;
             break;
         case BEACH:
             g->set_color(ezgl::YELLOW);
-            displayName = true;
             break;
         case LAKE:
             g->set_color(ezgl::BLUE);
-            displayName = true;
             break;
         case RIVER:
             g->set_color(ezgl::BLUE);
             break;
         case ISLAND:
-            displayName = true;
             g->set_color(ezgl::GREEN);
             break;
         case BUILDING:
             g->set_color(ezgl::GREY_75);
-            displayName = true;
             break;
         case GREENSPACE:
             g->set_color(ezgl::GREEN);
-            displayName = true;
             break;
         case GOLFCOURSE:
             g->set_color(ezgl::GREEN);
-            displayName = true;
             break;
         case STREAM:
             g->set_color(ezgl::BLUE);
@@ -252,54 +279,6 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id, double visibleArea, doub
     if (points.size() > 1 && (getFeaturePoint(id,0) == getFeaturePoint(id, getNumFeaturePoints(id) - 1))){
         g->fill_poly(points);
     }
-    
-    /*xAvg /= getNumFeaturePoints(id) - 1;
-    yAvg /= getNumFeaturePoints(id) - 1;
-    std::string featureName = getFeatureName(id); 
-    if (displayName && featureName.compare("<noname>") != 0 && featureArea > visibleArea * textDisplayRatio){
-        switch (featureType) {
-            case PARK:
-                g->set_color(ezgl::BLACK);
-                break;
-            case BEACH:
-                g->set_color(ezgl::BLACK);
-                break;
-            case LAKE:
-                g->set_color(ezgl::BLACK);
-                break;
-            case RIVER:
-                g->set_color(ezgl::BLACK);
-                break;
-            case ISLAND:
-                displayName = true;
-                g->set_color(ezgl::BLACK);
-                break;
-            case BUILDING:
-                g->set_color(ezgl::BLACK);
-                break;
-            case GREENSPACE:
-                g->set_color(ezgl::BLACK);
-                break;
-            case GOLFCOURSE:
-                g->set_color(ezgl::BLACK);
-                break;
-            case STREAM:
-                g->set_color(ezgl::BLACK);
-                break;
-            case UNKNOWN:
-                g->set_colo        
-
-        r(ezgl::BLACK);
-                break;
-            default:
-                break;
-        }
-
-        
-        std::cout << featureType << "::" << featureName << "   Area: " << findFeatureArea(id) << "\n";
-        ezgl::point2d* midPt = new ezgl::point2d(xAvg, yAvg);
-        g->draw_text(*midPt, featureName);
-    }*/
     
 
 
