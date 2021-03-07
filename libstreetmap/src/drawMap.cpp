@@ -13,6 +13,7 @@
 #include "m1.h"
 #include "global.h"
 #include "StreetsDatabaseAPI.h"
+#include <chrono>
 
 #include <iostream>
 #include <chrono>
@@ -49,9 +50,14 @@ void drawFeature(ezgl::renderer *g);
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world);
 
 
+
 void intersectionPopup(ezgl::application *application, IntersectionIdx id);
 void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data);
 void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world);
+
+double textSize(ezgl::rectangle world);
+double streetSize(ezgl::rectangle world);
+
 
 struct intersection_data {
   LatLon position;
@@ -102,6 +108,9 @@ void drawMap(){
 }
 
 void draw_main_canvas (ezgl::renderer *g){
+    
+    //timing fuction
+    
     g->draw_rectangle({0,0}, {1000,1000});
         
     ezgl::rectangle world = g->get_visible_world();
@@ -133,6 +142,12 @@ void draw_main_canvas (ezgl::renderer *g){
                           {x + width/2, y + height/2});
     }
 
+
+
+    
+    drawStreet(g, world);
+    //drawFeature(g, world);
+    displayStreetName(g, world);
 
 }
 
@@ -198,7 +213,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         if (findStreetLength(getStreetSegmentInfo(StreetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
             for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[StreetSegmentsID].size(); pointsID++){
                 g->set_color(210,223,227,255);
-                g->set_line_width(3);
+                g->set_line_width(streetSize(world));
                 x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID - 1].longitude());
                 y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID- 1].latitude());
 
@@ -212,7 +227,27 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         
         
     }
+//    std::cout<<"Diag size: "<<diagLength<<std::endl;
+    std::cout<<"street size: "<<streetSize(world)<<std::endl;
     return;
+}
+
+double textSize(ezgl::rectangle world){
+    double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
+    
+    double textSize = diagLength/15000;
+    
+   //std::cout<<"text size: "<<textSize<<std::endl;
+    return textSize;
+}
+
+double streetSize(ezgl::rectangle world){
+    double mapArea = world.area();
+    double k=3.5;
+    double streetSize = k*log(log(1000/sqrt(mapArea)+1.5))+5;
+    
+   //std::cout<<"text size: "<<textSize<<std::endl;
+    return streetSize;
 }
 
 
@@ -244,7 +279,7 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         }
         double degree = atan2(y1-y, x1-x)/kDegreeToRadian;
         g->set_font_size(10);
-        g->set_color(ezgl::BLACK);  
+        g->set_color(ezgl::BLACK);
         if (degree < 0){
             degree = degree+180;
         }
@@ -270,6 +305,12 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
             }
         }*/
     }
+//    std::cout<<"width: "<<world.width()<<std::endl;
+//    std::cout<<"height: "<<world.height()<<std::endl;
+ //   std::cout<<"area1: "<<world.area()<<std::endl;
+//    std::cout<<"area: "<<world.width()*world.height()<<std::endl;
+    //std::cout<<"center: "<<world.center()<<std::endl;
+   // std::cout<<"text size: "<<textSize(world)<<std::endl;
 }
 
 

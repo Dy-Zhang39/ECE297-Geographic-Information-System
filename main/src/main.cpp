@@ -55,7 +55,8 @@ int main(int argc, char** argv) {
     
     if(argc == 1) {
         //Use a default map
-        getCityName(&map_path);
+        //getCityName(&map_path);
+        map_path = default_map_path;
     } else if (argc == 2) {
         //Get the map from the command line
         map_path = argv[1];
