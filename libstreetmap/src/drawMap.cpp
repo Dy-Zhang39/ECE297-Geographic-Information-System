@@ -51,6 +51,7 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world);
 
 void intersectionPopup(ezgl::application *application, IntersectionIdx id);
 void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data);
+void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world);
 
 struct intersection_data {
   LatLon position;
@@ -116,13 +117,13 @@ void draw_main_canvas (ezgl::renderer *g){
         float height = width;
         
         if (intersections[i].isHighlight) {
+
             g->set_color(ezgl::GREY_75);
-            std::cout<<world.height()<<" "<<world.width();
-            g->fill_rectangle({x - world.width()/8, y - world.height()/35}, {x + world.width()/8, y + world.height()/35});
-            g->set_font_size(10);
-            g->set_color(ezgl::BLACK);  
             
-            g->draw_text({x, y}, intersections[i].name);
+            if (intersections[i].name.compare("<unknown>") != 0){
+                displayPopupBox(g, "Intersection: ", intersections[i].name, x, y, world);
+            }
+
             g->set_color(ezgl::RED);
         } else {
             g->set_color(ezgl::GREY_55);
@@ -463,4 +464,40 @@ void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data)
     }
     std::cout << "(" << response_id << ")\n";
     gtk_widget_destroy(GTK_WIDGET (dialog));
+}
+
+void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world) {
+    //useful ratios (retrieved from try and error)
+    double strLenToBoxRatio = 3.266;
+    double windowToPopupBoxRatio = 8.385;
+    
+    //get the width and height in pixel coordinates of the visible screen
+    ezgl::rectangle screen = g->get_visible_screen();
+    double screenWidth = screen.width();
+    double screenHeight = screen.height();
+
+    //get the width of the pop-up window according to string length 
+    int strLen = std::max(content.length(), title.length());
+    
+    //draw the rectangle for title
+    y -= world.height() * windowToPopupBoxRatio / screenHeight;
+    g->set_color(ezgl::GREY_55);
+    g->fill_rectangle({x - world.width() * (strLen * strLenToBoxRatio / screenWidth), y - world.height() * windowToPopupBoxRatio  / screenHeight},
+                      {x + world.width() * (strLen * strLenToBoxRatio / screenWidth), y + world.height() * windowToPopupBoxRatio  / screenHeight });
+    
+    //draw the text of the title
+    g->set_font_size(10);
+    g->set_color(ezgl::BLACK);
+    g->draw_text({x, y}, title);
+    
+    //draw the rectangle for the contents
+    y -= world.height() * windowToPopupBoxRatio / screenHeight * 2;
+    g->set_color(ezgl::GREY_75);
+    g->fill_rectangle({x - world.width() * (strLen * strLenToBoxRatio / screenWidth), y - world.height() * windowToPopupBoxRatio / screenHeight},
+                      {x + world.width() * (strLen * strLenToBoxRatio / screenWidth), y + world.height() * windowToPopupBoxRatio / screenHeight });
+                      
+    //draw the text of the contents
+    g->set_color(ezgl::BLACK);
+    g->set_font_size(10);
+    g->draw_text({x, y}, content);
 }
