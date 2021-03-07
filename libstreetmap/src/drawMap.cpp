@@ -44,7 +44,7 @@ IntersectionIdx previousHighlight = -1;
 void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 
-void searchButton(GtkWidget *widget, ezgl::application *application);
+gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
 
 void clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
@@ -196,16 +196,17 @@ double latFromY(double y){
 void initialSetUp(ezgl::application *application, bool /*new_window*/){
     application->update_message("Map is loaded successfully");
     
-    application->create_button("Search", 5, searchButton);
+    GObject *search = application->get_object("SearchButton");
+    g_signal_connect(search, "clicked", G_CALLBACK(searchButtonIsClicked), application);
 }
 
-void searchButton(GtkWidget */*widget*/, ezgl::application *application){
-    //update message
-    application->update_message("Search button is pressed");
-
-    // Redraw the main canvas
+gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+    application->update_message("Search Button is pressed");
     application->refresh_drawing();
+    return true;
 }
+
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y){
     std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
     std::cout << "Button " << event->button << " is clicked\n";
