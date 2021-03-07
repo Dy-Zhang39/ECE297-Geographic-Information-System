@@ -31,6 +31,9 @@ double streetToWorldRatio1 = 0.1;
 
 extern StreetSegment* STREET_SEGMENTS;
 extern Street* STREETS;
+
+double areaToShowPOI = 420000;           // If the visible world area is smaller than this number, the POI will be displayed
+
 IntersectionIdx previousHighlight = -1;
 
 //helper functions
@@ -39,7 +42,7 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
 
 void searchButton(GtkWidget *widget, ezgl::application *application);
 
-int clickToHighlightClosestIntersection(LatLon pos);
+void clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
 
 void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
@@ -58,6 +61,7 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
 double textSize(ezgl::rectangle world);
 double streetSize(ezgl::rectangle world);
 
+void displayPOI(ezgl::renderer *g, POIIdx id);
 
 struct intersection_data {
   LatLon position;
@@ -117,6 +121,17 @@ void draw_main_canvas (ezgl::renderer *g){
     drawStreet(g, world);
     drawFeature(g, world);
     displayStreetName(g, world);
+
+    // loop through all the poi and show it 
+    for(int i = 0; i < getNumPointsOfInterest(); i ++){
+        double x = xFromLon(getPOIPosition(i).longitude());
+        double y = yFromLat(getPOIPosition(i).latitude());
+        
+        // if the map is showing enough level of detail, and the poi is visible in the screen, then display it. 
+        if (world.contains({x, y}) && world.area() < areaToShowPOI) {
+            displayPOI(g, i);
+        }
+    }
     
     for (size_t i = 0; i < intersections.size(); ++i) {
         float x = xFromLon(intersections[i].position.longitude());
@@ -142,12 +157,6 @@ void draw_main_canvas (ezgl::renderer *g){
                           {x + width/2, y + height/2});
     }
 
-
-
-    
-    drawStreet(g, world);
-    //drawFeature(g, world);
-    displayStreetName(g, world);
 
 }
 
@@ -183,7 +192,7 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
     std::cout << "Button " << event->button << " is clicked\n";
     
     LatLon pos = LatLon(latFromY(y), lonFromX(x));
-    IntersectionIdx id = clickToHighlightClosestIntersection(pos);
+    clickToHighlightClosestIntersection(pos);
     
     //intersectionPopup(app, id);
 
@@ -191,7 +200,7 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
 }
 
 //mouse click to highlight the closest intersection
-IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
+void clickToHighlightClosestIntersection(LatLon pos){
     IntersectionIdx id = findClosestIntersection(pos);
     intersections[id].isHighlight = true;
     
@@ -201,8 +210,6 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
     
     previousHighlight = id;
     std::cout << "Closest Intersection: " << intersections[id].name << "\n";
-    
-    return id;
 }
 
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
@@ -287,42 +294,22 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         if (inViewSegment.size() > 1) {
             g->draw_text(inViewSegment[inViewSegment.size()/2], streetName);
         }
-        /*auto streetID = getStreetSegmentInfo(StreetSegmentsID).streetID;
-        //find a location to draw street text
-        
-        if(streetID != streetIdUsed){
-            std::string streetName = getStreetName(streetID);
-            if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
-                streetIdUsed = streetID;
-                double x, y;
-                x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(StreetSegmentsID).from).longitude());
-
-                y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(StreetSegmentsID).from).latitude());
-                ezgl::point2d center(x, y);
-                g->set_font_size(10);
-                g->set_color(ezgl::BLACK);
-                g->draw_text(center, streetName);
-            }
-        }*/
     }
-//    std::cout<<"width: "<<world.width()<<std::endl;
-//    std::cout<<"height: "<<world.height()<<std::endl;
- //   std::cout<<"area1: "<<world.area()<<std::endl;
-//    std::cout<<"area: "<<world.width()*world.height()<<std::endl;
-    //std::cout<<"center: "<<world.center()<<std::endl;
-   // std::cout<<"text size: "<<textSize(world)<<std::endl;
 }
 
-
+//draw all features in map
 void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
-    //std::cout << "World width: " << world.width() << "\n";
     double visibleArea = world.area();
+    
+    //loop through all features, if the feature area is at the predefined ratio of the visible area, draw it
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
         double featureArea = findFeatureArea(featureID);
         if (featureArea >= visibleArea * featureToWorldRatio){
             drawFeatureByID(g, featureID);
         }
     }
+    
+    //loop through all features, if the feature area is at the predefined ratio of the visible area, display its name
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
         double featureArea = findFeatureArea(featureID);
         if (featureArea >= visibleArea * textDisplayRatio){
@@ -331,9 +318,12 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     }
 }
 
+//draw a specific feature by a given feature id
 void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
     std::vector<ezgl::point2d> points;
-    FeatureType featureType = getFeatureType(id);
+    
+    //choose the color for different types of feature
+    FeatureType featureType = getFeatureType(id);   
     switch (featureType) {
         case PARK:
             g->set_color(ezgl::GREEN);
@@ -369,17 +359,15 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
             break;
 
     }
+    
+    //draw the feature outline
     g->set_line_width(0);
-    //double xAvg = 0, yAvg = 0;
     for (int pt = 1; pt < getNumFeaturePoints(id); pt++){
 
         double x1, x2, y1, y2;
         x1 = xFromLon(getFeaturePoint(id, pt - 1).longitude());
         y1 = yFromLat(getFeaturePoint(id, pt - 1).latitude());
-        
-        //xAvg += x1;
-        //yAvg += y1;
-        
+
         ezgl::point2d* ptr = new ezgl::point2d(x1, y1);
         
         points.push_back(*ptr);
@@ -391,18 +379,18 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
         
     }
     
+    //fill the feature with color chosen if it is closed
     if (points.size() > 1 && (getFeaturePoint(id,0) == getFeaturePoint(id, getNumFeaturePoints(id) - 1))){
         g->fill_poly(points);
     }
-    
-
-
 }
 
+//display the name of a specific feature with a given feature id
 void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea){
+    //obtain the middle point of the feature
     double xAvg = 0;
     double yAvg = 0;
-    bool displayName = false;
+    
     FeatureType featureType = getFeatureType(id);
     for (int pt = 1; pt < getNumFeaturePoints(id); pt++){
         double x1, y1;
@@ -413,60 +401,187 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
         yAvg += y1;
         
     }
-    
     xAvg /= getNumFeaturePoints(id) - 1;
     yAvg /= getNumFeaturePoints(id) - 1;
-    std::string featureName = getFeatureName(id); 
+    
+    //display the name only with features that is not type UNKNOWN
+    bool displayName = false;
     switch (featureType) {
-            case PARK:
-                g->set_color(ezgl::BLACK);
-                displayName = true;
-                break;
-            case BEACH:
-                g->set_color(ezgl::BLACK);
-                displayName = true;
-                break;
-            case LAKE:
-                g->set_color(ezgl::BLACK);
-                displayName = true;
-                break;
-            case RIVER:
-                g->set_color(ezgl::BLACK);
-                break;
-            case ISLAND:
-                g->set_color(ezgl::BLACK);
-                displayName = true;
-                break;
-            case BUILDING:
-                g->set_color(ezgl::BLACK);
-                displayName = true;
-                break;
-            case GREENSPACE:
-                g->set_color(ezgl::BLACK);
-                displayName = true;
-                break;
-            case GOLFCOURSE:
-                g->set_color(ezgl::BLACK);
-                displayName = true;
-                break;
-            case STREAM:
-                g->set_color(ezgl::BLACK);
-                break;
-            case UNKNOWN:
-                g->set_color(ezgl::BLACK);
-                break;
-            default:
-                break;
-        }
+        case PARK:
+            g->set_color(ezgl::BLACK);
+            displayName = true;
+            break;
+        case BEACH:
+            g->set_color(ezgl::BLACK);
+            displayName = true;
+            break;
+        case LAKE:
+            g->set_color(ezgl::BLACK);
+            displayName = true;
+            break;
+        case RIVER:
+            g->set_color(ezgl::BLACK);
+            displayName = true;
+            break;
+        case ISLAND:
+            g->set_color(ezgl::BLACK);
+            displayName = true;
+            break;
+        case BUILDING:
+            g->set_color(ezgl::BLACK);
+            displayName = true;
+            break;
+        case GREENSPACE:
+            g->set_color(ezgl::BLACK);
+            displayName = true;
+            break;
+        case GOLFCOURSE:
+            g->set_color(ezgl::BLACK);
+            displayName = true;
+            break;
+        case STREAM:
+            g->set_color(ezgl::BLACK);
+            break;
+        case UNKNOWN:
+            g->set_color(ezgl::BLACK);
+            break;
+        default:
+            break;
+    }
+    
+    //display the feature name at predefined text display ratio when its name is not <noname>
+    std::string featureName = getFeatureName(id); 
     if (displayName && featureName.compare("<noname>") != 0 && featureArea > visibleArea * textDisplayRatio){
-        //std::cout << featureType << "::" << featureName << "   Area: " << findFeatureArea(id) << "\n";
         ezgl::point2d* midPt = new ezgl::point2d(xAvg, yAvg);
         g->draw_text(*midPt, featureName);
     }
 }
 
+//display a pop-up box at given location with given title and content
+void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world) {
+    //useful ratios (retrieved from try and error)
+    double strLenToBoxRatio = 3.266;
+    double windowToPopupBoxRatio = 8.385;
+    
+    //get the width and height in pixel coordinates of the visible screen
+    ezgl::rectangle screen = g->get_visible_screen();
+    double screenWidth = screen.width();
+    double screenHeight = screen.height();
 
-void intersectionPopup(ezgl::application *application, IntersectionIdx id) {
+    //get the width of the pop-up window according to string length 
+    int strLen = std::max(content.length(), title.length());
+    
+    //draw the rectangle for title
+    y -= world.height() * windowToPopupBoxRatio / screenHeight;
+    g->set_color(ezgl::GREY_55);
+    g->fill_rectangle({x - world.width() * (strLen * strLenToBoxRatio / screenWidth), y - world.height() * windowToPopupBoxRatio  / screenHeight},
+                      {x + world.width() * (strLen * strLenToBoxRatio / screenWidth), y + world.height() * windowToPopupBoxRatio  / screenHeight });
+    
+    //draw the text of the title
+    g->set_font_size(10);
+    g->set_color(ezgl::BLACK);
+    g->draw_text({x, y}, title);
+    
+    //draw the rectangle for the contents
+    y -= world.height() * windowToPopupBoxRatio / screenHeight * 2;
+    g->set_color(ezgl::GREY_75);
+    g->fill_rectangle({x - world.width() * (strLen * strLenToBoxRatio / screenWidth), y - world.height() * windowToPopupBoxRatio / screenHeight},
+                      {x + world.width() * (strLen * strLenToBoxRatio / screenWidth), y + world.height() * windowToPopupBoxRatio / screenHeight });
+                      
+    //draw the text of the contents
+    g->set_color(ezgl::BLACK);
+    g->set_font_size(10);
+    g->draw_text({x, y}, content);
+}
+
+//display POI name and icon with a given POI id
+void displayPOI(ezgl::renderer *g, POIIdx id) {
+    ezgl::surface *iconSurface;
+    
+    //get the coordinates of the POI
+    double x = xFromLon(getPOIPosition(id).longitude());
+    double y = yFromLat(getPOIPosition(id).latitude());
+    
+    //calculated the world to pixel coordinate ratio
+    double widthToPixelRatio =  g->get_visible_world().width() / g->get_visible_screen().width();
+    double heightToPixelRatio =  g->get_visible_world().height() / g->get_visible_screen().height();
+    
+    std::string poiType = getPOIType(id);
+    std::string poiName = getPOIName(id);
+    
+    // Load icon image by poiType
+    if (poiType.compare("ferry_termial") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/ferry.png");
+    } else if (poiType.rfind("theatre") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/theater.png");
+    } else if (poiType.rfind("school") != std::string::npos 
+            || poiType.rfind("university") != std::string::npos 
+            || poiType.rfind("college") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/university.png");
+    } else if (poiType.rfind("parking") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/parkinggarage.png");
+    } else if (poiType.rfind("fast_food") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/fastfood.png");
+    } else if (poiType.compare("community_centre") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/communitycentre.png");
+    } else if (poiType.compare("pharmacy") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/drogerie.png");
+    } else if (poiType.rfind("cafe") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/coffee.png");
+    } else if (poiType.compare("place_of_worship") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/chapel-2.png");
+    } else if (poiType.compare("bank") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/bank.png");
+    } else if (poiType.compare("atm") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/atm-2.png");
+    } else if (poiType.compare("cinema") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/cinema.png");
+    } else if (poiType.compare("hospital") == 0 || poiType.compare("doctors") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/hospital-building.png");
+    } else if (poiType.compare("library") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/library.png");
+    } else if (poiType.rfind("restaurant") != std::string::npos || poiType.rfind("food_") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/restaurant.png");
+    } else if (poiType.rfind("post_") == std::string::npos) {
+        std::cout << poiType << " -- " << poiName << "\n";
+        iconSurface = g->load_png("./libstreetmap/images/postal.png");
+    } else if (poiType.compare("police") == 0) {
+        iconSurface = g->load_png("./libstreetmap/images/police.png");
+    } else if (poiType.rfind("gym") != std::string::npos || poiType.rfind("weight") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/fitness.png");
+    } else if (poiType.rfind("dentist") != std::string::npos || poiType.rfind("orthodon") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/dentist.png");
+    } else if (poiType.rfind("bus_s") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/bus.png");
+    } else if (poiType.rfind("fuel") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/fillingstation.png");
+    } else if (poiType.rfind("child") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/daycare.png");        
+     } else if (poiType.rfind("bicyle") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/bicyle_parking.png");       
+     } else if (poiType.rfind("toilets") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/toilets_inclusive.png");       
+        
+    } else if (poiType == "airport") {
+        iconSurface = g->load_png("./libstreetmap/images/airport.png");
+    } else {
+        iconSurface = g->load_png("./libstreetmap/images/sight-2.png");
+    }
+    
+    // make the middle bottom of the icon at the poi location
+    double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
+    double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
+    g->draw_surface(iconSurface, {x - surfaceWidth / 2 , y + surfaceHeight} );
+    
+    // display poi name
+    g->set_color(ezgl::BLACK);
+    g->set_font_size(10);
+    g->set_text_rotation(0);
+    g->draw_text({x, y }, poiName);
+}
+
+
+/*void intersectionPopup(ezgl::application *application, IntersectionIdx id) {
     GObject *window;            // the parent window over which to add the dialog
     GtkWidget *content_area;    // the content area of the dialog
     GtkWidget *label;           // the label we will create to display a message in the contentarea
@@ -505,40 +620,4 @@ void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data)
     }
     std::cout << "(" << response_id << ")\n";
     gtk_widget_destroy(GTK_WIDGET (dialog));
-}
-
-void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world) {
-    //useful ratios (retrieved from try and error)
-    double strLenToBoxRatio = 3.266;
-    double windowToPopupBoxRatio = 8.385;
-    
-    //get the width and height in pixel coordinates of the visible screen
-    ezgl::rectangle screen = g->get_visible_screen();
-    double screenWidth = screen.width();
-    double screenHeight = screen.height();
-
-    //get the width of the pop-up window according to string length 
-    int strLen = std::max(content.length(), title.length());
-    
-    //draw the rectangle for title
-    y -= world.height() * windowToPopupBoxRatio / screenHeight;
-    g->set_color(ezgl::GREY_55);
-    g->fill_rectangle({x - world.width() * (strLen * strLenToBoxRatio / screenWidth), y - world.height() * windowToPopupBoxRatio  / screenHeight},
-                      {x + world.width() * (strLen * strLenToBoxRatio / screenWidth), y + world.height() * windowToPopupBoxRatio  / screenHeight });
-    
-    //draw the text of the title
-    g->set_font_size(10);
-    g->set_color(ezgl::BLACK);
-    g->draw_text({x, y}, title);
-    
-    //draw the rectangle for the contents
-    y -= world.height() * windowToPopupBoxRatio / screenHeight * 2;
-    g->set_color(ezgl::GREY_75);
-    g->fill_rectangle({x - world.width() * (strLen * strLenToBoxRatio / screenWidth), y - world.height() * windowToPopupBoxRatio / screenHeight},
-                      {x + world.width() * (strLen * strLenToBoxRatio / screenWidth), y + world.height() * windowToPopupBoxRatio / screenHeight });
-                      
-    //draw the text of the contents
-    g->set_color(ezgl::BLACK);
-    g->set_font_size(10);
-    g->draw_text({x, y}, content);
-}
+}*/
