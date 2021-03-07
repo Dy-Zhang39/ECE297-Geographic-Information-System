@@ -33,8 +33,12 @@ extern Street* STREETS;
 IntersectionIdx previousHighlight = -1;
 
 //helper functions
+void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
-IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
+
+void searchButton(GtkWidget *widget, ezgl::application *application);
+
+int clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
 
 void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
@@ -93,7 +97,7 @@ void drawMap(){
     
     
     //initial set up, act on mouse press, act on mouse move, act on key press
-    application.run(nullptr, actOnMouseClick, nullptr, nullptr);
+    application.run(initialSetUp, actOnMouseClick, nullptr, nullptr);
 }
 
 void draw_main_canvas (ezgl::renderer *g){
@@ -145,6 +149,19 @@ double latFromY(double y){
     return y/(kDegreeToRadian* kEarthRadiusInMeters);
 }
 
+void initialSetUp(ezgl::application *application, bool /*new_window*/){
+    application->update_message("Map is loaded successfully");
+    
+    application->create_button("Search", 5, searchButton);
+}
+
+void searchButton(GtkWidget */*widget*/, ezgl::application *application){
+    //update message
+    application->update_message("Search button is pressed");
+
+    // Redraw the main canvas
+    application->refresh_drawing();
+}
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y){
     std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
     std::cout << "Button " << event->button << " is clicked\n";
