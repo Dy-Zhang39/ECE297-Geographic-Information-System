@@ -14,6 +14,10 @@
 #include "global.h"
 #include "StreetsDatabaseAPI.h"
 
+#include <iostream>
+#include <chrono>
+#include <thread>
+
 double xFromLon(double lon);  //convert longitude to meter
 double yFromLat(double lat);  //convert latitude to meter
 double lonFromX(double x);    //convert meter to longitude
@@ -30,7 +34,7 @@ IntersectionIdx previousHighlight = -1;
 
 //helper functions
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
-void clickToHighlightClosestIntersection(LatLon pos);
+IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
 
 void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
@@ -39,6 +43,10 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
 
 void drawFeature(ezgl::renderer *g);
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world);
+
+
+void intersectionPopup(ezgl::application *application, IntersectionIdx id);
+void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data);
 
 struct intersection_data {
   LatLon position;
@@ -90,6 +98,11 @@ void drawMap(){
 
 void draw_main_canvas (ezgl::renderer *g){
     g->draw_rectangle({0,0}, {1000,1000});
+        
+    ezgl::rectangle world = g->get_visible_world();
+    drawStreet(g, world);
+    drawFeature(g, world);
+    displayStreetName(g, world);
     
     for (size_t i = 0; i < intersections.size(); ++i) {
         float x = xFromLon(intersections[i].position.longitude());
@@ -98,22 +111,23 @@ void draw_main_canvas (ezgl::renderer *g){
         float width = 5;
         float height = width;
         
-        if (intersections[i].isHighlight)
+        if (intersections[i].isHighlight) {
+            g->set_color(ezgl::GREY_75);
+            std::cout<<world.height()<<" "<<world.width();
+            g->fill_rectangle({x - world.width()/8, y - world.height()/35}, {x + world.width()/8, y + world.height()/35});
+            g->set_font_size(10);
+            g->set_color(ezgl::BLACK);  
+            
+            g->draw_text({x, y}, intersections[i].name);
             g->set_color(ezgl::RED);
-        else
+        } else {
             g->set_color(ezgl::GREY_55);
+        }
         
         g->fill_rectangle({x - width/2, y - height/2},
                           {x + width/2, y + height/2});
     }
-    
-    ezgl::rectangle world = g->get_visible_world();
-    drawStreet(g, world);
-    drawFeature(g, world);
 
-  
-
-    displayStreetName(g, world);
 
 }
 
@@ -136,15 +150,15 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
     std::cout << "Button " << event->button << " is clicked\n";
     
     LatLon pos = LatLon(latFromY(y), lonFromX(x));
-    clickToHighlightClosestIntersection(pos);
+    IntersectionIdx id = clickToHighlightClosestIntersection(pos);
     
+    //intersectionPopup(app, id);
 
-    
     app->refresh_drawing();
 }
 
 //mouse click to highlight the closest intersection
-void clickToHighlightClosestIntersection(LatLon pos){
+IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
     IntersectionIdx id = findClosestIntersection(pos);
     intersections[id].isHighlight = true;
     
@@ -153,8 +167,9 @@ void clickToHighlightClosestIntersection(LatLon pos){
     }
     
     previousHighlight = id;
-
     std::cout << "Closest Intersection: " << intersections[id].name << "\n";
+    
+    return id;
 }
 
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
@@ -189,7 +204,7 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         std::vector<ezgl::point2d> inViewSegment;
         inViewSegment.clear();
         std::string streetName = getStreetName(streetID);
-        double x, y, x1, y1;
+        double x = 0, y = 0, x1 = 0, y1 = 0;
         for(int segmentIndex = 0; segmentIndex < STREETS->streetSegments[streetID].size(); segmentIndex++){
             
             if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
@@ -389,4 +404,46 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
         ezgl::point2d* midPt = new ezgl::point2d(xAvg, yAvg);
         g->draw_text(*midPt, featureName);
     }
+}
+
+
+void intersectionPopup(ezgl::application *application, IntersectionIdx id) {
+    GObject *window;            // the parent window over which to add the dialog
+    GtkWidget *content_area;    // the content area of the dialog
+    GtkWidget *label;           // the label we will create to display a message in the contentarea
+    GtkWidget *dialog;          // the dialog box we will create
+ 
+    window = application->get_object(application->get_main_window_id().c_str());
+    dialog = gtk_dialog_new_with_buttons(
+            "Intersection",(GtkWindow*) window,GTK_DIALOG_MODAL,
+            ("OK"),GTK_RESPONSE_ACCEPT);
+    
+    
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    label = gtk_label_new(intersections[id].name.c_str());
+    gtk_container_add(GTK_CONTAINER(content_area), label);
+    
+    // The main purpose of this is to show dialog's child widget, label
+    gtk_widget_show_all(dialog);// Connecting the "response" signal from the user to the associated callback function
+    g_signal_connect(GTK_DIALOG(dialog),"response",G_CALLBACK(on_dialog_response),NULL);
+}
+
+void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data){
+    // For demonstration purposes, this will show the int value of the response type
+    std::cout << "response is ";
+    switch(response_id) {
+        case GTK_RESPONSE_ACCEPT:
+            std::cout << "GTK_RESPONSE_ACCEPT ";
+            break;
+        case GTK_RESPONSE_DELETE_EVENT:
+            std::cout << "GTK_RESPONSE_DELETE_EVENT (i.e. ??X?? button) ";
+            break;
+        case GTK_RESPONSE_REJECT:
+            std::cout << "GTK_RESPONSE_REJECT ";
+            break;
+        default:std::cout << "UNKNOWN ";
+        break;
+    }
+    std::cout << "(" << response_id << ")\n";
+    gtk_widget_destroy(GTK_WIDGET (dialog));
 }
