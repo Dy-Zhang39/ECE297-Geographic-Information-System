@@ -32,7 +32,11 @@ double streetToWorldRatio1 = 0.1;
 extern StreetSegment* STREET_SEGMENTS;
 extern Street* STREETS;
 
-double areaToShowPOI = 420000;           // If the visible world area is smaller than this number, the POI will be displayed
+double areaToShowPOI = 42000;           // If the visible world area is smaller than this number, the POI will be displayed
+std::vector <double> topFeatures;
+std::vector <double> bottomFeatures;
+std::vector <double> leftFeatures;
+std::vector <double> rightFeatures;
 
 IntersectionIdx previousHighlight = -1;
 
@@ -61,7 +65,7 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
 double textSize(ezgl::rectangle world);
 double streetSize(ezgl::rectangle world);
 
-void displayPOI(ezgl::renderer *g, POIIdx id);
+void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
 
 struct intersection_data {
   LatLon position;
@@ -73,7 +77,6 @@ std::vector<intersection_data> intersections;
 
 void draw_main_canvas (ezgl::renderer *g);
 void drawMap(){
-    
     double maxLat = getIntersectionPosition(0).latitude();
     double minLat = maxLat;
     double maxLon = getIntersectionPosition(0).longitude();
@@ -92,6 +95,31 @@ void drawMap(){
     
     avgLat = (maxLat + minLat)/2;           //force the map to be a reactangle   
 
+    // initialize vectors for features
+    for (int featureID = 0; featureID < getNumFeatures(); featureID++){
+        double minX = xFromLon(getFeaturePoint(featureID, 0).longitude());
+        double maxX = minX;
+        double minY = yFromLat(getFeaturePoint(featureID, 0).latitude());
+        double maxY = minY;
+        
+        for (int pt = 1; pt < getNumFeaturePoints(featureID); pt++){
+            double x, y;
+            x = xFromLon(getFeaturePoint(featureID, pt).longitude());
+            y = yFromLat(getFeaturePoint(featureID, pt).latitude());
+            
+
+            minX = std::min(minX, x);
+            maxX = std::max(maxX, x);
+            minY = std::min(minY, y);
+            maxY = std::max(maxY, y);
+        }
+        
+        topFeatures.push_back(maxY);
+        bottomFeatures.push_back(minY);
+        leftFeatures.push_back(minX);
+        rightFeatures.push_back(maxX);
+    }
+    
     ezgl::application::settings settings;
     settings.main_ui_resource = "libstreetmap/resources/main.ui";
     settings.window_identifier = "MainWindow";
@@ -103,25 +131,28 @@ void drawMap(){
                                 {xFromLon(maxLon), yFromLat(maxLat)});
     
     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
- 
-    
-    
-    
+
     //initial set up, act on mouse press, act on mouse move, act on key press
     application.run(initialSetUp, actOnMouseClick, nullptr, nullptr);
 }
 
 void draw_main_canvas (ezgl::renderer *g){
-    
+    //calculated the world to pixel coordinate ratio
+    double widthToPixelRatio =  g->get_visible_world().width() / g->get_visible_screen().width();
+    double heightToPixelRatio =  g->get_visible_world().height() / g->get_visible_screen().height();
+
     //timing fuction
+    std::clock_t begin = clock();
     
     g->draw_rectangle({0,0}, {1000,1000});
-        
     ezgl::rectangle world = g->get_visible_world();
     drawStreet(g, world);
+    std::clock_t street_end = clock();
     drawFeature(g, world);
+    std::clock_t feature_end = clock();
     displayStreetName(g, world);
-
+    std::clock_t street_name_end = clock();
+    
     // loop through all the poi and show it 
     for(int i = 0; i < getNumPointsOfInterest(); i ++){
         double x = xFromLon(getPOIPosition(i).longitude());
@@ -129,9 +160,11 @@ void draw_main_canvas (ezgl::renderer *g){
         
         // if the map is showing enough level of detail, and the poi is visible in the screen, then display it. 
         if (world.contains({x, y}) && world.area() < areaToShowPOI) {
-            displayPOI(g, i);
+            displayPOIById(g, i, widthToPixelRatio, heightToPixelRatio);
         }
     }
+    
+    std::clock_t poi_end = clock();
     
     for (size_t i = 0; i < intersections.size(); ++i) {
         float x = xFromLon(intersections[i].position.longitude());
@@ -157,7 +190,14 @@ void draw_main_canvas (ezgl::renderer *g){
                           {x + width/2, y + height/2});
     }
 
-
+    
+    std::clock_t intersection_end = clock();
+    double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
+    double elapsedSecondsFeature = double(feature_end - street_end) / CLOCKS_PER_SEC;
+    double elapsedSecondsStreetName = double(street_name_end-feature_end) / CLOCKS_PER_SEC;
+    double elapsedSecondsPoi = double(poi_end-street_name_end) / CLOCKS_PER_SEC;
+    double elapsedSecondsIntersections = double(intersection_end-poi_end) / CLOCKS_PER_SEC;
+    std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " -> " << elapsedSecondsIntersections << "\n";
 }
 
 double xFromLon(double lon){
@@ -195,7 +235,6 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
     clickToHighlightClosestIntersection(pos);
     
     //intersectionPopup(app, id);
-
     app->refresh_drawing();
 }
 
@@ -219,23 +258,24 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     for(int StreetSegmentsID=0; StreetSegmentsID<getNumStreetSegments(); StreetSegmentsID++ ){
         if (findStreetLength(getStreetSegmentInfo(StreetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
             for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[StreetSegmentsID].size(); pointsID++){
-                g->set_color(210,223,227,255);
-                g->set_line_width(streetSize(world));
                 x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID - 1].longitude());
                 y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID- 1].latitude());
 
                 x2 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].longitude());
                 y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].latitude());
 
-
-                g->draw_line({x1,y1}, {x2, y2});
+                if (world.contains(x1, y1) || world.contains(x2, y2)) {
+                    g->set_color(210,223,227,255);
+                    g->set_line_width(streetSize(world));
+                    g->draw_line({x1, y1}, {x2, y2});
+                }
             }
         }
         
         
     }
-//    std::cout<<"Diag size: "<<diagLength<<std::endl;
-    std::cout<<"street size: "<<streetSize(world)<<std::endl;
+    //  std::cout<<"Diag size: "<<diagLength<<std::endl;
+    //  std::cout<<"street size: "<<streetSize(world)<<std::endl;
     return;
 }
 
@@ -303,8 +343,18 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     
     //loop through all features, if the feature area is at the predefined ratio of the visible area, draw it
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
+        double minX = leftFeatures[featureID];
+        double maxX = rightFeatures[featureID];
+        double maxY = topFeatures[featureID];
+        double minY = bottomFeatures[featureID];
         double featureArea = findFeatureArea(featureID);
-        if (featureArea >= visibleArea * featureToWorldRatio){
+        
+        // If the feature is in the visible area, call helper function to display the feature.
+        if ((world.contains(minX, minY) || world.contains(minX, maxY)
+                || world.contains(maxX, minY) || world.contains(maxX, maxY)
+                || (maxY > world.top() && minY < world.bottom() && minX < world.left() && maxX > world.right())
+                ) 
+                && featureArea >= visibleArea * featureToWorldRatio){
             drawFeatureByID(g, featureID);
         }
     }
@@ -495,17 +545,13 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
 }
 
 //display POI name and icon with a given POI id
-void displayPOI(ezgl::renderer *g, POIIdx id) {
+void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio) {
     ezgl::surface *iconSurface;
     
     //get the coordinates of the POI
     double x = xFromLon(getPOIPosition(id).longitude());
     double y = yFromLat(getPOIPosition(id).latitude());
-    
-    //calculated the world to pixel coordinate ratio
-    double widthToPixelRatio =  g->get_visible_world().width() / g->get_visible_screen().width();
-    double heightToPixelRatio =  g->get_visible_world().height() / g->get_visible_screen().height();
-    
+        
     std::string poiType = getPOIType(id);
     std::string poiName = getPOIName(id);
     
@@ -542,9 +588,6 @@ void displayPOI(ezgl::renderer *g, POIIdx id) {
         iconSurface = g->load_png("./libstreetmap/images/library.png");
     } else if (poiType.rfind("restaurant") != std::string::npos || poiType.rfind("food_") != std::string::npos) {
         iconSurface = g->load_png("./libstreetmap/images/restaurant.png");
-    } else if (poiType.rfind("post_") == std::string::npos) {
-        std::cout << poiType << " -- " << poiName << "\n";
-        iconSurface = g->load_png("./libstreetmap/images/postal.png");
     } else if (poiType.compare("police") == 0) {
         iconSurface = g->load_png("./libstreetmap/images/police.png");
     } else if (poiType.rfind("gym") != std::string::npos || poiType.rfind("weight") != std::string::npos) {
@@ -557,11 +600,12 @@ void displayPOI(ezgl::renderer *g, POIIdx id) {
         iconSurface = g->load_png("./libstreetmap/images/fillingstation.png");
     } else if (poiType.rfind("child") != std::string::npos) {
         iconSurface = g->load_png("./libstreetmap/images/daycare.png");        
-     } else if (poiType.rfind("bicyle") != std::string::npos) {
+    } else if (poiType.rfind("bicyle") != std::string::npos) {
         iconSurface = g->load_png("./libstreetmap/images/bicyle_parking.png");       
-     } else if (poiType.rfind("toilets") != std::string::npos) {
+    } else if (poiType.rfind("toilets") != std::string::npos) {
         iconSurface = g->load_png("./libstreetmap/images/toilets_inclusive.png");       
-        
+    } else if (poiType.rfind("post_") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/postal.png");
     } else if (poiType == "airport") {
         iconSurface = g->load_png("./libstreetmap/images/airport.png");
     } else {
