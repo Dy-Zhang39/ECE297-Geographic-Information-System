@@ -388,30 +388,29 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         for(int segmentIndex = 0; segmentIndex < STREETS->streetSegments[streetID].size(); segmentIndex++){
             
             if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
-                
-                
                 x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).from).longitude());
-
                 y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).from).latitude());
-                
                 x1 = xFromLon(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).to).longitude());
-
                 y1 = yFromLat(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).to).latitude());
-                if (world.contains(x, y)){
-                    ezgl::point2d point(x, y);
-                    
-                    inViewSegment.push_back(point);
+
+                if (world.contains(x, y) || world.contains(x1, y1)){
+                    inViewSegment.push_back({x, y});
                 }
             }
         }
-        double degree = atan2(y1-y, x1-x)/kDegreeToRadian;
-        g->set_font_size(10);
-        g->set_color(ezgl::BLACK);
-        if (degree < 0){
-            degree = degree+180;
-        }
-        g->set_text_rotation(degree);
-        if (inViewSegment.size() > 1) {
+
+        if (inViewSegment.size() > 2) {
+            ezgl::point2d midPoint = inViewSegment[inViewSegment.size()/2];
+            ezgl::point2d midNextPoint = inViewSegment[inViewSegment.size()/2 + 1];
+            double degree = atan2(midNextPoint.y - midPoint.y, midNextPoint.x - midPoint.x) / kDegreeToRadian;
+            g->set_font_size(10);
+            g->set_color(ezgl::BLACK);
+            
+            if (degree < 0){
+                degree = degree+180;
+            }
+            
+            g->set_text_rotation(degree);
             g->draw_text(inViewSegment[inViewSegment.size()/2], streetName);
         }
     }
