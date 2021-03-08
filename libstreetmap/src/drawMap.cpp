@@ -177,6 +177,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     std::string firstStreet, secondStreet;
     bool firstFinished = false;         //finished reading the first street
 
+    clearHighlightIntersection();
     
     for (auto iterator = text.begin(); iterator != text.end(); iterator++){
         
@@ -223,7 +224,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
 
         if (commonIntersection.size() > 0){
             
-            clearHighlightIntersection();
+            
             //position in latitude and longitude
             for (int idx = 0; idx < commonIntersection.size(); idx++){
                 //get the position in cartesian coordiante
@@ -252,6 +253,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
                 
                 //highlight these intersections
                 intersections[commonIntersection[idx]].isHighlight = true;
+                previousHighlight.push_back(commonIntersection[idx]);
                 
             }
             center.x = sum.x/commonIntersection.size();
