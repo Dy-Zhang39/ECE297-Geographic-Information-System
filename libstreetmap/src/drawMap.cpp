@@ -525,14 +525,10 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
         double x1, x2, y1, y2;
         x1 = xFromLon(getFeaturePoint(id, pt - 1).longitude());
         y1 = yFromLat(getFeaturePoint(id, pt - 1).latitude());
-
-        ezgl::point2d* ptr = new ezgl::point2d(x1, y1);
-        
-        points.push_back(*ptr);
+        points.push_back({x1, y1});
 
         x2 = xFromLon(getFeaturePoint(id, pt).longitude());
         y2 = yFromLat(getFeaturePoint(id, pt).latitude());
-
         g->draw_line({x1,y1}, {x2, y2});
         
     }
@@ -610,8 +606,7 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     //display the feature name at predefined text display ratio when its name is not <noname>
     std::string featureName = getFeatureName(id); 
     if (displayName && featureName.compare("<noname>") != 0 && featureArea > visibleArea * textDisplayRatio){
-        ezgl::point2d* midPt = new ezgl::point2d(xAvg, yAvg);
-        g->draw_text(*midPt, featureName);
+        g->draw_text({xAvg, yAvg}, featureName);
     }
 }
 
