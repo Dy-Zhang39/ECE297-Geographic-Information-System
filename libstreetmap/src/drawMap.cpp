@@ -25,7 +25,6 @@ double lonFromX(double x);    //convert meter to longitude
 double latFromY(double y);    //convert meter to latitude
 double avgLat;                  //the average latitude of the map
 double worldRatio;              //the ratio of height to width of the screen
-double featureToWorldRatio = 0.0001;
 double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.1;
@@ -34,15 +33,10 @@ double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 extern StreetSegment* STREET_SEGMENTS;
 extern Street* STREETS;
 
-
-double areaToShowPOI = 42000;           // If the visible world area is smaller than this number, the POI will be displayed
 std::vector <double> topFeatures;
 std::vector <double> bottomFeatures;
 std::vector <double> leftFeatures;
 std::vector <double> rightFeatures;
-
-
-
 
 std::vector<IntersectionIdx> previousHighlight;
 
@@ -64,15 +58,13 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
 void drawFeature(ezgl::renderer *g);
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world);
 
-
-
-void intersectionPopup(ezgl::application *application, IntersectionIdx id);
-void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data);
+void displayHighlightedIntersection(ezgl::renderer *g);
 void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world);
 
 double textSize(ezgl::rectangle world);
 double streetSize(ezgl::rectangle world);
 
+void displayPOI(ezgl::renderer *g);
 void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
 
 struct intersection_data {
@@ -127,67 +119,29 @@ void drawMap(){
 }
 
 void draw_main_canvas (ezgl::renderer *g){
-    //calculated the world to pixel coordinate ratio
-    double widthToPixelRatio =  g->get_visible_world().width() / g->get_visible_screen().width();
-    double heightToPixelRatio =  g->get_visible_world().height() / g->get_visible_screen().height();
-
     //timing fuction
-    std::clock_t begin = clock();
+    //std::clock_t begin = clock();
     
     g->draw_rectangle({0,0}, {1000,1000});
     ezgl::rectangle world = g->get_visible_world();
     drawStreet(g, world);
-    std::clock_t street_end = clock();
+    //std::clock_t street_end = clock();
     drawFeature(g, world);
-    std::clock_t feature_end = clock();
+    //std::clock_t feature_end = clock();
     displayStreetName(g, world);
-    std::clock_t street_name_end = clock();
-    
-    // loop through all the poi and show it 
-    for(int i = 0; i < getNumPointsOfInterest(); i ++){
-        double x = xFromLon(getPOIPosition(i).longitude());
-        double y = yFromLat(getPOIPosition(i).latitude());
-        
-        // if the map is showing enough level of detail, and the poi is visible in the screen, then display it. 
-        if (world.contains({x, y}) && world.area() < areaToShowPOI) {
-            displayPOIById(g, i, widthToPixelRatio, heightToPixelRatio);
-        }
-    }
-    
-    std::clock_t poi_end = clock();
-    
-    for (size_t i = 0; i < intersections.size(); ++i) {
-        float x = xFromLon(intersections[i].position.longitude());
-        float y = yFromLat(intersections[i].position.latitude());
+    //std::clock_t street_name_end = clock();
+    displayPOI(g);
+    //std::clock_t poi_end = clock();
+    displayHighlightedIntersection(g);
 
-        float width = 8 * widthToPixelRatio;
-        float height = width;
-        
-        if (intersections[i].isHighlight) {
 
-            g->set_color(ezgl::GREY_75);
-            
-            if (intersections[i].name.compare("<unknown>") != 0){
-                displayPopupBox(g, "Intersection: ", intersections[i].name, x, y, world);
-            }
-
-            g->set_color(ezgl::RED);
-            g->fill_rectangle({x - width/2, y - height/2},
-                              {x + width/2, y + height/2});
-        } else {
-            g->set_color(ezgl::GREY_55);
-        }
-        
-    }
-
-    
-    std::clock_t intersection_end = clock();
-    double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
-    double elapsedSecondsFeature = double(feature_end - street_end) / CLOCKS_PER_SEC;
-    double elapsedSecondsStreetName = double(street_name_end-feature_end) / CLOCKS_PER_SEC;
-    double elapsedSecondsPoi = double(poi_end-street_name_end) / CLOCKS_PER_SEC;
-    double elapsedSecondsIntersections = double(intersection_end-poi_end) / CLOCKS_PER_SEC;
-    std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " -> " << elapsedSecondsIntersections << "\n";
+    //std::clock_t intersection_end = clock();
+    //double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
+    //double elapsedSecondsFeature = double(feature_end - street_end) / CLOCKS_PER_SEC;
+    //double elapsedSecondsStreetName = double(street_name_end-feature_end) / CLOCKS_PER_SEC;
+    //double elapsedSecondsPoi = double(poi_end-street_name_end) / CLOCKS_PER_SEC;
+    //double elapsedSecondsIntersections = double(intersection_end-poi_end) / CLOCKS_PER_SEC;
+    //std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " -> " << elapsedSecondsIntersections << "\n";
 }
 
 double xFromLon(double lon){
@@ -463,7 +417,6 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
 
 // initialize the bounding coordinates of all features into vectors
 void initializeFeatureBounding() {
-    // initialize vectors for features
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
         double minX = xFromLon(getFeaturePoint(featureID, 0).longitude());
         double maxX = minX;
@@ -489,8 +442,10 @@ void initializeFeatureBounding() {
         rightFeatures.push_back(maxX);
     }
 }
+
 //draw all features in map
 void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
+    double featureToWorldRatio = 0.0001;
     double visibleArea = world.area();
     
     //loop through all features, if the feature area is at the predefined ratio of the visible area, draw it
@@ -659,6 +614,31 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     }
 }
 
+//highlight intersection by showing a red square and display the pop-up box
+void displayHighlightedIntersection(ezgl::renderer *g) {
+    ezgl::rectangle world = g->get_visible_world();
+    for (size_t i = 0; i < intersections.size(); ++i) {
+        float x = xFromLon(intersections[i].position.longitude());
+        float y = yFromLat(intersections[i].position.latitude());
+
+        float width = 6 * g->get_visible_world().width() / g->get_visible_screen().width();
+        float height = width;
+        
+        if (intersections[i].isHighlight) {
+
+            g->set_color(ezgl::GREY_75);
+            
+            if (intersections[i].name.compare("<unknown>") != 0){
+                displayPopupBox(g, "Intersection: ", intersections[i].name, x, y, world);
+            }
+
+            g->set_color(ezgl::RED);
+            g->fill_rectangle({x - width/2, y - height/2},
+                              {x + width/2, y + height/2});
+        }
+    }
+}
+
 //display a pop-up box at given location with given title and content
 void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world) {
     //useful ratios (retrieved from try and error)
@@ -697,6 +677,24 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
     g->draw_text({x, y}, content);
 }
 
+//display all the POIs qualified for displaying
+void displayPOI(ezgl::renderer *g) {
+    double areaToShowPOI = 42000;           // If the visible world area is smaller than this number, the POI will be displayed
+    //calculated the world to pixel coordinate ratio
+    ezgl::rectangle world = g->get_visible_world();
+    double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
+    double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
+    // loop through all the poi and show it 
+    for(int i = 0; i < getNumPointsOfInterest(); i ++){
+        double x = xFromLon(getPOIPosition(i).longitude());
+        double y = yFromLat(getPOIPosition(i).latitude());
+        
+        // if the map is showing enough level of detail, and the poi is visible in the screen, then display it. 
+        if (world.contains({x, y}) && world.area() < areaToShowPOI) {
+            displayPOIById(g, i, widthToPixelRatio, heightToPixelRatio);
+        }
+    }
+}
 //display POI name and icon with a given POI id
 void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio) {
     ezgl::surface *iconSurface;
@@ -776,7 +774,6 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     g->set_text_rotation(0);
     g->draw_text({x, y }, poiName);
 }
-
 
 /*void intersectionPopup(ezgl::application *application, IntersectionIdx id) {
     GObject *window;            // the parent window over which to add the dialog
