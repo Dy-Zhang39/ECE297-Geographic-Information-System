@@ -149,7 +149,7 @@ void draw_main_canvas (ezgl::renderer *g){
         float x = xFromLon(intersections[i].position.longitude());
         float y = yFromLat(intersections[i].position.latitude());
 
-        float width = 5;
+        float width = 8 * widthToPixelRatio;
         float height = width;
         
         if (intersections[i].isHighlight) {
@@ -535,6 +535,7 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
                       {x + world.width() * (strLen * strLenToBoxRatio / screenWidth), y + world.height() * windowToPopupBoxRatio  / screenHeight });
     
     //draw the text of the title
+    g->set_text_rotation(0);
     g->set_font_size(10);
     g->set_color(ezgl::BLACK);
     g->draw_text({x, y}, title);
