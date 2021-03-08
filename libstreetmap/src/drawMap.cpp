@@ -50,6 +50,7 @@ void clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
 
 void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
+void initializeFeatureBounding();
 void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id);
 void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea);
 
@@ -95,30 +96,8 @@ void drawMap(){
     
     avgLat = (maxLat + minLat)/2;           //force the map to be a reactangle   
 
-    // initialize vectors for features
-    for (int featureID = 0; featureID < getNumFeatures(); featureID++){
-        double minX = xFromLon(getFeaturePoint(featureID, 0).longitude());
-        double maxX = minX;
-        double minY = yFromLat(getFeaturePoint(featureID, 0).latitude());
-        double maxY = minY;
-        
-        for (int pt = 1; pt < getNumFeaturePoints(featureID); pt++){
-            double x, y;
-            x = xFromLon(getFeaturePoint(featureID, pt).longitude());
-            y = yFromLat(getFeaturePoint(featureID, pt).latitude());
-            
-
-            minX = std::min(minX, x);
-            maxX = std::max(maxX, x);
-            minY = std::min(minY, y);
-            maxY = std::max(maxY, y);
-        }
-        
-        topFeatures.push_back(maxY);
-        bottomFeatures.push_back(minY);
-        leftFeatures.push_back(minX);
-        rightFeatures.push_back(maxX);
-    }
+    // Initialize coordinates for feature bounding boxes.
+    initializeFeatureBounding();
     
     ezgl::application::settings settings;
     settings.main_ui_resource = "libstreetmap/resources/main.ui";
@@ -182,12 +161,12 @@ void draw_main_canvas (ezgl::renderer *g){
             }
 
             g->set_color(ezgl::RED);
+            g->fill_rectangle({x - width/2, y - height/2},
+                              {x + width/2, y + height/2});
         } else {
             g->set_color(ezgl::GREY_55);
         }
         
-        g->fill_rectangle({x - width/2, y - height/2},
-                          {x + width/2, y + height/2});
     }
 
     
@@ -337,6 +316,34 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
     }
 }
 
+// initialize the bounding coordinates of all features into vectors
+void initializeFeatureBounding() {
+    // initialize vectors for features
+    for (int featureID = 0; featureID < getNumFeatures(); featureID++){
+        double minX = xFromLon(getFeaturePoint(featureID, 0).longitude());
+        double maxX = minX;
+        double minY = yFromLat(getFeaturePoint(featureID, 0).latitude());
+        double maxY = minY;
+        
+        // find bounding box of feature
+        for (int pt = 1; pt < getNumFeaturePoints(featureID); pt++){
+            double x, y;
+            x = xFromLon(getFeaturePoint(featureID, pt).longitude());
+            y = yFromLat(getFeaturePoint(featureID, pt).latitude());
+
+            minX = std::min(minX, x);
+            maxX = std::max(maxX, x);
+            minY = std::min(minY, y);
+            maxY = std::max(maxY, y);
+        }
+        
+        // record the bounding boxes for each feature
+        topFeatures.push_back(maxY);
+        bottomFeatures.push_back(minY);
+        leftFeatures.push_back(minX);
+        rightFeatures.push_back(maxX);
+    }
+}
 //draw all features in map
 void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double visibleArea = world.area();
