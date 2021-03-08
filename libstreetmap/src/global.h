@@ -7,6 +7,7 @@ class Street {
 public:
     std::vector<std::vector<IntersectionIdx>> streetIntersections; //store all intersection in one specific street for every street
     std::vector<std::vector<StreetSegmentIdx>> streetSegments; //store all segments of a specific street (in inner vector), store every street in outer vector
+    std::vector<std::string> streetNames;                   //store every street name to the corresponding index location
     std::vector<std::vector<StreetIdx>> streetNamesOneChar; //index vector using the first one characters of the street name
     std::vector<std::vector<StreetIdx>> streetNamesTwoChar; //index vector using the first two characters of the street name
     std::vector<std::vector<StreetIdx>> streetNamesThreeChar; //index vector using the first three characters of the street name

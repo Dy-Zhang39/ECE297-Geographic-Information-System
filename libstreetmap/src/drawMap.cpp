@@ -24,13 +24,16 @@ double yFromLat(double lat);  //convert latitude to meter
 double lonFromX(double x);    //convert meter to longitude
 double latFromY(double y);    //convert meter to latitude
 double avgLat;                  //the average latitude of the map
+double worldRatio;              //the ratio of height to width of the screen
 double featureToWorldRatio = 0.0001;
 double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.1;
+double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 
 extern StreetSegment* STREET_SEGMENTS;
 extern Street* STREETS;
+
 
 double areaToShowPOI = 42000;           // If the visible world area is smaller than this number, the POI will be displayed
 std::vector <double> topFeatures;
@@ -38,15 +41,19 @@ std::vector <double> bottomFeatures;
 std::vector <double> leftFeatures;
 std::vector <double> rightFeatures;
 
-IntersectionIdx previousHighlight = -1;
+
+
+
+std::vector<IntersectionIdx> previousHighlight;
 
 //helper functions
 void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
+void clearHighlightIntersection();
 
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
 
-void clickToHighlightClosestIntersection(LatLon pos);
+IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
 
 void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
@@ -96,9 +103,13 @@ void drawMap(){
     
     avgLat = (maxLat + minLat)/2;           //force the map to be a reactangle   
 
+
     // Initialize coordinates for feature bounding boxes.
     initializeFeatureBounding();
+
     
+    worldRatio = (yFromLat(maxLat) - yFromLat(minLat))/(xFromLon(maxLon) - xFromLon(minLon));
+
     ezgl::application::settings settings;
     settings.main_ui_resource = "libstreetmap/resources/main.ui";
     settings.window_identifier = "MainWindow";
@@ -202,7 +213,131 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-    application->update_message("Search Button is pressed");
+    
+    std::string main_canvas_id = application->get_main_canvas_id();
+    auto canvas = application->get_canvas(main_canvas_id);
+    
+    GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
+    
+    std::string text = gtk_entry_get_text(textEntry);
+    std::string firstStreet, secondStreet;
+    bool firstFinished = false;         //finished reading the first street
+
+    
+    for (auto iterator = text.begin(); iterator != text.end(); iterator++){
+        
+        if (!firstFinished){
+            
+            if (*iterator != ',' && *iterator != ' '){
+                firstStreet.push_back(tolower(*iterator));
+            }else if (*iterator == ','){
+                firstFinished = true;
+            }
+            
+        }else{
+            
+            if (*iterator != ' '){
+                secondStreet.push_back(tolower(*iterator));
+            }
+            
+        }
+    }
+    
+    StreetIdx firstStreetIdx = -1, secondStreetIdx = -1;
+    
+    for(int idx = 0; idx < STREETS->streetNames.size(); idx++){
+        std::string name = STREETS->streetNames[idx];
+        if(name == firstStreet){
+            firstStreetIdx = idx;
+        }
+        
+        if (name == secondStreet){
+            secondStreetIdx = idx;
+        }
+    }
+    
+    
+    std::string output;
+    
+    ezgl::point2d sum(0, 0), center(0,0), largest(-1 * EARTH_CIRCUMFERENCE, -1 * EARTH_CIRCUMFERENCE), smallest(EARTH_CIRCUMFERENCE, EARTH_CIRCUMFERENCE);
+
+    
+    if (firstStreetIdx != -1 && secondStreetIdx != -1){
+        output = getStreetName(firstStreetIdx) + ", " + getStreetName(secondStreetIdx);
+       
+        std::vector<IntersectionIdx> commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(firstStreetIdx, secondStreetIdx));
+
+        if (commonIntersection.size() > 0){
+            
+            clearHighlightIntersection();
+            //position in latitude and longitude
+            for (int idx = 0; idx < commonIntersection.size(); idx++){
+                //get the position in cartesian coordiante
+                auto positionInLL = getIntersectionPosition(commonIntersection[idx]);
+                double positionInX = xFromLon(positionInLL.longitude());
+                double positionInY = yFromLat(positionInLL.latitude());
+                        
+                sum.x += positionInX;
+                sum.y += positionInY;
+                
+                if (positionInX > largest.x){
+                    largest.x = positionInX;
+                }
+                
+                if (positionInX < smallest.x){
+                    smallest.x = positionInX;
+                }
+                
+                if (positionInY > largest.y){
+                    largest.y = positionInY;
+                }
+                
+                if (positionInY < smallest.y){
+                    smallest.y = positionInY;
+                }
+                
+                //highlight these intersections
+                intersections[commonIntersection[idx]].isHighlight = true;
+                
+            }
+            center.x = sum.x/commonIntersection.size();
+            center.y = sum.y/commonIntersection.size();
+            
+            //set up the world zoom level
+            double left, bottom, top, right;
+            left = smallest.x - 500;
+            bottom = smallest.y - 500;
+            right = largest.x + 500;
+            top = largest.y + 500;
+            
+            double width = right - left;
+            double height = top - bottom;
+            
+            //making sure the width and height of the screen is in the world ratio
+            if (width * worldRatio > height){
+                
+                bottom = center.y - (width * worldRatio) / 2;
+                top =  center.y + (width * worldRatio) / 2;
+                
+            }else {
+                
+                left = center.x - (height / worldRatio) / 2;
+                right = center.x + (height / worldRatio) / 2;
+                
+            }
+            ezgl::rectangle world({left, bottom}, {right, top});
+            canvas->get_camera().set_world(world);
+            
+        }else{
+            output = "No Intersection found.";
+        }
+        
+    }else{
+        output = "Street can not be found.";
+    }
+    
+    
+    application->update_message(output);
     application->refresh_drawing();
     return true;
 }
@@ -219,18 +354,27 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
 }
 
 //mouse click to highlight the closest intersection
-void clickToHighlightClosestIntersection(LatLon pos){
+
+IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
+    
+    clearHighlightIntersection(); 
+
     IntersectionIdx id = findClosestIntersection(pos);
     intersections[id].isHighlight = true;
     
-    if (previousHighlight != -1){
-        intersections[previousHighlight].isHighlight = false;   //un-highlight the previous intersection that is clicked
-    }
     
-    previousHighlight = id;
+    
+    previousHighlight.push_back(id);
     std::cout << "Closest Intersection: " << intersections[id].name << "\n";
+    return id;
 }
 
+void clearHighlightIntersection(){
+    for (auto iterator = previousHighlight.begin(); iterator != previousHighlight.end(); iterator++){
+        intersections[*iterator].isHighlight = false;
+    }
+    previousHighlight.clear();
+}
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());

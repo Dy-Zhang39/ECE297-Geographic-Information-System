@@ -100,6 +100,7 @@ void resizeData(){
     // Load street name into the vector using first 1 characters as index for STREETS->streetNamesOneChar,
     // Load street name into the vector using first 2 characters as index for STREETS->streetNamedTwoChar,
     // Load street name into the vector using first 3 characters as index for STREETS->streetNamesThreeChar.
+    STREETS->streetNames.resize(getNumStreets());
     STREETS->streetNamesOneChar.resize(CHAR_SIZE);
     STREETS->streetNamesTwoChar.resize(CHAR_SIZE * CHAR_SIZE);
     STREETS->streetNamesThreeChar.resize(CHAR_SIZE * CHAR_SIZE * 3);
@@ -120,14 +121,17 @@ void streetPartialName(){
         // Get street name, remove space and convert to lower cases. Got only the first 2 letters.
         std::string streetName = getStreetName(i);
         std::string streetNameSub = "";
-    
+        std::string streetFullName;
+        
         for (int j = 0; j < streetName.length(); j++) {
             
-            if (streetName[j] != ' ') {
+            if (streetName[j] != ' ' && streetNameSub.length() <= PREFIX_NUM_CHAR) {
                 streetNameSub.push_back(tolower(streetName[j]));
             }
             
-            if (streetNameSub.length() > PREFIX_NUM_CHAR) break;
+            if (streetName[j] != ' ') {
+                STREETS->streetNames[i].push_back(tolower(streetName[j]));
+            }
         }
 
         // Store the street id into the index vector: streetNamesOneChar, streetNamesTwoChar
@@ -147,6 +151,8 @@ void streetPartialName(){
             }
         }
     }
+    
+    
 }
 void street_Intersection(){
     INTERSECTIONS->intersectionStreetSegments.resize(getNumIntersections()); //create empty vector for each intersection
@@ -572,6 +578,8 @@ std::vector<IntersectionIdx> findIntersectionsOfTwoStreets(std::pair<StreetIdx, 
             commonIntersections.push_back(*i);
         }
     }
+    
+
     return commonIntersections;
 }
 
