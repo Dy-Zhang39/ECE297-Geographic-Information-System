@@ -125,7 +125,11 @@ void draw_main_canvas (ezgl::renderer *g){
     g->draw_rectangle({0,0}, {1000,1000});
     ezgl::rectangle world = g->get_visible_world();
     drawStreet(g, world);
+
     std::clock_t street_end = clock();
+
+
+    //std::clock_t street_end = clock();
     drawFeature(g, world);
     std::clock_t feature_end = clock();
     displayStreetName(g, world);
@@ -133,6 +137,7 @@ void draw_main_canvas (ezgl::renderer *g){
     displayPOI(g);
     std::clock_t poi_end = clock();
     displayHighlightedIntersection(g);
+
 
 
     std::clock_t intersection_end = clock();
@@ -144,6 +149,42 @@ void draw_main_canvas (ezgl::renderer *g){
     std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " (Intersection  Pop up)-> " << elapsedSecondsIntersections << "\n";
     double totalTime = double(intersection_end -begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
+    //std::clock_t intersection_end = clock();
+    //double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
+    //double elapsedSecondsFeature = double(feature_end - street_end) / CLOCKS_PER_SEC;
+    //double elapsedSecondsStreetName = double(street_name_end-feature_end) / CLOCKS_PER_SEC;
+    //double elapsedSecondsPoi = double(poi_end-street_name_end) / CLOCKS_PER_SEC;
+    //double elapsedSecondsIntersections = double(intersection_end-poi_end) / CLOCKS_PER_SEC;
+    //std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " -> " << elapsedSecondsIntersections << "\n";
+
+    //drawFeature(g, world);
+    displayStreetName(g, world);
+    
+    for (size_t i = 0; i < intersections.size(); ++i) {
+        float x = xFromLon(intersections[i].position.longitude());
+        float y = yFromLat(intersections[i].position.latitude());
+
+        float width = 5;
+        float height = width;
+        
+        if (intersections[i].isHighlight) {
+
+            g->set_color(ezgl::GREY_75);
+            
+            if (intersections[i].name.compare("<unknown>") != 0){
+                displayPopupBox(g, "Intersection: ", intersections[i].name, x, y, world);
+            }
+
+            g->set_color(ezgl::RED);
+        } else {
+            g->set_color(ezgl::GREY_55);
+        }
+        
+        g->fill_rectangle({x - width/2, y - height/2},
+                          {x + width/2, y + height/2});
+    }
+
+
 }
 
 double xFromLon(double lon){
@@ -333,27 +374,33 @@ void clearHighlightIntersection(){
     }
     previousHighlight.clear();
 }
+
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
     
-    for(int StreetSegmentsID=0; StreetSegmentsID<getNumStreetSegments(); StreetSegmentsID++ ){
-        
-        if (findStreetLength(getStreetSegmentInfo(StreetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
-            
-            for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[StreetSegmentsID].size(); pointsID++){
+
+
+    for(int streetSegmentsID=0; streetSegmentsID<getNumStreetSegments(); streetSegmentsID++ ){
+        if (findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
+            for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[streetSegmentsID].size(); pointsID++){
                 
-                x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID - 1].longitude());
-                y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID- 1].latitude());
+                x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
+                y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID- 1].latitude());
 
-                x2 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].longitude());
-                y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].latitude());
+                x2 = xFromLon(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].longitude());
+                y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].latitude());
+                if(world.contains(x1, y1) || world.contains(x2, y2)){
+                    if(getStreetSegmentInfo(streetSegmentsID).speedLimit>22.2){
+                       g->set_color(15,157,88,255);
+                       g->set_line_width(1.3*streetSize(world));
+                       g->draw_line({x1,y1}, {x2, y2});
+                    }else{
+                       g->set_color(210,223,227,255);
+                       g->set_line_width(streetSize(world));
+                       g->draw_line({x1,y1}, {x2, y2});
+                     }
 
-                if (world.contains(x1, y1) || world.contains(x2, y2)) {
-                    
-                    g->set_color(210,223,227,255);
-                    g->set_line_width(streetSize(world));
-                    g->draw_line({x1, y1}, {x2, y2});
                 }
             }
         }
