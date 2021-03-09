@@ -27,7 +27,7 @@ double avgLat;                  //the average latitude of the map
 double worldRatio;              //the ratio of height to width of the screen
 double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
-double streetToWorldRatio1 = 0.1;
+double streetToWorldRatio1 = 0.09;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 
 extern StreetSegment* STREET_SEGMENTS;
@@ -132,12 +132,13 @@ void draw_main_canvas (ezgl::renderer *g){
     //std::clock_t street_end = clock();
     drawFeature(g, world);
     std::clock_t feature_end = clock();
-    displayStreetName(g, world);
-    std::clock_t street_name_end = clock();
+//    displayStreetName(g, world);
+//    std::clock_t street_name_end = clock();
     displayPOI(g);
     std::clock_t poi_end = clock();
     displayHighlightedIntersection(g);
-
+    displayStreetName(g, world);
+    std::clock_t street_name_end = clock();
 
 
     std::clock_t intersection_end = clock();
@@ -379,6 +380,12 @@ void clearHighlightIntersection(){
     previousHighlight.clear();
 }
 
+bool isAve(std::string streetName){
+    bool isAve =false;
+    //code here checks the street type,return true if ave still working on...
+    return isAve;
+}
+
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
@@ -386,7 +393,15 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
 
 
     for(int streetSegmentsID=0; streetSegmentsID<getNumStreetSegments(); streetSegmentsID++ ){
-        if (findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
+        //get street segment streetID
+        StreetIdx streetId =getStreetSegmentInfo(streetSegmentsID).streetID;
+        //get street name of this street segment
+        std::string streetName = getStreetName(streetId);
+
+        //if the street name is unknown or end with Ave, draw when user zoom in
+        if(!streetName.compare("<unknown>")){
+            //draw as user zooms in
+        }else if (findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
             for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[streetSegmentsID].size(); pointsID++){
                 
                 x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
@@ -395,8 +410,8 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                 x2 = xFromLon(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].longitude());
                 y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].latitude());
                 if(world.contains(x1, y1) || world.contains(x2, y2)){
-
-                    if(getStreetSegmentInfo(streetSegmentsID).speedLimit>22.2){
+                    double speedLimit = getStreetSegmentInfo(streetSegmentsID).speedLimit;
+                    if(speedLimit>22.23){
                        g->set_color(244, 208, 63, 255);
                        g->set_line_width(1.3*streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
@@ -404,7 +419,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                        g->set_color(210,223,227,255);
                        g->set_line_width(streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
-                     }
+                    }
 
                 }
             }
@@ -438,7 +453,6 @@ double streetSize(ezgl::rectangle world){
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
     std::vector<ezgl::point2d> displayedNames;
     
-    bool isFirst = true;
     double fontSize = 10;
     double streetNameSize = 200;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
@@ -482,26 +496,7 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
                 degree = degree+180;
             }
             
-//            if(isFirst){
-//                g->set_text_rotation(degree);
-//                    g->draw_text(inViewSegment[inViewSegment.size()/2], streetName);
-//                    nameSize.push_back(std::make_pair(inViewSegment[inViewSegment.size()/2], streetName.size()));
-//                    isFirst = false;
-//            }
-//            for(int streetIdx = 0; streetIdx < nameSize.size(); streetIdx++ ){
-//                double  halfDiagLength1= sqrt(2)*( nameSize[streetIdx].second/2),
-//                        halfDiagLength2= sqrt(2)*( streetName.size()/2),
-//                        minDistance = halfDiagLength1 +halfDiagLength2;
-//               
-//                ezgl::point2d xyDifference = inViewSegment[inViewSegment.size()/2] - nameSize[streetIdx].first;
-//                double Distance = sqrt(xyDifference.x * xyDifference.x + xyDifference.y * xyDifference.y);
-//                
-//                if(Distance > minDistance){
-//                    g->set_text_rotation(degree);
-//                    g->draw_text(inViewSegment[inViewSegment.size()/2], streetName);
-//                    nameSize.push_back(std::make_pair(inViewSegment[inViewSegment.size()/2], streetName.size()));
-//                }
-//            }
+
             if(!overlap){
                 g->set_font_size(fontSize);
                 g->set_color(ezgl::BLACK);
