@@ -160,7 +160,7 @@ void draw_main_canvas (ezgl::renderer *g){
     //drawFeature(g, world);
     displayStreetName(g, world);
     
-    for (size_t i = 0; i < intersections.size(); ++i) {
+   /* for (size_t i = 0; i < intersections.size(); ++i) {
         float x = xFromLon(intersections[i].position.longitude());
         float y = yFromLat(intersections[i].position.latitude());
 
@@ -182,7 +182,7 @@ void draw_main_canvas (ezgl::renderer *g){
         
         g->fill_rectangle({x - width/2, y - height/2},
                           {x + width/2, y + height/2});
-    }
+    }*/
 
 
 }
@@ -666,12 +666,11 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
 //highlight intersection by showing a red square and display the pop-up box
 void displayHighlightedIntersection(ezgl::renderer *g) {
     ezgl::rectangle world = g->get_visible_world();
+    double width = 6 * world.width() / g->get_visible_screen().width();
+    double height = width;
     for (size_t i = 0; i < intersections.size(); ++i) {
         float x = xFromLon(intersections[i].position.longitude());
         float y = yFromLat(intersections[i].position.latitude());
-
-        float width = 6 * g->get_visible_world().width() / g->get_visible_screen().width();
-        float height = width;
         
         if (intersections[i].isHighlight) {
 
@@ -729,18 +728,31 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
 //display all the POIs qualified for displaying
 void displayPOI(ezgl::renderer *g) {
     double areaToShowPOI = 4200000;           // If the visible world area is smaller than this number, the POI will be displayed
+    double POIRange = 60;
+    std::vector<ezgl::point2d> displayedPoints;
     //calculated the world to pixel coordinate ratio
     ezgl::rectangle world = g->get_visible_world();
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
+    
+    displayedPoints.clear();
     // loop through all the poi and show it 
     for(int i = 0; i < getNumPointsOfInterest(); i ++){
         double x = xFromLon(getPOIPosition(i).longitude());
         double y = yFromLat(getPOIPosition(i).latitude());
         
+        //prevent overlapping of POI: if the POI is in a certain range of a previously displayed POI, it will not be displayed
+        bool overlapped = false;
+        for(int displayedPOIIdx = 0; displayedPOIIdx < displayedPoints.size(); displayedPOIIdx++){
+            if(abs(x - displayedPoints[displayedPOIIdx].x) < POIRange * widthToPixelRatio && 
+                    abs(y - displayedPoints[displayedPOIIdx].y) < POIRange * heightToPixelRatio){
+                overlapped = true;
+            }
+        }
         // if the map is showing enough level of detail, and the poi is visible in the screen, then display it. 
-        if (world.contains({x, y}) && world.area() < areaToShowPOI) {
+        if (world.contains({x, y}) && world.area() < areaToShowPOI && !overlapped) {
             displayPOIById(g, i, widthToPixelRatio, heightToPixelRatio);
+            displayedPoints.push_back({x, y});
         }
     }
 }
