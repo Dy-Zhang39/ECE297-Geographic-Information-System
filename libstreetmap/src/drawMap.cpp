@@ -123,17 +123,19 @@ void draw_main_canvas (ezgl::renderer *g){
     std::clock_t begin = clock();
     
     g->draw_rectangle({0,0}, {1000,1000});
+   
     ezgl::rectangle world = g->get_visible_world();
-    drawStreet(g, world);
-
-    std::clock_t street_end = clock();
+    
 
 
     //std::clock_t street_end = clock();
     drawFeature(g, world);
     std::clock_t feature_end = clock();
 //    displayStreetName(g, world);
-//    std::clock_t street_name_end = clock();
+//    std::clock_t street_name_end = clock(); 
+    
+    drawStreet(g, world);
+    std::clock_t street_end = clock();
     displayPOI(g);
     std::clock_t poi_end = clock();
     displayHighlightedIntersection(g);
@@ -540,9 +542,9 @@ void initializeFeatureBounding() {
 void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double featureToWorldRatio = 0.0001;
     double visibleArea = world.area();
-    
+    std::vector <FeatureIdx> islands;
     //loop through all features, if the feature area is at the predefined ratio of the visible area, draw it
-    for (int featureID = 0; featureID < getNumFeatures(); featureID++){
+    for (FeatureIdx featureID = 0; featureID < getNumFeatures(); featureID++){
         double minX = leftFeatures[featureID];
         double maxX = rightFeatures[featureID];
         double maxY = topFeatures[featureID];
@@ -555,8 +557,17 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
                 || (minY <= world.top() && maxY >= world.bottom() && minX <= world.right() && maxX >= world.left())
                 ) 
                 && featureArea >= visibleArea * featureToWorldRatio){
-            drawFeatureByID(g, featureID);
+            if(getFeatureType(featureID) == ISLAND){
+                islands.push_back(featureID);
+            }else{
+                drawFeatureByID(g, featureID);
+            }
         }
+    }
+    
+    // 
+    for (int islandIdx = 0; islandIdx < islands.size(); islandIdx++){
+        drawFeatureByID(g, islands[islandIdx]);
     }
     
     //loop through all features, if the feature area is at the predefined ratio of the visible area, display its name
