@@ -392,7 +392,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                 y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].latitude());
                 if(world.contains(x1, y1) || world.contains(x2, y2)){
                     if(getStreetSegmentInfo(streetSegmentsID).speedLimit>22.2){
-                       g->set_color(15,157,88,255);
+                       g->set_color(244, 208, 63, 255);
                        g->set_line_width(1.3*streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else{
@@ -537,31 +537,32 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
     FeatureType featureType = getFeatureType(id);   
     switch (featureType) {
         case PARK:
-            g->set_color(ezgl::GREEN);
+            g->set_color(204, 255, 153, 255);
             break;
         case BEACH:
-            g->set_color(ezgl::YELLOW);
+            g->set_color(236, 226, 149, 255);
             break;
         case LAKE:
-            g->set_color(ezgl::BLUE);
+            //blue
+            g->set_color(102, 204, 255, 255);
             break;
         case RIVER:
-            g->set_color(ezgl::BLUE);
+            g->set_color(102, 204, 255, 255);
             break;
         case ISLAND:
-            g->set_color(ezgl::GREEN);
+            g->set_color(204, 255, 153, 255);
             break;
         case BUILDING:
             g->set_color(ezgl::GREY_75);
             break;
         case GREENSPACE:
-            g->set_color(ezgl::GREEN);
+            g->set_color(204, 255, 153, 255);
             break;
         case GOLFCOURSE:
-            g->set_color(ezgl::GREEN);
+            g->set_color(110, 184, 66, 255);
             break;
         case STREAM:
-            g->set_color(ezgl::BLUE);
+            g->set_color(102, 204, 255, 255);
             break;
         case UNKNOWN:
             g->set_color(ezgl::PURPLE);
