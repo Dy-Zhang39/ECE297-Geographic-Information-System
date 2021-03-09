@@ -120,28 +120,30 @@ void drawMap(){
 
 void draw_main_canvas (ezgl::renderer *g){
     //timing fuction
-    //std::clock_t begin = clock();
+    std::clock_t begin = clock();
     
     g->draw_rectangle({0,0}, {1000,1000});
     ezgl::rectangle world = g->get_visible_world();
     drawStreet(g, world);
-    //std::clock_t street_end = clock();
+    std::clock_t street_end = clock();
     drawFeature(g, world);
-    //std::clock_t feature_end = clock();
+    std::clock_t feature_end = clock();
     displayStreetName(g, world);
-    //std::clock_t street_name_end = clock();
+    std::clock_t street_name_end = clock();
     displayPOI(g);
-    //std::clock_t poi_end = clock();
+    std::clock_t poi_end = clock();
     displayHighlightedIntersection(g);
 
 
-    //std::clock_t intersection_end = clock();
-    //double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
-    //double elapsedSecondsFeature = double(feature_end - street_end) / CLOCKS_PER_SEC;
-    //double elapsedSecondsStreetName = double(street_name_end-feature_end) / CLOCKS_PER_SEC;
-    //double elapsedSecondsPoi = double(poi_end-street_name_end) / CLOCKS_PER_SEC;
-    //double elapsedSecondsIntersections = double(intersection_end-poi_end) / CLOCKS_PER_SEC;
-    //std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " -> " << elapsedSecondsIntersections << "\n";
+    std::clock_t intersection_end = clock();
+    double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
+    double elapsedSecondsFeature = double(feature_end - street_end) / CLOCKS_PER_SEC;
+    double elapsedSecondsStreetName = double(street_name_end-feature_end) / CLOCKS_PER_SEC;
+    double elapsedSecondsPoi = double(poi_end-street_name_end) / CLOCKS_PER_SEC;
+    double elapsedSecondsIntersections = double(intersection_end-poi_end) / CLOCKS_PER_SEC;
+    std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " (Intersection  Pop up)-> " << elapsedSecondsIntersections << "\n";
+    double totalTime = double(intersection_end -begin)/CLOCKS_PER_SEC;
+    std::cout<<"total time" << totalTime << "\n";
 }
 
 double xFromLon(double lon){
@@ -336,8 +338,11 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
     
     for(int StreetSegmentsID=0; StreetSegmentsID<getNumStreetSegments(); StreetSegmentsID++ ){
+        
         if (findStreetLength(getStreetSegmentInfo(StreetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
+            
             for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[StreetSegmentsID].size(); pointsID++){
+                
                 x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID - 1].longitude());
                 y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID- 1].latitude());
 
@@ -345,6 +350,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                 y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[StreetSegmentsID][pointsID].latitude());
 
                 if (world.contains(x1, y1) || world.contains(x2, y2)) {
+                    
                     g->set_color(210,223,227,255);
                     g->set_line_width(streetSize(world));
                     g->draw_line({x1, y1}, {x2, y2});
@@ -704,58 +710,84 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     
     // Load icon image by poiType
     if (poiType.compare("ferry_termial") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/ferry.png");
     } else if (poiType.rfind("theatre") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/theater.png");
     } else if (poiType.rfind("school") != std::string::npos 
             || poiType.rfind("university") != std::string::npos 
             || poiType.rfind("college") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/university.png");
     } else if (poiType.rfind("parking") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/parkinggarage.png");
     } else if (poiType.rfind("fast_food") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/fastfood.png");
     } else if (poiType.compare("community_centre") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/communitycentre.png");
     } else if (poiType.compare("pharmacy") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/drogerie.png");
     } else if (poiType.rfind("cafe") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/coffee.png");
     } else if (poiType.compare("place_of_worship") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/chapel-2.png");
     } else if (poiType.compare("bank") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/bank.png");
     } else if (poiType.compare("atm") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/atm-2.png");
     } else if (poiType.compare("cinema") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/cinema.png");
     } else if (poiType.compare("hospital") == 0 || poiType.compare("doctors") == 0 || poiType.find("clinic") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/hospital-building.png");
     } else if (poiType.compare("library") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/library.png");
     } else if (poiType.rfind("restaurant") != std::string::npos || poiType.rfind("food_") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/restaurant.png");
     } else if (poiType.compare("police") == 0) {
+        
         iconSurface = g->load_png("./libstreetmap/images/police.png");
     } else if (poiType.rfind("gym") != std::string::npos || poiType.rfind("weight") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/fitness.png");
     } else if (poiType.rfind("dentist") != std::string::npos || poiType.rfind("orthodon") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/dentist.png");
     } else if (poiType.rfind("bus_s") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/bus.png");
     } else if (poiType.rfind("fuel") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/fillingstation.png");
     } else if (poiType.rfind("child") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/daycare.png");        
     } else if (poiType.rfind("bicyle") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/bicyle_parking.png");       
     } else if (poiType.rfind("toilets") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/toilets_inclusive.png");       
     } else if (poiType.rfind("post_") != std::string::npos) {
+        
         iconSurface = g->load_png("./libstreetmap/images/postal.png");
     } else if (poiType == "airport") {
+        
         iconSurface = g->load_png("./libstreetmap/images/airport.png");
     } else {
+        
         iconSurface = g->load_png("./libstreetmap/images/sight-2.png");
     }
     
