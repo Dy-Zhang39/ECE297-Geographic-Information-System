@@ -37,6 +37,7 @@ std::vector <double> topFeatures;
 std::vector <double> bottomFeatures;
 std::vector <double> leftFeatures;
 std::vector <double> rightFeatures;
+std::vector <ezgl::point2d> featureTextPoints;
 
 std::vector<IntersectionIdx> previousHighlight;
 
@@ -53,7 +54,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
 void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
 void initializeFeatureBounding();
 void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id);
-void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea);
+void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea, double widthToPixelRatio, double heightToPixelRatio);
 
 void drawFeature(ezgl::renderer *g);
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world);
@@ -540,8 +541,12 @@ void initializeFeatureBounding() {
 
 //draw all features in map
 void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
+    featureTextPoints.clear();
+    
     double featureToWorldRatio = 0.0001;
     double visibleArea = world.area();
+    double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
+    double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
     std::vector <FeatureIdx> islands;
     //loop through all features, if the feature area is at the predefined ratio of the visible area, draw it
     for (FeatureIdx featureID = 0; featureID < getNumFeatures(); featureID++){
@@ -565,7 +570,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
         }
     }
     
-    // 
+    //draw the islands last, this prevents lakes from covering and islands
     for (int islandIdx = 0; islandIdx < islands.size(); islandIdx++){
         drawFeatureByID(g, islands[islandIdx]);
     }
@@ -573,8 +578,9 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     //loop through all features, if the feature area is at the predefined ratio of the visible area, display its name
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
         double featureArea = findFeatureArea(featureID);
+        
         if (featureArea >= visibleArea * textDisplayRatio){
-            displayFeatureNameByID(g, featureID, visibleArea, featureArea);
+            displayFeatureNameByID(g, featureID, visibleArea, featureArea,widthToPixelRatio, heightToPixelRatio);
         }
     }
 }
@@ -644,7 +650,7 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
 }
 
 //display the name of a specific feature with a given feature id
-void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea){
+void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea, double widthToPixelRatio, double heightToPixelRatio){
     //obtain the middle point of the feature
     double xAvg = 0;
     double yAvg = 0;
@@ -706,11 +712,22 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
         default:
             break;
     }
-    
+    bool overlapped = false;
+    double featureRangeX = 30;
+    double featureRangeY = 30;
+
+    for(int displayedNameIdx = 0; displayedNameIdx < featureTextPoints.size(); displayedNameIdx++){
+        if(abs(xAvg - featureTextPoints[displayedNameIdx].x) < featureRangeX * widthToPixelRatio && 
+           abs(yAvg - featureTextPoints[displayedNameIdx].y) < featureRangeY * heightToPixelRatio){
+            overlapped = true;
+            break;
+        }
+    }
     //display the feature name at predefined text display ratio when its name is not <noname>
     std::string featureName = getFeatureName(id); 
-    if (displayName && featureName.compare("<noname>") != 0 && featureArea > visibleArea * textDisplayRatio){
+    if (displayName && featureName.compare("<noname>") != 0 && featureArea > visibleArea * textDisplayRatio && !overlapped){
         g->draw_text({xAvg, yAvg}, featureName);
+        featureTextPoints.push_back({xAvg, yAvg});
     }
 }
 
