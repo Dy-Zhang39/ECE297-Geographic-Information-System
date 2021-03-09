@@ -460,7 +460,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
         // If the feature is in the visible area, call helper function to display the feature.
         if ((world.contains(minX, minY) || world.contains(minX, maxY)
                 || world.contains(maxX, minY) || world.contains(maxX, maxY)
-                || (maxY > world.top() && minY < world.bottom() && minX < world.left() && maxX > world.right())
+                || (minY <= world.top() && maxY >= world.bottom() && minX <= world.right() && maxX >= world.left())
                 ) 
                 && featureArea >= visibleArea * featureToWorldRatio){
             drawFeatureByID(g, featureID);
@@ -675,7 +675,7 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
 
 //display all the POIs qualified for displaying
 void displayPOI(ezgl::renderer *g) {
-    double areaToShowPOI = 42000;           // If the visible world area is smaller than this number, the POI will be displayed
+    double areaToShowPOI = 4200000;           // If the visible world area is smaller than this number, the POI will be displayed
     //calculated the world to pixel coordinate ratio
     ezgl::rectangle world = g->get_visible_world();
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
@@ -729,7 +729,7 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
         iconSurface = g->load_png("./libstreetmap/images/atm-2.png");
     } else if (poiType.compare("cinema") == 0) {
         iconSurface = g->load_png("./libstreetmap/images/cinema.png");
-    } else if (poiType.compare("hospital") == 0 || poiType.compare("doctors") == 0) {
+    } else if (poiType.compare("hospital") == 0 || poiType.compare("doctors") == 0 || poiType.find("clinic") != std::string::npos) {
         iconSurface = g->load_png("./libstreetmap/images/hospital-building.png");
     } else if (poiType.compare("library") == 0) {
         iconSurface = g->load_png("./libstreetmap/images/library.png");
