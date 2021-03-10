@@ -169,45 +169,6 @@ void draw_main_canvas (ezgl::renderer *g){
     
     double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
-    //std::clock_t intersection_end = clock();
-    //double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
-    //double elapsedSecondsFeature = double(feature_end - street_end) / CLOCKS_PER_SEC;
-    //double elapsedSecondsStreetName = double(street_name_end-feature_end) / CLOCKS_PER_SEC;
-    //double elapsedSecondsPoi = double(poi_end-street_name_end) / CLOCKS_PER_SEC;
-    //double elapsedSecondsIntersections = double(intersection_end-poi_end) / CLOCKS_PER_SEC;
-    //std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " -> " << elapsedSecondsIntersections << "\n";
-
-    //drawFeature(g, world);
-    
-/*<<<<<<< HEAD
-    
-
-=======
-   /* for (size_t i = 0; i < intersections.size(); ++i) {
-        float x = xFromLon(intersections[i].position.longitude());
-        float y = yFromLat(intersections[i].position.latitude());
-
-        float width = 5;
-        float height = width;
-        
-        if (intersections[i].isHighlight) {
-
-            g->set_color(ezgl::GREY_75);
-            
-            if (intersections[i].name.compare("<unknown>") != 0){
-                displayPopupBox(g, "Intersection: ", intersections[i].name, x, y, world);
-            }
-
-            g->set_color(ezgl::RED);
-        } else {
-            g->set_color(ezgl::GREY_55);
-        }
-        
-        g->fill_rectangle({x - width/2, y - height/2},
-                          {x + width/2, y + height/2});
-    }
->>>>>>> 767c592517ad55764cec93bf9124fed704595e65
-*/
 
 }
 
@@ -383,29 +344,43 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
         }
     }
     
-    StreetIdx firstStreetIdx = -1, secondStreetIdx = -1;
-    
-    for(int idx = 0; idx < STREETS->streetNames.size(); idx++){
-        std::string name = STREETS->streetNames[idx];
-        if(name == firstStreet){
-            firstStreetIdx = idx;
-        }
-        
-        if (name == secondStreet){
-            secondStreetIdx = idx;
-        }
-    }
-    
-    
     std::string output;
+    
+    //StreetIdx firstStreetIdx = -1, secondStreetIdx = -1;
+    std::vector<StreetIdx> partialResultFirst = findStreetIdsFromPartialStreetName(firstStreet);
+    std::vector<StreetIdx> partialResultSecond = findStreetIdsFromPartialStreetName(secondStreet);
+    
+
+    
+ 
+    
     
     ezgl::point2d sum(0, 0), center(0,0), largest(-1 * EARTH_CIRCUMFERENCE, -1 * EARTH_CIRCUMFERENCE), smallest(EARTH_CIRCUMFERENCE, EARTH_CIRCUMFERENCE);
 
     
-    if (firstStreetIdx != -1 && secondStreetIdx != -1){
-        output = getStreetName(firstStreetIdx) + ", " + getStreetName(secondStreetIdx);
+    if (partialResultFirst.size() >= 1 && partialResultSecond.size() >= 1){
+        
        
-        std::vector<IntersectionIdx> commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(firstStreetIdx, secondStreetIdx));
+        std::vector<IntersectionIdx> commonIntersection;
+        for (auto firstStreetIdx = partialResultFirst.begin(); firstStreetIdx != partialResultFirst.end();){
+            
+            for (auto secondStreetIdx= partialResultSecond.begin(); secondStreetIdx != partialResultSecond.end();){
+                
+                commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(*firstStreetIdx, *secondStreetIdx));
+                if (commonIntersection.size() > 0){
+                    output = getStreetName(*firstStreetIdx) + ", " + getStreetName(*secondStreetIdx);
+                    firstStreetIdx = partialResultFirst.end();
+                    secondStreetIdx = partialResultSecond.end();
+                }else {
+                    secondStreetIdx++;
+                }
+            }
+            
+            if(firstStreetIdx != partialResultFirst.end()){
+                firstStreetIdx++;
+            }
+        }
+
 
         if (commonIntersection.size() > 0){
             
@@ -474,7 +449,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
         }
         
     }else{
-        output = "Street can not be found.";
+        output = "Street can not be found";
     }
     
     
@@ -686,6 +661,12 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
     std::vector <FeatureIdx> islands;
+    
+    int count = 0;
+    std::clock_t featureBegin = clock();
+
+
+    
     //loop through all features, if the feature area is at the predefined ratio of the visible area, draw it
     for (FeatureIdx featureID = 0; featureID < getNumFeatures(); featureID++){
         double minX = leftFeatures[featureID];
@@ -700,6 +681,9 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
                 || (minY <= world.top() && maxY >= world.bottom() && minX <= world.right() && maxX >= world.left())
                 ) 
                 && featureArea >= visibleArea * featureToWorldRatio){
+            
+            count++;
+                    
             if(getFeatureType(featureID) == ISLAND){
                 islands.push_back(featureID);
             }else{
@@ -712,15 +696,31 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     for (int islandIdx = 0; islandIdx < islands.size(); islandIdx++){
         drawFeatureByID(g, islands[islandIdx]);
     }
+    std::clock_t featureFin = clock();
+
+    double elapsedSecondsFeature = double(featureFin - featureBegin) / CLOCKS_PER_SEC;
     
     //loop through all features, if the feature area is at the predefined ratio of the visible area, display its name
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
+        double minX = leftFeatures[featureID];
+        double maxX = rightFeatures[featureID];
+        double maxY = topFeatures[featureID];
+        double minY = bottomFeatures[featureID];
         double featureArea = findFeatureArea(featureID);
-        
-        if (featureArea >= visibleArea * textDisplayRatio){
-            displayFeatureNameByID(g, featureID, visibleArea, featureArea,widthToPixelRatio, heightToPixelRatio);
+        if ((world.contains(minX, minY) || world.contains(minX, maxY)
+                || world.contains(maxX, minY) || world.contains(maxX, maxY)
+                || (minY <= world.top() && maxY >= world.bottom() && minX <= world.right() && maxX >= world.left())
+                ) 
+                && featureArea >= visibleArea * featureToWorldRatio){
+            if (featureArea >= visibleArea * textDisplayRatio){
+                displayFeatureNameByID(g, featureID, visibleArea, featureArea,widthToPixelRatio, heightToPixelRatio);
+            }
         }
     }
+    std::clock_t featureNameFin = clock();
+
+    double elapsedSecondsFeatureName = double(featureNameFin - featureFin) / CLOCKS_PER_SEC;
+    std::cout<<count<<"=== time: " << elapsedSecondsFeature<< " feature name time: " << elapsedSecondsFeatureName<<"\n";
 }
 
 //draw a specific feature by a given feature id
