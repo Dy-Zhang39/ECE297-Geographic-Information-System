@@ -519,6 +519,10 @@ void clearHighlightIntersection(){
 
 bool isAve(std::string streetName){
     bool isAve =false;
+    std::string s1 ("Avenue");
+    if (streetName.find(s1) != std::string::npos){
+        isAve = true;
+    }
     //code here checks the street type,return true if ave still working on...
     return isAve;
 }
@@ -536,7 +540,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         std::string streetName = getStreetName(streetId);
 
         //if the street name is unknown or end with Ave, draw when user zoom in
-        if(!streetName.compare("<unknown>")){
+        if(isAve(streetName)){
             //draw as user zooms in
         }else if (findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
             for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[streetSegmentsID].size(); pointsID++){
