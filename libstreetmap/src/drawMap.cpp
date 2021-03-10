@@ -132,38 +132,42 @@ void drawMap(){
 }
 
 void draw_main_canvas (ezgl::renderer *g){
-    //timing fuction
-    std::clock_t begin = clock();
+    
+    
     
     g->draw_rectangle({0,0}, {1000,1000});
    
     ezgl::rectangle world = g->get_visible_world();
-    
+    //timing function
+    std::clock_t begin = clock();
 
-
-    //std::clock_t street_end = clock();
     drawFeature(g, world);
-    std::clock_t feature_end = clock();
-//    displayStreetName(g, world);
-//    std::clock_t street_name_end = clock(); 
+    std::clock_t featureEnd = clock();
+
     
     drawStreet(g, world);
-    std::clock_t street_end = clock();
+    std::clock_t streetEnd = clock();
+    
     displayPOI(g);
-    std::clock_t poi_end = clock();
+    std::clock_t poiEnd = clock();
+    
     displayHighlightedIntersection(g);
+    std::clock_t highlighIntersectionEnd = clock();
+    
     displayStreetName(g, world);
-    std::clock_t street_name_end = clock();
+    std::clock_t streetNameEnd = clock();
 
 
-    std::clock_t intersection_end = clock();
-    double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
-    double elapsedSecondsFeature = double(feature_end - street_end) / CLOCKS_PER_SEC;
-    double elapsedSecondsStreetName = double(street_name_end-feature_end) / CLOCKS_PER_SEC;
-    double elapsedSecondsPoi = double(poi_end-street_name_end) / CLOCKS_PER_SEC;
-    double elapsedSecondsIntersections = double(intersection_end-poi_end) / CLOCKS_PER_SEC;
-    std::cout << elapsedSecondsStreet << " -> (Load Feature) " << elapsedSecondsFeature << " -> " << elapsedSecondsStreetName << " -> (Load POI) " << elapsedSecondsPoi << " (Intersection  Pop up)-> " << elapsedSecondsIntersections << "\n";
-    double totalTime = double(intersection_end -begin)/CLOCKS_PER_SEC;
+    double elapsedSecondsFeature = double(featureEnd - begin) / CLOCKS_PER_SEC;
+    double elapsedSecondsStreet = double(streetEnd-featureEnd) / CLOCKS_PER_SEC;
+    double elapsedSecondsPoi = double(poiEnd-streetEnd) / CLOCKS_PER_SEC;
+    double elapsedSecondsHighlightIntersection = double(highlighIntersectionEnd-poiEnd) / CLOCKS_PER_SEC;
+    double elapsedSecondsStreetName = double(streetNameEnd-highlighIntersectionEnd) / CLOCKS_PER_SEC;
+    
+    std::cout << "Feature: "<<elapsedSecondsFeature << " Street: " << elapsedSecondsStreet << " POI:  " << elapsedSecondsPoi << 
+            " HighlightIntersection: " << elapsedSecondsHighlightIntersection << " StreetName: " << elapsedSecondsStreetName << "\n";
+    
+    double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
     //std::clock_t intersection_end = clock();
     //double elapsedSecondsStreet = double(street_end-begin) / CLOCKS_PER_SEC;
