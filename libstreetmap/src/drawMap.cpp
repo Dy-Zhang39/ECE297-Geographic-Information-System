@@ -218,6 +218,8 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
     GObject *otherPOI = application->get_object("otherPOIBtn");
     g_signal_connect(otherPOI, "toggled", G_CALLBACK(toggleOtherPOI), application);
+    
+    
 }
 
 //triggered when all POI button is changed
@@ -472,15 +474,18 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
 //mouse click to highlight the closest intersection
 
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
-    
-    clearHighlightIntersection(); 
-
     IntersectionIdx id = findClosestIntersection(pos);
-    intersections[id].isHighlight = true;
+    
+    if (previousHighlight.size() == 1 && previousHighlight[0] == id){
+        intersections[id].isHighlight = false;
+        clearHighlightIntersection(); 
+    }else{
+        clearHighlightIntersection();
+        intersections[id].isHighlight = true;
+        previousHighlight.push_back(id);
+    }
     
     
-    
-    previousHighlight.push_back(id);
     std::cout << "Closest Intersection: " << intersections[id].name << "\n";
     return id;
 }
