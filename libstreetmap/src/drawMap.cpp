@@ -170,11 +170,6 @@ void draw_main_canvas (ezgl::renderer *g){
     double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
 
-
-   
-
-
-
 }
 
 double xFromLon(double lon){
@@ -662,6 +657,12 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
     std::vector <FeatureIdx> islands;
+    
+    int count = 0;
+    std::clock_t featureBegin = clock();
+
+
+    
     //loop through all features, if the feature area is at the predefined ratio of the visible area, draw it
     for (FeatureIdx featureID = 0; featureID < getNumFeatures(); featureID++){
         double minX = leftFeatures[featureID];
@@ -676,6 +677,9 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
                 || (minY <= world.top() && maxY >= world.bottom() && minX <= world.right() && maxX >= world.left())
                 ) 
                 && featureArea >= visibleArea * featureToWorldRatio){
+            
+            count++;
+                    
             if(getFeatureType(featureID) == ISLAND){
                 islands.push_back(featureID);
             }else{
@@ -688,15 +692,31 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     for (int islandIdx = 0; islandIdx < islands.size(); islandIdx++){
         drawFeatureByID(g, islands[islandIdx]);
     }
+    std::clock_t featureFin = clock();
+
+    double elapsedSecondsFeature = double(featureFin - featureBegin) / CLOCKS_PER_SEC;
     
     //loop through all features, if the feature area is at the predefined ratio of the visible area, display its name
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
+        double minX = leftFeatures[featureID];
+        double maxX = rightFeatures[featureID];
+        double maxY = topFeatures[featureID];
+        double minY = bottomFeatures[featureID];
         double featureArea = findFeatureArea(featureID);
-        
-        if (featureArea >= visibleArea * textDisplayRatio){
-            displayFeatureNameByID(g, featureID, visibleArea, featureArea,widthToPixelRatio, heightToPixelRatio);
+        if ((world.contains(minX, minY) || world.contains(minX, maxY)
+                || world.contains(maxX, minY) || world.contains(maxX, maxY)
+                || (minY <= world.top() && maxY >= world.bottom() && minX <= world.right() && maxX >= world.left())
+                ) 
+                && featureArea >= visibleArea * featureToWorldRatio){
+            if (featureArea >= visibleArea * textDisplayRatio){
+                displayFeatureNameByID(g, featureID, visibleArea, featureArea,widthToPixelRatio, heightToPixelRatio);
+            }
         }
     }
+    std::clock_t featureNameFin = clock();
+
+    double elapsedSecondsFeatureName = double(featureNameFin - featureFin) / CLOCKS_PER_SEC;
+    std::cout<<count<<"=== time: " << elapsedSecondsFeature<< " feature name time: " << elapsedSecondsFeatureName<<"\n";
 }
 
 //draw a specific feature by a given feature id
