@@ -159,30 +159,7 @@ void draw_main_canvas (ezgl::renderer *g){
 
     //drawFeature(g, world);
     displayStreetName(g, world);
-    
-    for (size_t i = 0; i < intersections.size(); ++i) {
-        float x = xFromLon(intersections[i].position.longitude());
-        float y = yFromLat(intersections[i].position.latitude());
-
-        float width = 5;
-        float height = width;
-        
-        if (intersections[i].isHighlight) {
-
-            g->set_color(ezgl::GREY_75);
-            
-            if (intersections[i].name.compare("<unknown>") != 0){
-                displayPopupBox(g, "Intersection: ", intersections[i].name, x, y, world);
-            }
-
-            g->set_color(ezgl::RED);
-        } else {
-            g->set_color(ezgl::GREY_55);
-        }
-        
-        g->fill_rectangle({x - width/2, y - height/2},
-                          {x + width/2, y + height/2});
-    }
+   
 
 
 }
@@ -241,29 +218,43 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
         }
     }
     
-    StreetIdx firstStreetIdx = -1, secondStreetIdx = -1;
-    
-    for(int idx = 0; idx < STREETS->streetNames.size(); idx++){
-        std::string name = STREETS->streetNames[idx];
-        if(name == firstStreet){
-            firstStreetIdx = idx;
-        }
-        
-        if (name == secondStreet){
-            secondStreetIdx = idx;
-        }
-    }
-    
-    
     std::string output;
+    
+    //StreetIdx firstStreetIdx = -1, secondStreetIdx = -1;
+    std::vector<StreetIdx> partialResultFirst = findStreetIdsFromPartialStreetName(firstStreet);
+    std::vector<StreetIdx> partialResultSecond = findStreetIdsFromPartialStreetName(secondStreet);
+    
+
+    
+ 
+    
     
     ezgl::point2d sum(0, 0), center(0,0), largest(-1 * EARTH_CIRCUMFERENCE, -1 * EARTH_CIRCUMFERENCE), smallest(EARTH_CIRCUMFERENCE, EARTH_CIRCUMFERENCE);
 
     
-    if (firstStreetIdx != -1 && secondStreetIdx != -1){
-        output = getStreetName(firstStreetIdx) + ", " + getStreetName(secondStreetIdx);
+    if (partialResultFirst.size() >= 1 && partialResultSecond.size() >= 1){
+        
        
-        std::vector<IntersectionIdx> commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(firstStreetIdx, secondStreetIdx));
+        std::vector<IntersectionIdx> commonIntersection;
+        for (auto firstStreetIdx = partialResultFirst.begin(); firstStreetIdx != partialResultFirst.end();){
+            
+            for (auto secondStreetIdx= partialResultSecond.begin(); secondStreetIdx != partialResultSecond.end();){
+                
+                commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(*firstStreetIdx, *secondStreetIdx));
+                if (commonIntersection.size() > 0){
+                    output = getStreetName(*firstStreetIdx) + ", " + getStreetName(*secondStreetIdx);
+                    firstStreetIdx = partialResultFirst.end();
+                    secondStreetIdx = partialResultSecond.end();
+                }else {
+                    secondStreetIdx++;
+                }
+            }
+            
+            if(firstStreetIdx != partialResultFirst.end()){
+                firstStreetIdx++;
+            }
+        }
+
 
         if (commonIntersection.size() > 0){
             
@@ -332,7 +323,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
         }
         
     }else{
-        output = "Street can not be found.";
+        output = "Street can not be found";
     }
     
     
