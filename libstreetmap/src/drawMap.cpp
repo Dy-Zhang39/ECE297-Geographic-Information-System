@@ -38,6 +38,7 @@ std::vector <double> bottomFeatures;
 std::vector <double> leftFeatures;
 std::vector <double> rightFeatures;
 std::vector <ezgl::point2d> featureTextPoints;
+std::string selectedPOI = "all";
 
 std::vector<IntersectionIdx> previousHighlight;
 
@@ -47,6 +48,17 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
 void clearHighlightIntersection();
 
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
+
+// function definitions for POI selection buttons
+gboolean toggleAllPOI(GtkWidget *, gpointer data);
+gboolean toggleEducationPOI(GtkWidget *, gpointer data);
+gboolean toggleFoodPOI(GtkWidget *, gpointer data);
+gboolean toggleMedicalPOI(GtkWidget *, gpointer data);
+gboolean toggleTransportPOI(GtkWidget *, gpointer data);
+gboolean toggleRecreationPOI(GtkWidget *, gpointer data);
+gboolean toggleFinancePOI(GtkWidget *, gpointer data);
+gboolean toggleGovPOI(GtkWidget *, gpointer data);
+gboolean toggleOtherPOI(GtkWidget *, gpointer data);
 
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
@@ -214,6 +226,124 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     
     GObject *search = application->get_object("SearchButton");
     g_signal_connect(search, "clicked", G_CALLBACK(searchButtonIsClicked), application);
+    
+    GObject *allPOI = application->get_object("allPOIBtn");
+    g_signal_connect(allPOI, "toggled", G_CALLBACK(toggleAllPOI), application);
+    
+    GObject *educationPOI = application->get_object("educationPOIBtn");
+    g_signal_connect(educationPOI, "toggled", G_CALLBACK(toggleEducationPOI), application);
+
+    GObject *foodPOI = application->get_object("foodPOIBtn");
+    g_signal_connect(foodPOI, "toggled", G_CALLBACK(toggleFoodPOI), application);
+    
+    GObject *medicalPOI = application->get_object("medicalPOIBtn");
+    g_signal_connect(medicalPOI, "toggled", G_CALLBACK(toggleMedicalPOI), application);
+    
+    GObject *transportPOI = application->get_object("transportPOIBtn");
+    g_signal_connect(transportPOI, "toggled", G_CALLBACK(toggleTransportPOI), application);
+    
+    GObject *recreationPOI = application->get_object("recreationPOIBtn");
+    g_signal_connect(recreationPOI, "toggled", G_CALLBACK(toggleRecreationPOI), application);
+    
+    GObject *financePOI = application->get_object("financePOIBtn");
+    g_signal_connect(financePOI, "toggled", G_CALLBACK(toggleFinancePOI), application);
+    
+    GObject *govPOI = application->get_object("govPOIBtn");
+    g_signal_connect(govPOI, "toggled", G_CALLBACK(toggleGovPOI), application);
+
+    GObject *otherPOI = application->get_object("otherPOIBtn");
+    g_signal_connect(otherPOI, "toggled", G_CALLBACK(toggleOtherPOI), application);
+}
+
+//triggered when all POI button is changed
+gboolean toggleAllPOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("all") != 0) {
+        selectedPOI = "all";
+        application->refresh_drawing();
+    }
+    return true;
+}
+
+//triggered when education POI button is changed
+gboolean toggleEducationPOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("education") != 0) {
+        selectedPOI = "education";
+        application->refresh_drawing();
+    }
+    return true;
+}
+
+//triggered when Food POI button is changed
+gboolean toggleFoodPOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("food") != 0) {
+        selectedPOI = "food";
+        application->refresh_drawing();
+    }
+    return true;
+}
+
+//triggered when Medical POI button is changed
+gboolean toggleMedicalPOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("medical") != 0) {
+        selectedPOI = "medical";
+        application->refresh_drawing();
+    }
+    return true;
+}
+
+//triggered when Transport POI button is changed
+gboolean toggleTransportPOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("transport") != 0) {
+        selectedPOI = "transport";
+        application->refresh_drawing();
+    }
+    return true;
+}
+
+//triggered when Finance POI button is changed
+gboolean toggleFinancePOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("finance") != 0) {
+        selectedPOI = "finance";
+        application->refresh_drawing();
+    }
+    return true;
+}
+
+//triggered when Recreation POI button is changed
+gboolean toggleRecreationPOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("recreation") != 0) {
+        selectedPOI = "recreation";
+        application->refresh_drawing();
+    }
+    return true;
+}
+
+//triggered when Government POI button is changed
+gboolean toggleGovPOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("gov") != 0) {
+        selectedPOI = "gov";
+        application->refresh_drawing();
+    }
+    return true;
+}
+
+//triggered when Other POI button is changed
+gboolean toggleOtherPOI(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("other") != 0) {
+        selectedPOI = "other";
+        std::cout << selectedPOI << "\n";
+        application->refresh_drawing();
+    }
+    return true;
 }
 
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
@@ -831,103 +961,137 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     //get the coordinates of the POI
     double x = xFromLon(getPOIPosition(id).longitude());
     double y = yFromLat(getPOIPosition(id).latitude());
+    bool education, food, medical, transport, recreation,finance, gov, other, displayPOI;
+    
+    //boolean values for whether to call EZGL function to draw POI icon
+    displayPOI = true;
+    
+    //boolean values for whether to display each type of POI
+    education = (selectedPOI.compare("all") == 0 || selectedPOI.compare("education") == 0);
+    food = (selectedPOI.compare("all") == 0 || selectedPOI.compare("food") == 0);
+    medical = (selectedPOI.compare("all") == 0 || selectedPOI.compare("medical") == 0);
+    transport = (selectedPOI.compare("all") == 0 || selectedPOI.compare("transport") == 0);
+    recreation = (selectedPOI.compare("all") == 0 || selectedPOI.compare("recreation") == 0);
+    finance = (selectedPOI.compare("all") == 0 || selectedPOI.compare("finance") == 0);
+    gov = (selectedPOI.compare("all") == 0 || selectedPOI.compare("gov") == 0);
+    other = (selectedPOI.compare("all") == 0 || selectedPOI.compare("other") == 0);
         
     std::string poiType = getPOIType(id);
     std::string poiName = getPOIName(id);
     
     // Load icon image by poiType
-    if (poiType.compare("ferry_termial") == 0) {
+    if (poiType.compare("ferry_termial") == 0 && transport){
         
         iconSurface = g->load_png("./libstreetmap/images/ferry.png");
-    } else if (poiType.rfind("theatre") != std::string::npos) {
+    } else if (poiType.rfind("theatre") != std::string::npos && recreation) {
         
         iconSurface = g->load_png("./libstreetmap/images/theater.png");
-    } else if (poiType.rfind("school") != std::string::npos 
+    } else if ((poiType.rfind("school") != std::string::npos 
             || poiType.rfind("university") != std::string::npos 
-            || poiType.rfind("college") != std::string::npos) {
+            || poiType.rfind("college") != std::string::npos)
+            && education) {
         
         iconSurface = g->load_png("./libstreetmap/images/university.png");
-    } else if (poiType.rfind("parking") != std::string::npos) {
+    } else if (poiType.rfind("parking") != std::string::npos
+            && transport) {
         
         iconSurface = g->load_png("./libstreetmap/images/parkinggarage.png");
-    } else if (poiType.rfind("fast_food") != std::string::npos) {
+    } else if (poiType.rfind("fast_food") != std::string::npos
+            && food) {
         
         iconSurface = g->load_png("./libstreetmap/images/fastfood.png");
-    } else if (poiType.compare("community_centre") == 0) {
+    } else if (poiType.compare("community_centre") == 0
+            && other) {
         
         iconSurface = g->load_png("./libstreetmap/images/communitycentre.png");
-    } else if (poiType.compare("pharmacy") == 0) {
+    } else if (poiType.compare("pharmacy") == 0
+            && (selectedPOI.compare("all") == 0 
+            || selectedPOI.compare("medical") == 0)) {
         
         iconSurface = g->load_png("./libstreetmap/images/drogerie.png");
-    } else if (poiType.rfind("cafe") != std::string::npos) {
+    } else if (poiType.rfind("cafe") != std::string::npos
+            && food) {
         
         iconSurface = g->load_png("./libstreetmap/images/coffee.png");
-    } else if (poiType.compare("place_of_worship") == 0) {
+    } else if (poiType.compare("place_of_worship") == 0
+            && other) {
         
         iconSurface = g->load_png("./libstreetmap/images/chapel-2.png");
-    } else if (poiType.compare("bank") == 0) {
+    } else if (poiType.compare("bank") == 0 && finance) {
         
         iconSurface = g->load_png("./libstreetmap/images/bank.png");
-    } else if (poiType.compare("atm") == 0) {
+    } else if (poiType.compare("atm") == 0 && finance) {
         
         iconSurface = g->load_png("./libstreetmap/images/atm-2.png");
-    } else if (poiType.compare("cinema") == 0) {
+    } else if (poiType.compare("cinema") == 0
+            && recreation) {
         
         iconSurface = g->load_png("./libstreetmap/images/cinema.png");
-    } else if (poiType.compare("hospital") == 0 || poiType.compare("doctors") == 0 || poiType.find("clinic") != std::string::npos) {
+    } else if ((poiType.compare("hospital") == 0 
+            || poiType.compare("doctors") == 0 
+            || poiType.find("clinic") != std::string::npos) && medical) {
         
         iconSurface = g->load_png("./libstreetmap/images/hospital-building.png");
-    } else if (poiType.compare("library") == 0) {
+    } else if (poiType.compare("library") == 0
+            && education) {
         
         iconSurface = g->load_png("./libstreetmap/images/library.png");
-    } else if (poiType.rfind("restaurant") != std::string::npos || poiType.rfind("food_") != std::string::npos) {
+    } else if ((poiType.rfind("restaurant") != std::string::npos 
+            || poiType.rfind("food_") != std::string::npos) && food) {
         
         iconSurface = g->load_png("./libstreetmap/images/restaurant.png");
-    } else if (poiType.compare("police") == 0) {
+    } else if (poiType.compare("police") == 0 && gov) {
         
         iconSurface = g->load_png("./libstreetmap/images/police.png");
-    } else if (poiType.rfind("gym") != std::string::npos || poiType.rfind("weight") != std::string::npos) {
+    } else if ((poiType.rfind("gym") != std::string::npos 
+            || poiType.rfind("weight") != std::string::npos) && recreation) {
         
         iconSurface = g->load_png("./libstreetmap/images/fitness.png");
-    } else if (poiType.rfind("dentist") != std::string::npos || poiType.rfind("orthodon") != std::string::npos) {
+    } else if ((poiType.rfind("dentist") != std::string::npos 
+            || poiType.rfind("orthodon") != std::string::npos) && medical) {
         
         iconSurface = g->load_png("./libstreetmap/images/dentist.png");
-    } else if (poiType.rfind("bus_s") != std::string::npos) {
+    } else if (poiType.rfind("bus_s") != std::string::npos && transport) {
         
         iconSurface = g->load_png("./libstreetmap/images/bus.png");
-    } else if (poiType.rfind("fuel") != std::string::npos) {
+    } else if (poiType.rfind("fuel") != std::string::npos && transport) {
         
         iconSurface = g->load_png("./libstreetmap/images/fillingstation.png");
-    } else if (poiType.rfind("child") != std::string::npos) {
+    } else if (poiType.rfind("child") != std::string::npos && other) {
         
         iconSurface = g->load_png("./libstreetmap/images/daycare.png");        
-    } else if (poiType.rfind("bicyle") != std::string::npos) {
+    } else if (poiType.rfind("bicyle") != std::string::npos && transport) {
         
-        iconSurface = g->load_png("./libstreetmap/images/bicyle_parking.png");       
-    } else if (poiType.rfind("toilets") != std::string::npos) {
+        iconSurface = g->load_png("./libstreetmap/images/bicyle_parking.png");
+    } else if (poiType.rfind("toilets") != std::string::npos && other) {
         
         iconSurface = g->load_png("./libstreetmap/images/toilets_inclusive.png");       
-    } else if (poiType.rfind("post_") != std::string::npos) {
+    } else if (poiType.rfind("post_") != std::string::npos && other) {
         
         iconSurface = g->load_png("./libstreetmap/images/postal.png");
-    } else if (poiType == "airport") {
+    } else if (poiType == "airport" && transport) {
         
         iconSurface = g->load_png("./libstreetmap/images/airport.png");
-    } else {
+    } else if (other) {
         
         iconSurface = g->load_png("./libstreetmap/images/sight-2.png");
+    } else {                                // else do not display anything
+        
+        displayPOI = false;
     }
     
-    // make the middle bottom of the icon at the poi location
-    double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
-    double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
-    g->draw_surface(iconSurface, {x - surfaceWidth / 2 , y + surfaceHeight} );
-    
-    // display poi name
-    g->set_color(ezgl::BLACK);
-    g->set_font_size(10);
-    g->set_text_rotation(0);
-    g->draw_text({x, y }, poiName);
+    if (displayPOI) {
+        // make the middle bottom of the icon at the poi location
+        double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
+        double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
+        g->draw_surface(iconSurface, {x - surfaceWidth / 2 , y + surfaceHeight} );
+
+        // display poi name
+        g->set_color(ezgl::BLACK);
+        g->set_font_size(10);
+        g->set_text_rotation(0);
+        g->draw_text({x, y }, poiName);
+    }
 }
 
 /*void intersectionPopup(ezgl::application *application, IntersectionIdx id) {
