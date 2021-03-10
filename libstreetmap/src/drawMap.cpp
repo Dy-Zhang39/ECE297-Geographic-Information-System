@@ -47,6 +47,7 @@ void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 void clearHighlightIntersection();
 
+//call back function for search button
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
 
 // function definitions for POI selection buttons
@@ -59,6 +60,9 @@ gboolean toggleRecreationPOI(GtkWidget *, gpointer data);
 gboolean toggleFinancePOI(GtkWidget *, gpointer data);
 gboolean toggleGovPOI(GtkWidget *, gpointer data);
 gboolean toggleOtherPOI(GtkWidget *, gpointer data);
+
+//call back function for text field
+gboolean textEntryPressedEnter(GtkWidget *, gpointer data);
 
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
@@ -192,6 +196,9 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *search = application->get_object("SearchButton");
     g_signal_connect(search, "clicked", G_CALLBACK(searchButtonIsClicked), application);
     
+    GObject *textEntry = application->get_object("TextInput");
+    g_signal_connect(textEntry, "activate", G_CALLBACK(textEntryPressedEnter), application);
+    
     GObject *allPOI = application->get_object("allPOIBtn");
     g_signal_connect(allPOI, "toggled", G_CALLBACK(toggleAllPOI), application);
     
@@ -311,6 +318,11 @@ gboolean toggleOtherPOI(GtkWidget *, gpointer data) {
         application->refresh_drawing();
     }
     return true;
+}
+
+gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
+    return searchButtonIsClicked(widget, data);
+    
 }
 
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
