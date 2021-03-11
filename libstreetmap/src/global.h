@@ -3,6 +3,13 @@
 #define GLOBAL_H
 
 #include "StreetsDatabaseAPI.h"
+
+struct intersectionData {
+  LatLon position;
+  std::string name;
+  bool isHighlight = false;
+};
+
 class Street {
 public:
     std::vector<std::vector<IntersectionIdx>> streetIntersections; //store all intersection in one specific street for every street
@@ -27,16 +34,21 @@ public:
 class Intersection{
 public:
     std::vector<std::vector<StreetSegmentIdx>> intersectionStreetSegments;  //store every street segments to one intersection for every intersection
-
+    std::vector<intersectionData> intersectionInfo;
 };
 
 class City{
 public:
-    std::string name;
     std::string mapPath;
     Street* street;
     StreetSegment* streetSegment;
     Intersection* intersection;
+    double maxLat;
+    double minLat;
+    double maxLon;
+    double minLon;
+    double avgLat;
+    double worldRatio;
     
 };
 #endif /* GLOBAL_H */

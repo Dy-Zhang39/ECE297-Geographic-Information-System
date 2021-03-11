@@ -23,8 +23,6 @@ double xFromLon(double lon);  //convert longitude to meter
 double yFromLat(double lat);  //convert latitude to meter
 double lonFromX(double x);    //convert meter to longitude
 double latFromY(double y);    //convert meter to latitude
-double avgLat;                  //the average latitude of the map
-double worldRatio;              //the ratio of height to width of the screen
 double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.09;
@@ -33,8 +31,10 @@ double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 //extern StreetSegment* citys[currentCityIdx]->streetSegment;
 //extern Street* citys[currentCityIdx]->street;
 extern std::vector<City*> citys;
-extern bool isFinished;
 extern int currentCityIdx;
+extern std::vector<std::string> cityNames;
+extern std::string mapPath_prefix;
+
 
 std::vector <double> topFeatures;
 std::vector <double> bottomFeatures;
@@ -49,7 +49,7 @@ std::vector<IntersectionIdx> previousHighlight;
 void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 void clearHighlightIntersection();
-
+void initializeCurrentWorldRatio();
 //call back function for search button
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
 
@@ -67,7 +67,8 @@ gboolean toggleOtherPOI(GtkWidget *, gpointer data);
 //call back function for text field
 gboolean textEntryPressedEnter(GtkWidget *, gpointer data);
 
-void changeMapButtonIsPressed(GtkWidget *widget, ezgl::application *application);
+gboolean changeMap(GtkWidget *, gpointer data);
+
 
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
@@ -89,40 +90,22 @@ double streetSize(ezgl::rectangle world);
 void displayPOI(ezgl::renderer *g);
 void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
 
-struct intersection_data {
-  LatLon position;
-  std::string name;
-  bool isHighlight = false;
-};
+std::string convertNameToPath(std::string name);
+void importNameToTheBar(GtkComboBoxText* bar);
 
-std::vector<intersection_data> intersections;
+
 
 void draw_main_canvas (ezgl::renderer *g);
 void drawMap(){
-    double maxLat = getIntersectionPosition(0).latitude();
-    double minLat = maxLat;
-    double maxLon = getIntersectionPosition(0).longitude();
-    double minLon = maxLon;
-    intersections.resize(getNumIntersections());
-
-    for (int id = 0; id < getNumIntersections(); ++id) {
-        intersections[id].position = getIntersectionPosition(id);
-        intersections[id].name = getIntersectionName(id);
-
-        maxLat = std::max(maxLat, intersections[id].position.latitude());
-        minLat = std::min(minLat, intersections[id].position. latitude());
-        maxLon = std::max(maxLon, intersections[id].position.longitude());
-        minLon = std::min(minLon, intersections[id].position.longitude());
-    }
-    
-    avgLat = (maxLat + minLat)/2;           //force the map to be a reactangle   
-
-
     // Initialize coordinates for feature bounding boxes.
     initializeFeatureBounding();
 
+    double maxLat = citys[currentCityIdx] -> maxLat;
+    double minLat = citys[currentCityIdx] -> minLat;
+    double maxLon = citys[currentCityIdx] -> maxLon;
+    double minLon = citys[currentCityIdx] -> minLon;
     
-    worldRatio = (yFromLat(maxLat) - yFromLat(minLat))/(xFromLon(maxLon) - xFromLon(minLon));
+    initializeCurrentWorldRatio();
 
     ezgl::application::settings settings;
     settings.main_ui_resource = "libstreetmap/resources/main.ui";
@@ -135,7 +118,6 @@ void drawMap(){
                                 {xFromLon(maxLon), yFromLat(maxLat)});
     
     application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-
     //initial set up, act on mouse press, act on mouse move, act on key press
     application.run(initialSetUp, actOnMouseClick, nullptr, nullptr);
 }
@@ -178,18 +160,27 @@ void draw_main_canvas (ezgl::renderer *g){
     
     double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
-
 }
 
+
+//set the height to width ratio of a current city
+void initializeCurrentWorldRatio(){
+    double maxLat = citys[currentCityIdx] -> maxLat;
+    double minLat = citys[currentCityIdx] -> minLat;
+    double maxLon = citys[currentCityIdx] -> maxLon;
+    double minLon = citys[currentCityIdx] -> minLon;
+    
+    citys[currentCityIdx]->worldRatio = (yFromLat(maxLat) - yFromLat(minLat))/(xFromLon(maxLon) - xFromLon(minLon));
+}
 double xFromLon(double lon){
-    return lon * kDegreeToRadian * kEarthRadiusInMeters * std::cos(avgLat * kDegreeToRadian);
+    return lon * kDegreeToRadian * kEarthRadiusInMeters * std::cos(citys[currentCityIdx] -> avgLat * kDegreeToRadian);
 }
 double yFromLat(double lat){
     return lat * kDegreeToRadian* kEarthRadiusInMeters;
 }
 
 double lonFromX(double x){
-    return x/(kDegreeToRadian * kEarthRadiusInMeters * std::cos(avgLat * kDegreeToRadian));
+    return x/(kDegreeToRadian * kEarthRadiusInMeters * std::cos(citys[currentCityIdx] -> avgLat * kDegreeToRadian));
 }
 double latFromY(double y){
     return y/(kDegreeToRadian* kEarthRadiusInMeters);
@@ -231,8 +222,20 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *otherPOI = application->get_object("otherPOIBtn");
     g_signal_connect(otherPOI, "toggled", G_CALLBACK(toggleOtherPOI), application);
     
-    application->create_button("Change Map", 15, changeMapButtonIsPressed);
+    GtkComboBoxText *mapBar = (GtkComboBoxText*) application->get_object("MapBar");
+    importNameToTheBar(mapBar);
+    g_signal_connect (mapBar, "changed", G_CALLBACK(changeMap), application);
 }
+
+//input all the city name to the map bar
+void importNameToTheBar(GtkComboBoxText* bar){
+    
+    for(int idx = 0; idx < cityNames.size(); idx++){
+        std::string name = cityNames[idx];
+        gtk_combo_box_text_append_text(bar, name.c_str());
+    }
+}
+
 
 //triggered when all POI button is changed
 gboolean toggleAllPOI(GtkWidget *, gpointer data) {
@@ -330,6 +333,63 @@ gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
     
 }
 
+gboolean changeMap(GtkWidget *, gpointer data){
+    
+    auto application = static_cast<ezgl::application *>(data);
+    GtkComboBoxText * mapBar = (GtkComboBoxText*) application->get_object("MapBar");
+    
+    std::string map = gtk_combo_box_text_get_active_text(mapBar);
+    
+    std::string newMapPath = convertNameToPath(map);
+    
+    //close the database
+    closeMap();
+    bool loadSucessfully = loadMap(newMapPath);
+    if(!loadSucessfully){
+        std::cerr << "Failed to load map '" << newMapPath << "'\n";
+        application->quit();
+        return true;
+    }
+    
+    initializeFeatureBounding();
+    
+    double maxLat = citys[currentCityIdx] -> maxLat;
+    double minLat = citys[currentCityIdx] -> minLat;
+    double maxLon = citys[currentCityIdx] -> maxLon;
+    double minLon = citys[currentCityIdx] -> minLon;
+    
+    ezgl::rectangle newWorld({xFromLon(minLon), yFromLat(minLat)},
+                                {xFromLon(maxLon), yFromLat(maxLat)});
+    
+    initializeCurrentWorldRatio();
+    
+    application ->change_canvas_world_coordinates("MainCanvas", newWorld);
+    std::string output = "Map " + map + " has loaded Successfully";
+    application->update_message(output);
+    application->refresh_drawing();
+    
+    return true;
+    
+}
+
+std::string convertNameToPath(std::string name){
+    std::string nameInLower;
+    char previous = '1';
+    for (int c = 0; c < name.size(); c++){
+        if (name[c] == ' ' && previous != ','){
+            nameInLower.push_back('-');
+        }else if (name[c] == ','){
+            nameInLower.push_back('_');
+        }else if (previous != ','){
+            nameInLower.push_back(tolower(name[c]));
+        }
+        previous = name[c];
+    }
+    
+    std::string path = mapPath_prefix + nameInLower + ".streets.bin";
+    return path;
+}
+    
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
     
@@ -430,8 +490,8 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
                     smallest.y = positionInY;
                 }
                 
-                //highlight these intersections
-                intersections[commonIntersection[idx]].isHighlight = true;
+                //highlight these citys[currentCityIdx] -> intersection -> intersectionInfo
+                citys[currentCityIdx] -> intersection -> intersectionInfo[commonIntersection[idx]].isHighlight = true;
                 previousHighlight.push_back(commonIntersection[idx]);
                 
             }
@@ -449,15 +509,15 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
             double height = top - bottom;
             
             //making sure the width and height of the screen is in the world ratio
-            if (width * worldRatio > height){
+            if (width * citys[currentCityIdx]->worldRatio > height){
                 
-                bottom = center.y - (width * worldRatio) / 2;
-                top =  center.y + (width * worldRatio) / 2;
+                bottom = center.y - (width * citys[currentCityIdx]->worldRatio) / 2;
+                top =  center.y + (width * citys[currentCityIdx]->worldRatio) / 2;
                 
             }else {
                 
-                left = center.x - (height / worldRatio) / 2;
-                right = center.x + (height / worldRatio) / 2;
+                left = center.x - (height / citys[currentCityIdx]->worldRatio) / 2;
+                right = center.x + (height / citys[currentCityIdx]->worldRatio) / 2;
                 
             }
             ezgl::rectangle world({left, bottom}, {right, top});
@@ -477,10 +537,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     return true;
 }
 
-void changeMapButtonIsPressed(GtkWidget *widget, ezgl::application *application){
 
-    application->quit();
-}
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y){
     std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
     std::cout << "Button " << event->button << " is clicked\n";
@@ -498,22 +555,22 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
     IntersectionIdx id = findClosestIntersection(pos);
     
     if (previousHighlight.size() == 1 && previousHighlight[0] == id){
-        intersections[id].isHighlight = false;
+        citys[currentCityIdx] -> intersection -> intersectionInfo[id].isHighlight = false;
         clearHighlightIntersection(); 
     }else{
         clearHighlightIntersection();
-        intersections[id].isHighlight = true;
+        citys[currentCityIdx] -> intersection -> intersectionInfo[id].isHighlight = true;
         previousHighlight.push_back(id);
     }
     
     
-    std::cout << "Closest Intersection: " << intersections[id].name << "\n";
+    std::cout << "Closest Intersection: " << citys[currentCityIdx] -> intersection -> intersectionInfo[id].name << "\n";
     return id;
 }
 
 void clearHighlightIntersection(){
     for (auto iterator = previousHighlight.begin(); iterator != previousHighlight.end(); iterator++){
-        intersections[*iterator].isHighlight = false;
+        citys[currentCityIdx] -> intersection -> intersectionInfo[*iterator].isHighlight = false;
     }
     previousHighlight.clear();
 }
@@ -896,16 +953,16 @@ void displayHighlightedIntersection(ezgl::renderer *g) {
     ezgl::rectangle world = g->get_visible_world();
     double width = 6 * world.width() / g->get_visible_screen().width();
     double height = width;
-    for (size_t i = 0; i < intersections.size(); ++i) {
-        float x = xFromLon(intersections[i].position.longitude());
-        float y = yFromLat(intersections[i].position.latitude());
+    for (size_t i = 0; i < citys[currentCityIdx] -> intersection -> intersectionInfo.size(); ++i) {
+        float x = xFromLon(citys[currentCityIdx] -> intersection -> intersectionInfo[i].position.longitude());
+        float y = yFromLat(citys[currentCityIdx] -> intersection -> intersectionInfo[i].position.latitude());
         
-        if (intersections[i].isHighlight) {
+        if (citys[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
 
             g->set_color(ezgl::GREY_75);
             
-            if (intersections[i].name.compare("<unknown>") != 0){
-                displayPopupBox(g, "Intersection: ", intersections[i].name, x, y, world);
+            if (citys[currentCityIdx] -> intersection -> intersectionInfo[i].name.compare("<unknown>") != 0){
+                displayPopupBox(g, "Intersection: ", citys[currentCityIdx] -> intersection -> intersectionInfo[i].name, x, y, world);
             }
 
             g->set_color(ezgl::RED);
@@ -1200,7 +1257,7 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     
     
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    label = gtk_label_new(intersections[id].name.c_str());
+    label = gtk_label_new(citys[currentCityIdx] -> intersection -> intersectionInfo[id].name.c_str());
     gtk_container_add(GTK_CONTAINER(content_area), label);
     
     // The main purpose of this is to show dialog's child widget, label

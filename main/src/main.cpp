@@ -32,17 +32,17 @@ constexpr int BAD_ARGUMENTS_EXIT_CODE = 2;  //Invalid command-line usage
 void getCityName(std::string* s);        //get city name from the user
 void clearAllMap();                      //clear all the global variable in citys
 std::vector<std::string> cityNames = {
-    "beijing_china", "cairo_egypt", "cape-town_south-africa", "golden-horseshoe_canada",
-    "hamilton_canada", "hong-kong_china", "iceland", "interlaken_switzerland",
-    "london_england", "moscow_russia", "new-delhi_india", "new-york_usa",
-    "rio-de-janeiro_brazil", "saint-helena", "singapore", "sydney_australia",
-    "tehran_iran", "tokyo_japan", "toronto_canada"
+    "Beijing, China", "Cairo, Egypt", "Cape Town, South Africa", "Golden Horseshoe, Canada",
+    "Hamilton, Canada", "Hong Kong, China", "Iceland", "Interlaken, Switzerland",
+    "London, England", "Moscow, Russia", "New Delhi, India", "New York, USA",
+    "Rio De Janeiro, Brazil", "Saint Helena", "Singapore", "Sydney, Australia",
+    "Tehran, Iran", "Tokyo, Japan", "Toronto, Canada"
 };
 //The default map to load if none is specified
 std::string default_mapPath = "/cad2/ece297s/public/maps/toronto_canada.streets.bin";
 std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
 std::vector<City*> citys;
-bool isFinished = false;
+
 int currentCityIdx;
 
 // The start routine of your program (main) when you are running your standalone
@@ -52,15 +52,12 @@ int currentCityIdx;
 // Don't write any code in this file that you want run by ece297exerise -- it 
 // will not be called!
 int main(int argc, char** argv) {
-
+    
     std::string mapPath;
-    
-    
-    
     if(argc == 1) {
         //Use a default map
-        //getCityName(&mapPath);
-        mapPath = default_mapPath;
+        getCityName(&mapPath);
+        //mapPath = default_mapPath;
     } else if (argc == 2) {
         //Get the map from the command line
         mapPath = argv[1];
@@ -72,20 +69,19 @@ int main(int argc, char** argv) {
     }
     
     
-    while (!isFinished){
-        bool load_success = loadMap(mapPath);
-        
-        if(!load_success) {
-            
-            std::cerr << "Failed to load map '" << mapPath << "'\n";
-            return ERROR_EXIT_CODE;
-        }
-        
-        std::cout << "Successfully loaded map '" << mapPath << "'\n";
-        drawMap();
-        closeMap();
-    }
     
+    bool load_success = loadMap(mapPath);
+        
+    if(!load_success) {
+            
+        std::cerr << "Failed to load map '" << mapPath << "'\n";
+        return ERROR_EXIT_CODE;
+    }
+        
+    std::cout << "Successfully loaded map '" << mapPath << "'\n";
+    drawMap();
+    closeMap();
+   
     std::cout << "Closing all the map";
     clearAllMap();
     

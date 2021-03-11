@@ -34,7 +34,7 @@
 
 extern int currentCityIdx;
 extern std::vector<City*> citys;
-extern std::string mapPath;
+
 
 // loadMap will be called with the name of the file that stores the "layer-2"
 // map data accessed through StreetsDatabaseAPI: the street and intersection 
@@ -88,9 +88,13 @@ bool loadMap(std::string map_streets_database_filename) {
         }      
     }
     bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded successfully
+    
     if(!load_successful){
         return load_successful;
     }
+    
+    
+    std::cout << "loadMap: " << map_streets_database_filename << std::endl;
     
     if(!alreadyExist){
         City* newCity = new City;
@@ -100,12 +104,9 @@ bool loadMap(std::string map_streets_database_filename) {
         newCity ->intersection = new Intersection;
         citys.push_back(newCity);
         currentCityIdx = citys.size() - 1;
+    }else{
+        return true;
     }
-
-    
-
-    std::cout << "loadMap: " << map_streets_database_filename << std::endl;
-    
     /*
     //dynamic allocate the global variable
     citys[currentCityIdx]->street = new Street;
@@ -185,24 +186,45 @@ void streetPartialName(){
 void street_Intersection(){
     citys[currentCityIdx]->intersection->intersectionStreetSegments.resize(getNumIntersections()); //create empty vector for each intersection
     citys[currentCityIdx]->street->streetIntersections.resize(getNumStreets());
+    citys[currentCityIdx] -> intersection -> intersectionInfo.resize(getNumIntersections());
     
-    for(int intersection = 0; intersection < getNumIntersections(); ++intersection){
+    double maxLat = getIntersectionPosition(0).latitude();
+    double minLat = maxLat;
+    double maxLon = getIntersectionPosition(0).longitude();
+    double minLon = maxLon;
+    
+    //iterate through all intersections
+    for(int intersectionID = 0; intersectionID < getNumIntersections(); ++intersectionID){
         
-        //iterate through all intersections
-        for(int i = 0; i < getNumIntersectionStreetSegment(intersection); ++i) {
-            
+        citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position = getIntersectionPosition(intersectionID);
+        citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].name = getIntersectionName(intersectionID);
+
+        maxLat = std::max(maxLat, citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.latitude());
+        minLat = std::min(minLat, citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position. latitude());
+        maxLon = std::max(maxLon, citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.longitude());
+        minLon = std::min(minLon, citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.longitude());
+        
+        for(int i = 0; i < getNumIntersectionStreetSegment(intersectionID); ++i) {         
+        
             //iterate through all segments at intersection
-            int streetSegID = getIntersectionStreetSegment(intersection, i);
+            int streetSegID = getIntersectionStreetSegment(intersectionID, i);
             auto streetSegInfo = getStreetSegmentInfo(streetSegID);
             auto streetID = streetSegInfo.streetID;
 
-            if (citys[currentCityIdx]->street->streetIntersections[streetID].size() == 0 || citys[currentCityIdx]->street->streetIntersections[streetID].back() < intersection) {
-                citys[currentCityIdx]->street->streetIntersections[streetID].push_back(intersection);              //save the intersection to the street it belongs to
+            if (citys[currentCityIdx]->street->streetIntersections[streetID].size() == 0 || citys[currentCityIdx]->street->streetIntersections[streetID].back() < intersectionID) {
+                citys[currentCityIdx]->street->streetIntersections[streetID].push_back(intersectionID);              //save the intersection to the street it belongs to
             }
             
-            citys[currentCityIdx]->intersection->intersectionStreetSegments[intersection].push_back(streetSegID);  //save segments connected to intersection
+            citys[currentCityIdx]->intersection->intersectionStreetSegments[intersectionID].push_back(streetSegID);  //save segments connected to intersection
         }
     }
+    
+    citys[currentCityIdx] -> maxLat = maxLat;
+    citys[currentCityIdx] -> minLat = minLat;
+    citys[currentCityIdx] -> maxLon = maxLon;
+    citys[currentCityIdx] -> minLon = minLon;
+    citys[currentCityIdx] -> avgLat = (maxLat + minLat)/2;
+            
 }
 //street length; street travel time; street segment length
 void street_Info(){
