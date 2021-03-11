@@ -13,6 +13,7 @@
 #include "m1.h"
 #include "global.h"
 #include "StreetsDatabaseAPI.h"
+#include "OSMDatabaseAPI.h"
 #include <chrono>
 
 #include <iostream>
@@ -89,6 +90,8 @@ double streetSize(ezgl::rectangle world);
 void displayPOI(ezgl::renderer *g);
 void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
 
+void loadSubway(ezgl::renderer *g);
+
 struct intersection_data {
   LatLon position;
   std::string name;
@@ -105,7 +108,7 @@ void drawMap(){
     double maxLon = getIntersectionPosition(0).longitude();
     double minLon = maxLon;
     intersections.resize(getNumIntersections());
-
+    
     for (int id = 0; id < getNumIntersections(); ++id) {
         intersections[id].position = getIntersectionPosition(id);
         intersections[id].name = getIntersectionName(id);
@@ -166,6 +169,7 @@ void draw_main_canvas (ezgl::renderer *g){
     
     displayStreetName(g, world);
     std::clock_t streetNameEnd = clock();
+        loadSubway(g);
 
 
     double elapsedSecondsFeature = double(featureEnd - begin) / CLOCKS_PER_SEC;
@@ -1239,6 +1243,167 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
         g->draw_text({x, y }, poiName);
     }
 }
+
+void loadSubway(ezgl::renderer *g){
+    double showTextRatio = 10;
+    double showLineRatio = 30;
+    std::vector<const OSMRelation *> osm_subway_lines;
+    int stepLength = 1000;
+    std::clock_t subwayStart = clock();
+    std::vector<OSMID> osm_nodes;
+    ezgl::rectangle world = g->get_visible_world();
+    double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
+    std::vector<ezgl::point2d> stationCoordindate;
+    std::vector<std::string> stationName;
+    std::string lineColor;
+    // Create index for the nodes by grouping them
+    for (unsigned k = 0; k < getNumberOfNodes(); k++) {
+        const OSMNode  *newNode = getNodeByIndex(k);
+        if (k % stepLength == 0) {
+            osm_nodes.push_back(newNode->id());
+        }
+    }
+
+    // Loop through all OSM relations
+    for (unsigned i = 0; i < getNumberOfRelations(); i++) {
+        const OSMRelation *currRel = getRelationByIndex(i);
+
+        // Check the tag of the currRel
+        for (unsigned j = 0; j < getTagCount(currRel); j++) {
+            std::pair<std::string, std::string> tagPair = getTagPair(currRel, j);
+
+            // Push relations with the route=subway tag
+            if (tagPair.first == "route" && tagPair.second == "subway") {
+                osm_subway_lines.push_back(currRel);
+                break;
+            }
+        }
+    }
+
+    
+    // For each subway line (relation), get its name, color, and members
+    for (unsigned i = 0; i < osm_subway_lines.size(); i++) {
+
+        // Get subway line color and name
+        for (unsigned j = 0; j < getTagCount(osm_subway_lines[i]); j++) {
+            std::pair<std::string, std::string> tagPair = getTagPair(osm_subway_lines[i], j);
+            if (tagPair.first == "colour") {
+                std::cout << "Subway line color: " << tagPair.second << std::endl;
+                lineColor = tagPair.second;
+            } else if (tagPair.first == "name") {
+                //std::cout << "Subway line name: " << tagPair.second << std::endl;
+            }
+        }
+
+        // Get relation members
+        std::vector<TypedOSMID> route_members = getRelationMembers(osm_subway_lines[i]); 
+        // Print subway station names
+        //std::cout << "Subway line stations:" << std::endl;
+        double prevX = 0, prevY = 0;
+        
+        for(unsigned j = 0; j < route_members.size(); j++) {
+
+            // A member of type node represents a subway station
+            if(route_members[j].type() == TypedOSMID::Node) {
+
+                const OSMNode *currNode = nullptr;
+                unsigned indexRange = 0;
+                
+                for (unsigned k = 0; k < osm_nodes.size(); k++) {
+                    if (route_members[j] < osm_nodes[k]) {
+                        indexRange = k;
+                        break;
+                    }
+                }
+
+                unsigned startIdx = 0, endIdx = getNumberOfNodes();      
+                
+                if ((indexRange - 1) * stepLength > 0) startIdx = (indexRange - 1) * stepLength;
+                if ((indexRange + 1) * stepLength < endIdx) endIdx = (indexRange + 1) * stepLength ;
+
+                // Node lookup by OSMID
+                for (unsigned k = startIdx; k < endIdx; k++) {
+                    currNode = getNodeByIndex(k);
+                    if (currNode->id() == route_members[j]) {
+                        break;
+                    }
+                }
+
+                // Get the name tag of that node
+                for (unsigned k = 0; k < getTagCount(currNode); k++) {
+                    std::pair<std::string, std::string> tagPair = getTagPair(currNode, k);
+                    LatLon stationCoord = getNodeCoords(currNode);
+                    if (tagPair.first == "name") {
+                        double x = xFromLon(stationCoord.longitude());
+                        double y = yFromLat(stationCoord.latitude());
+                            
+                        if (showLineRatio > widthToPixelRatio) {
+
+                            g->set_color(244, 208, 163, 255);
+                            if (lineColor.compare("green")) {
+                                g->set_color(ezgl::GREEN);
+                            } else if (lineColor.compare("purple") == 0) {
+                                g->set_color(ezgl::PURPLE);
+                            } else if (lineColor.compare("yellow") == 0) {
+                                g->set_color(ezgl::YELLOW);
+                            } else if (lineColor.compare("brown") == 0) {
+                                g->set_color(128, 0, 0, 255);
+                            } else if (lineColor.at(0) == '#') {
+
+                            }
+
+                            g->fill_arc({x, y}, 5 * widthToPixelRatio, 0, 360);
+                            if (prevX != 0 || prevY != 0) {
+                                g->set_line_width(streetSize(world));
+                                g->draw_line({prevX, prevY}, {x, y});
+                            }
+                            
+                            if (world.contains(x, y) && showTextRatio > widthToPixelRatio) {
+                                stationCoordindate.push_back({x, y});
+                                stationName.push_back(tagPair.second );
+                            }
+                        }
+
+                        prevX = x;
+                        prevY = y;
+                        break;
+                    }
+                }
+
+            }
+        }
+    
+
+    }
+    std::vector <ezgl::point2d> displayedCoord;
+    displayedCoord.clear();
+
+    for (int stationIdx = 0; stationIdx < stationName.size(); stationIdx ++) {
+        bool displayStation = true;
+
+        for (int j = 0; j < displayedCoord.size(); j ++) {
+            if (abs(stationCoordindate[stationIdx].x - displayedCoord[j].x) < (30* widthToPixelRatio) 
+                    && abs(stationCoordindate[stationIdx].y - displayedCoord[j].y) < (30 * widthToPixelRatio)) {
+                displayStation = false;
+                break;
+            }
+
+        }
+
+        if (displayStation) {
+            //draw the text of the contents
+            g->set_text_rotation(0);
+            g->set_color(ezgl::BLACK);
+            g->set_font_size(10);
+            g->draw_text(stationCoordindate[stationIdx], stationName[stationIdx]);
+            displayedCoord.push_back(stationCoordindate[stationIdx]);
+        }
+    } 
+    std::clock_t subwayEnd = clock();
+    double elapsedSecondsSubway = double(subwayEnd - subwayStart) / CLOCKS_PER_SEC;
+    std::cout<<"elapsedSecondsSubway: " << elapsedSecondsSubway << "  r atio:" <<widthToPixelRatio<< std::endl;
+}
+
 
 /*void intersectionPopup(ezgl::application *application, IntersectionIdx id) {
     GObject *window;            // the parent window over which to add the dialog
