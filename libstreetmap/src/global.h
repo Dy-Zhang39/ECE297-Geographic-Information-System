@@ -30,6 +30,19 @@ public:
 
 };
 
+class Feature{
+public:
+    double top;
+    double bottom;
+    double left;
+    double right;
+    Feature (double t, double b, double l, double r){
+        top = t;
+        bottom = b;
+        left = l;
+        right = r;
+    }   
+};
 class City{
 public:
     std::string name;
@@ -37,7 +50,7 @@ public:
     Street* street;
     StreetSegment* streetSegment;
     Intersection* intersection;
-    
+    std::vector<Feature> featurePts;
 };
 #endif /* GLOBAL_H */
 

@@ -115,10 +115,6 @@ void getCityName(std::string* s){
     std::string name;
     std::cout << "Please enter the name of the city: ";
     std::cin >> name;
-//<<<<<<< HEAD
-//    *s = mapPath_prefix + name + ".streets.bin";
-//    
-//=======
 
     *s = mapPath_prefix + name;
 }
