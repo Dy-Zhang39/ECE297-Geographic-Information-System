@@ -30,8 +30,11 @@ double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.09;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 
-extern StreetSegment* STREET_SEGMENTS;
-extern Street* STREETS;
+//extern StreetSegment* citys[currentCityIdx]->streetSegment;
+//extern Street* citys[currentCityIdx]->street;
+extern std::vector<City*> citys;
+extern bool isFinished;
+extern int currentCityIdx;
 
 std::vector <double> topFeatures;
 std::vector <double> bottomFeatures;
@@ -47,6 +50,7 @@ void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 void clearHighlightIntersection();
 
+//call back function for search button
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
 
 // function definitions for POI selection buttons
@@ -59,6 +63,11 @@ gboolean toggleRecreationPOI(GtkWidget *, gpointer data);
 gboolean toggleFinancePOI(GtkWidget *, gpointer data);
 gboolean toggleGovPOI(GtkWidget *, gpointer data);
 gboolean toggleOtherPOI(GtkWidget *, gpointer data);
+
+//call back function for text field
+gboolean textEntryPressedEnter(GtkWidget *, gpointer data);
+
+void changeMapButtonIsPressed(GtkWidget *widget, ezgl::application *application);
 
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
@@ -192,6 +201,9 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *search = application->get_object("SearchButton");
     g_signal_connect(search, "clicked", G_CALLBACK(searchButtonIsClicked), application);
     
+    GObject *textEntry = application->get_object("TextInput");
+    g_signal_connect(textEntry, "activate", G_CALLBACK(textEntryPressedEnter), application);
+    
     GObject *allPOI = application->get_object("allPOIBtn");
     g_signal_connect(allPOI, "toggled", G_CALLBACK(toggleAllPOI), application);
     
@@ -218,6 +230,8 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
     GObject *otherPOI = application->get_object("otherPOIBtn");
     g_signal_connect(otherPOI, "toggled", G_CALLBACK(toggleOtherPOI), application);
+    
+    application->create_button("Change Map", 15, changeMapButtonIsPressed);
 }
 
 //triggered when all POI button is changed
@@ -309,6 +323,11 @@ gboolean toggleOtherPOI(GtkWidget *, gpointer data) {
         application->refresh_drawing();
     }
     return true;
+}
+
+gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
+    return searchButtonIsClicked(widget, data);
+    
 }
 
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
@@ -458,6 +477,10 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     return true;
 }
 
+void changeMapButtonIsPressed(GtkWidget *widget, ezgl::application *application){
+
+    application->quit();
+}
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y){
     std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
     std::cout << "Button " << event->button << " is clicked\n";
@@ -472,15 +495,18 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
 //mouse click to highlight the closest intersection
 
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
-    
-    clearHighlightIntersection(); 
-
     IntersectionIdx id = findClosestIntersection(pos);
-    intersections[id].isHighlight = true;
+    
+    if (previousHighlight.size() == 1 && previousHighlight[0] == id){
+        intersections[id].isHighlight = false;
+        clearHighlightIntersection(); 
+    }else{
+        clearHighlightIntersection();
+        intersections[id].isHighlight = true;
+        previousHighlight.push_back(id);
+    }
     
     
-    
-    previousHighlight.push_back(id);
     std::cout << "Closest Intersection: " << intersections[id].name << "\n";
     return id;
 }
@@ -519,14 +545,16 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         if(!streetName.compare("<unknown>")){
             //draw as user zooms in
         }else if (findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
-            //draw street according to the length of the street compare to screen  length
-            for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[streetSegmentsID].size(); pointsID++){
-                
-                x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
-                y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID- 1].latitude());
 
-                x2 = xFromLon(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].longitude());
-                y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].latitude());
+            //draw street according to the length of the street compare to screen  length
+
+            for(int pointsID=1; pointsID < citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID].size(); pointsID++){
+                
+                x1 = xFromLon(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
+                y1 = yFromLat(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID- 1].latitude());
+
+                x2 = xFromLon(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].longitude());
+                y2 = yFromLat(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].latitude());
                 if(world.contains(x1, y1) || world.contains(x2, y2)){
                     double speedLimit = getStreetSegmentInfo(streetSegmentsID).speedLimit;
                     
@@ -599,19 +627,19 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         std::string streetName = getStreetName(streetID);
         
         double x = 0, y = 0, x1 = 0, y1 = 0;
-        for(int segmentIndex = 0; segmentIndex < STREETS->streetSegments[streetID].size(); segmentIndex++){
+        for(int segmentIndex = 0; segmentIndex < citys[currentCityIdx]->street->streetSegments[streetID].size(); segmentIndex++){
             
             if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
-                
-                x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).from).longitude());
-                y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).from).latitude());
-                x1 = xFromLon(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).to).longitude());
-                y1 = yFromLat(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).to).latitude());
-             
+
+                x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).longitude());
+                y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).latitude());
+                x1 = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).longitude());
+                y1 = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).latitude());
+
                 if (world.contains(x, y) || world.contains(x1, y1)){
                     inViewSegment.push_back({x, y});
                     //store the segment that is one way
-                    if(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).oneWay){
+                    if(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).oneWay){
                         oneWaySegInfo oneWay;
                         oneWay.x=x1;
                         oneWay.y=y1;
