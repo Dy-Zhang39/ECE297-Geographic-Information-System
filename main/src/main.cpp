@@ -38,13 +38,13 @@ std::vector<std::string> cityNames = {
     "tehran_iran", "tokyo_japan", "toronto_canada"
 };
 //The default map to load if none is specified
-std::string default_map_path = "/cad2/ece297s/public/maps/toronto_canada.streets.bin";
+std::string default_map_path = "/cad2/ece297s/public/maps/tokyo_japan";
 std::string map_path_prefix = "/cad2/ece297s/public/maps/";
 
 // The start routine of your program (main) when you are running your standalone
 // mapper program. This main routine is *never called* when you are running 
 // ece297exercise (the unit tests) -- those tests have their own main routine
-// and directly call your functions in /libstreetmap/src/ to test them.
+// and directly call your functions in /libstreetmap/src/ to testtext to replacetext to replace them.
 // Don't write any code in this file that you want run by ece297exerise -- it 
 // will not be called!
 int main(int argc, char** argv) {
@@ -91,5 +91,5 @@ void getCityName(std::string* s){
     std::string name;
     std::cout << "Please enter the name of the city: ";
     std::cin >> name;
-    *s = map_path_prefix + name + ".streets.bin";
+    *s = map_path_prefix + name;
 }

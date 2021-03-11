@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <math.h>
 #include <map>
-
+#include "OSMDatabaseAPI.h"
 
 #include<bits/stdc++.h>
 #include<stdio.h>
@@ -45,7 +45,6 @@
 // name of the ".osm.bin" file that matches your map -- just change 
 // ".streets" to ".osm" in the map_streets_database_filename to get the proper
 // name.
-
 
 //global variable
 Street* STREETS;
@@ -72,11 +71,13 @@ void streetPartialName();
 void resizeData();
 
 bool loadMap(std::string map_streets_database_filename) {
-    bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded 
-                                                                                  //successfully
+    bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename + ".streets.bin"); //Indicates whether the map has loaded                                                                             //successfully
     if(!load_successful)
         return load_successful;
-
+    
+    load_successful = loadOSMDatabaseBIN(map_streets_database_filename + ".osm.bin");
+    if(!load_successful)
+        return load_successful;
     std::cout << "loadMap: " << map_streets_database_filename << std::endl;
     
     //dynamic allocate the global variable
