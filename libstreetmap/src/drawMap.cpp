@@ -104,6 +104,7 @@ std::vector<intersection_data> intersections;
 
 void draw_main_canvas (ezgl::renderer *g);
 void drawMap(){
+    
     double maxLat = getIntersectionPosition(0).latitude();
     double minLat = maxLat;
     double maxLon = getIntersectionPosition(0).longitude();
@@ -146,7 +147,7 @@ void drawMap(){
 }
 
 void draw_main_canvas (ezgl::renderer *g){
-    
+    g->format_font("Noto Sans CJK SC", ezgl::font_slant::normal, ezgl::font_weight::normal, 10);
     
     
     g->draw_rectangle({0,0}, {1000,1000});

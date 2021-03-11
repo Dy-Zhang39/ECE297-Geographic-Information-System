@@ -56,12 +56,12 @@ int main(int argc, char** argv) {
 
     std::string mapPath;
     
-    
+   
     
     if(argc == 1) {
         //Use a default map
-        //getCityName(&mapPath);
-        mapPath = default_mapPath;
+        getCityName(&mapPath);
+        //mapPath = default_mapPath;
     } else if (argc == 2) {
         //Get the map from the command line
         mapPath = argv[1];
@@ -115,6 +115,10 @@ void getCityName(std::string* s){
     std::string name;
     std::cout << "Please enter the name of the city: ";
     std::cin >> name;
+//<<<<<<< HEAD
+//    *s = mapPath_prefix + name + ".streets.bin";
+//    
+//=======
 
     *s = mapPath_prefix + name;
 }
