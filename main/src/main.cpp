@@ -40,7 +40,7 @@ std::vector<std::string> cityNames = {
 };
 //The default map to load if none is specified
 
-std::string default_mapPath = "/cad2/ece297s/public/maps/toronto_canada";
+std::string default_mapPath = "/cad2/ece297s/public/maps/tokyo_japan";
 std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
 std::vector<City*> citys;
 bool isFinished = false;

@@ -30,6 +30,7 @@ double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.09;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
+bool showSubways = false;
 
 //extern StreetSegment* citys[currentCityIdx]->streetSegment;
 //extern Street* citys[currentCityIdx]->street;
@@ -91,6 +92,7 @@ void displayPOI(ezgl::renderer *g);
 void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
 
 void loadSubway(ezgl::renderer *g);
+gboolean toggleSubway(GtkWidget *, gpointer data);
 
 struct intersection_data {
   LatLon position;
@@ -168,7 +170,8 @@ void draw_main_canvas (ezgl::renderer *g){
     
     displayStreetName(g, world);
     std::clock_t streetNameEnd = clock();
-        loadSubway(g);
+    
+    if (showSubways) loadSubway(g);
 
 
     double elapsedSecondsFeature = double(featureEnd - begin) / CLOCKS_PER_SEC;
@@ -234,8 +237,19 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
     GObject *otherPOI = application->get_object("otherPOIBtn");
     g_signal_connect(otherPOI, "toggled", G_CALLBACK(toggleOtherPOI), application);
+
+    GObject *showSubwayBox = application->get_object("showSubwayBox");
+    g_signal_connect(showSubwayBox, "toggled", G_CALLBACK(toggleSubway), application);
     
     application->create_button("Change Map", 15, changeMapButtonIsPressed);
+}
+
+//triggered showSubway check box changed
+gboolean toggleSubway(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    showSubways = !showSubways;
+    application->refresh_drawing();
+    return true;
 }
 
 //triggered when all POI button is changed
@@ -1347,8 +1361,12 @@ void loadSubway(ezgl::renderer *g){
                                 g->set_color(ezgl::YELLOW);
                             } else if (lineColor.compare("brown") == 0) {
                                 g->set_color(128, 0, 0, 255);
-                            } else if (lineColor.at(0) == '#') {
-
+                            } else if (lineColor.at(0) == '#' && lineColor.length() == 7) {
+                                int rColor = std::stoi(lineColor.substr(1,2));
+                                int gColor = std::stoi(lineColor.substr(3,2));
+                                int bColor = std::stoi(lineColor.substr(5,2));
+                                g->set_color(rColor,gColor,bColor,255);
+                                
                             }
 
                             g->fill_arc({x, y}, 5 * widthToPixelRatio, 0, 360);

@@ -150,7 +150,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">15</property>
+                <property name="top_attach">16</property>
                 <property name="width">3</property>
               </packing>
             </child>
@@ -294,6 +294,20 @@
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">13</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="showSubwayBox">
+                <property name="label" translatable="yes">Show subway</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="draw_indicator">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">15</property>
                 <property name="width">3</property>
               </packing>
             </child>
