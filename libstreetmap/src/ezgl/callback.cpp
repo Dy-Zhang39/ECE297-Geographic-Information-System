@@ -18,6 +18,8 @@
 
 #include "ezgl/callback.hpp"
 
+extern bool isFinished;
+
 namespace ezgl {
 
 // File wide static variables to track whether the middle mouse
@@ -252,6 +254,7 @@ gboolean press_right(GtkWidget *, gpointer data)
 gboolean press_proceed(GtkWidget *, gpointer data)
 {
   auto ezgl_app = static_cast<ezgl::application *>(data);
+  isFinished = true;
   ezgl_app->quit();
 
   return TRUE;

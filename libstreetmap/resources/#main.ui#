@@ -298,22 +298,6 @@
               </packing>
             </child>
             <child>
-              <object class="GtkComboBox" id="mapName">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">16</property>
-              </packing>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
               <placeholder/>
             </child>
             <child>
@@ -353,7 +337,7 @@
             <property name="can_focus">True</property>
           </object>
           <packing>
-            <property name="left_attach">0</property>
+            <property name="left_attach">1</property>
             <property name="top_attach">0</property>
           </packing>
         </child>
@@ -368,6 +352,9 @@
             <property name="left_attach">1</property>
             <property name="top_attach">0</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
         </child>
       </object>
     </child>

@@ -30,6 +30,14 @@ public:
 
 };
 
-
+class City{
+public:
+    std::string name;
+    std::string mapPath;
+    Street* street;
+    StreetSegment* streetSegment;
+    Intersection* intersection;
+    
+};
 #endif /* GLOBAL_H */
 

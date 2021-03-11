@@ -30,8 +30,11 @@ double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.09;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 
-extern StreetSegment* STREET_SEGMENTS;
-extern Street* STREETS;
+//extern StreetSegment* citys[currentCityIdx]->streetSegment;
+//extern Street* citys[currentCityIdx]->street;
+extern std::vector<City*> citys;
+extern bool isFinished;
+extern int currentCityIdx;
 
 std::vector <double> topFeatures;
 std::vector <double> bottomFeatures;
@@ -63,6 +66,8 @@ gboolean toggleOtherPOI(GtkWidget *, gpointer data);
 
 //call back function for text field
 gboolean textEntryPressedEnter(GtkWidget *, gpointer data);
+
+void changeMapButtonIsPressed(GtkWidget *widget, ezgl::application *application);
 
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
@@ -226,7 +231,7 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *otherPOI = application->get_object("otherPOIBtn");
     g_signal_connect(otherPOI, "toggled", G_CALLBACK(toggleOtherPOI), application);
     
-    
+    application->create_button("Change Map", 15, changeMapButtonIsPressed);
 }
 
 //triggered when all POI button is changed
@@ -472,6 +477,10 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     return true;
 }
 
+void changeMapButtonIsPressed(GtkWidget *widget, ezgl::application *application){
+
+    application->quit();
+}
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y){
     std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
     std::cout << "Button " << event->button << " is clicked\n";
@@ -531,13 +540,13 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         if(!streetName.compare("<unknown>")){
             //draw as user zooms in
         }else if (findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
-            for(int pointsID=1; pointsID < STREET_SEGMENTS->streetSegPoint[streetSegmentsID].size(); pointsID++){
+            for(int pointsID=1; pointsID < citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID].size(); pointsID++){
                 
-                x1 = xFromLon(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
-                y1 = yFromLat(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID- 1].latitude());
+                x1 = xFromLon(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
+                y1 = yFromLat(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID- 1].latitude());
 
-                x2 = xFromLon(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].longitude());
-                y2 = yFromLat(STREET_SEGMENTS->streetSegPoint[streetSegmentsID][pointsID].latitude());
+                x2 = xFromLon(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].longitude());
+                y2 = yFromLat(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].latitude());
                 if(world.contains(x1, y1) || world.contains(x2, y2)){
                     double speedLimit = getStreetSegmentInfo(streetSegmentsID).speedLimit;
                     if(speedLimit>22.23){
@@ -591,13 +600,13 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         inViewSegment.clear();
         std::string streetName = getStreetName(streetID);
         double x = 0, y = 0, x1 = 0, y1 = 0;
-        for(int segmentIndex = 0; segmentIndex < STREETS->streetSegments[streetID].size(); segmentIndex++){
+        for(int segmentIndex = 0; segmentIndex < citys[currentCityIdx]->street->streetSegments[streetID].size(); segmentIndex++){
             
             if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
-                x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).from).longitude());
-                y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).from).latitude());
-                x1 = xFromLon(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).to).longitude());
-                y1 = yFromLat(getIntersectionPosition(getStreetSegmentInfo(STREETS->streetSegments[streetID][segmentIndex]).to).latitude());
+                x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).longitude());
+                y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).latitude());
+                x1 = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).longitude());
+                y1 = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).latitude());
 
                 if (world.contains(x, y) || world.contains(x1, y1)){
                     inViewSegment.push_back({x, y});
