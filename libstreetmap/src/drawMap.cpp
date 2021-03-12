@@ -900,7 +900,7 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
             g->set_color(102, 204, 255, 255);
             break;
         case ISLAND:
-            g->set_color(245, 224, 136, 255);
+            g->set_color(221, 251, 109, 255);
             break;
         case BUILDING:
             g->set_color(ezgl::GREY_75);
