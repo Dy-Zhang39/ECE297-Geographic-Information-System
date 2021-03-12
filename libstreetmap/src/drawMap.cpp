@@ -49,6 +49,8 @@ void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 void clearHighlightIntersection();
 void initializeCurrentWorldRatio();
+bool isAve(std::string streetName);
+
 //call back function for search button
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
 
@@ -89,6 +91,8 @@ double streetSize(ezgl::rectangle world);
 void displayPOI(ezgl::renderer *g);
 void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
 
+void drawOneWayStreet(ezgl::renderer *g, double diagLength);
+void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta);
 
 std::string convertNameToPath(std::string name);
 void importNameToTheBar(GtkComboBoxText* bar);
@@ -120,6 +124,7 @@ void drawMap(){
     
     ezgl::application application(settings);
     
+    
     ezgl::rectangle initial_world({xFromLon(minLon), yFromLat(minLat)},
                                 {xFromLon(maxLon), yFromLat(maxLat)});
     
@@ -129,10 +134,10 @@ void drawMap(){
 }
 
 void draw_main_canvas (ezgl::renderer *g){
+    
     g->format_font("Noto Sans CJK SC", ezgl::font_slant::normal, ezgl::font_weight::normal, 10);
     
-    
-    g->draw_rectangle({0,0}, {1000,1000});
+    g->draw_rectangle({0,0}, {10,10});
    
     ezgl::rectangle world = g->get_visible_world();
     //timing function
@@ -597,11 +602,10 @@ void clearHighlightIntersection(){
 
 bool isAve(std::string streetName){
     bool isAve =false;
-    std::string s1 ("Avenue");
+    std::string s1 ("Avenue\0");
     if (streetName.find(s1) != std::string::npos){
         isAve = true;
     }
-    //code here checks the street type,return true if ave still working on...
     return isAve;
 }
 
@@ -610,7 +614,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
     double aveToWorldRatio1 = 0.13;
-
+    double highwaySpeed = 22.23;
 
     for(int streetSegmentsID=0; streetSegmentsID<getNumStreetSegments(); streetSegmentsID++ ){
         //get street segment streetID
@@ -618,13 +622,17 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         //get street name of this street segment
         std::string streetName = getStreetName(streetId);
 
-        //if the street name is unknown or end with Ave, draw when user zoom in
+        //if the street name is unknown, draw when user zoom in
         if(!streetName.compare("<unknown>")){
             //draw as user zooms in
+            if(findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * 1.5*streetToWorldRatio1){
+                g->set_color(210,223,227,255);
+                g->set_line_width(0.5 * streetSize(world));
+                g->draw_line({x1,y1}, {x2, y2});
+            }
+            
         }else if (findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
-
             //draw street according to the length of the street compare to screen  length
-
             for(int pointsID=1; pointsID < citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID].size(); pointsID++){
                 
                 x1 = xFromLon(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
@@ -635,25 +643,20 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                 if(world.contains(x1, y1) || world.contains(x2, y2)){
                     double speedLimit = getStreetSegmentInfo(streetSegmentsID).speedLimit;
                     
-                    if(speedLimit>22.23){// draw highway
+                    if(speedLimit>highwaySpeed){// draw highway
                        g->set_color(244, 208, 63, 255);
-                       g->set_line_width(1.3*streetSize(world));
+                       g->set_line_width(1.3 * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else if(!isAve(streetName)){ //draw main road and street
                        g->set_color(210,223,227,255);
                        g->set_line_width(streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else if(isAve(streetName)&&findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * aveToWorldRatio1){ 
-                        //draw avenue according to the screen length
+                        //draw avenue
                        g->set_color(210,223,227,255);
-                       g->set_line_width(0.5*streetSize(world));
+                       g->set_line_width(0.5 * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }
-                    //indicate one way street
-//                    if(getStreetSegmentInfo(streetSegmentsID).oneWay){
-//                         drawOneWay(g, x1, y1, x2, y2);
-//
-//                    }
 
                 }
             }
@@ -674,7 +677,7 @@ double textSize(ezgl::rectangle world){
 
 double streetSize(ezgl::rectangle world){
     double mapArea = world.area();
-    double k=3.5;
+    double k=6;
     double streetSize = k*log(log(1000/sqrt(mapArea)+1.5))+5;
  
     return streetSize;
@@ -683,11 +686,7 @@ double streetSize(ezgl::rectangle world){
 
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
     std::vector<ezgl::point2d> displayedNames;
-    struct oneWaySegInfo{
-        int x;
-        int y;
-        int distance;
-    };
+
     
     double fontSize = 10;
     double streetNameSize = 200;
@@ -698,30 +697,32 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         std::vector<ezgl::point2d> inViewSegment;
         inViewSegment.clear();
         
-        std::vector<oneWaySegInfo> oneWaySegment;
+        
         inViewSegment.clear();
         
         std::string streetName = getStreetName(streetID);
         
-        double x = 0, y = 0, x1 = 0, y1 = 0;
+        double xFrom = 0, yFrom = 0, xTo = 0, yTo = 0;
         for(int segmentIndex = 0; segmentIndex < citys[currentCityIdx]->street->streetSegments[streetID].size(); segmentIndex++){
             
             if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
 
-                x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).longitude());
-                y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).latitude());
-                x1 = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).longitude());
-                y1 = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).latitude());
+                xFrom = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).longitude());
+                yFrom = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).latitude());
+                xTo = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).longitude());
+                yTo = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).latitude());
 
-                if (world.contains(x, y) || world.contains(x1, y1)){
-                    inViewSegment.push_back({x, y});
+                if (world.contains(xFrom, yFrom) || world.contains(xTo, yTo)){
+                    inViewSegment.push_back({xFrom, yFrom});
                     //store the segment that is one way
                     if(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).oneWay){
                         oneWaySegInfo oneWay;
-                        oneWay.x=x1;
-                        oneWay.y=y1;
-                        oneWay.distance=sqrt((x1-x)*(x1-x)+(y1-y)*(y1-y));
-                        oneWaySegment.push_back(oneWay);
+                        oneWay.fromX=xFrom;
+                        oneWay.fromY=yFrom;
+                        oneWay.toX=xTo;
+                        oneWay.toY=yTo;
+                        oneWay.distance=sqrt((xTo-xFrom)*(xTo-xFrom)+(yTo-yFrom)*(yTo-yFrom));
+                        citys[currentCityIdx]->streetSegment->oneWaySegment.push_back(oneWay);
                     }
                 }
             }
@@ -761,18 +762,45 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
                 displayedNames.push_back(midPoint);
             }
             //draw one way symbol
-           
-                for(int oneWaySegId = 1; oneWaySegId < oneWaySegment.size(); oneWaySegId++){
-                    if(oneWaySegment[oneWaySegId].distance > 0.1*diagLength){
-                        g->set_text_rotation(degree);
-                        ezgl::point2d position(oneWaySegment[oneWaySegId].x,oneWaySegment[oneWaySegId].y);
-                        g->draw_text(position, ">");
-                        
-                    }
-                }
+           drawOneWayStreet(g, diagLength);
+              
         }
     }
 }
+void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
+    double h=7;
+    double b=1;
+    std::vector<ezgl::point2d> points;
+    //point 1
+    ezgl::point2d firstPoint(position.x+h*cos(theta*kDegreeToRadian),position.y+h*sin(theta*kDegreeToRadian));
+    ezgl::point2d secondPoint(position.x+b*cos((90+theta)*kDegreeToRadian),position.y+h*sin((90+theta)*kDegreeToRadian));
+    ezgl::point2d thirdPoint(position.x+h*cos((theta-90)*kDegreeToRadian),position.y+h*sin((theta-90)*kDegreeToRadian));
+    points.push_back(firstPoint);
+    points.push_back(secondPoint);
+    points.push_back(thirdPoint);
+    
+    g->fill_poly(points);
+    
+}
+void drawOneWayStreet(ezgl::renderer *g, double diagLength){
+    for(int oneWaySegId = 1; oneWaySegId < citys[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
+                    if(citys[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1*diagLength){
+                        
+                        double degree = atan2(citys[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toY - 
+                        citys[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
+                                citys[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toX - 
+                        citys[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX) / kDegreeToRadian;
+                        
+                        ezgl::point2d position(citys[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX ,
+                                citys[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY);
+                        
+                        g->set_text_rotation(degree);
+                        drawArrow(g, position, degree);
+                        
+                    }
+                }
+}
+
 
 
 // initialize the bounding coordinates of all features into vectors
