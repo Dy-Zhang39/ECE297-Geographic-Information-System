@@ -1179,14 +1179,14 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     if (poiType.compare("ferry_termial") == 0){   
         
         if (transport) 
-            iconSurface = g->load_png("./libstreetmap/images/ferry.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/ferry.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("theatre") != std::string::npos && recreation) {       
         
         if(recreation) 
-            iconSurface = g->load_png("./libstreetmap/images/theater.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/theater.png");
         else 
             displayPOI = false;
         
@@ -1195,70 +1195,70 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
             || poiType.rfind("college") != std::string::npos)) {
         
         if (education) 
-            iconSurface = g->load_png("./libstreetmap/images/university.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/university.png");
         else 
             displayPOI = false;
 
     } else if (poiType.rfind("parking") != std::string::npos) {       
         
         if (transport) 
-            iconSurface = g->load_png("./libstreetmap/images/parkinggarage.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/parkinggarage.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("fast_food") != std::string::npos) {       
         
         if (food) 
-            iconSurface = g->load_png("./libstreetmap/images/fastfood.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/fastfood.png");
         else 
             displayPOI = false;
 
     } else if (poiType.compare("community_centre") == 0) {       
         
         if (other) 
-            iconSurface = g->load_png("./libstreetmap/images/communitycentre.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/communitycentre.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("pharmacy") == 0) {       
         
         if (medical) 
-            iconSurface = g->load_png("./libstreetmap/images/drogerie.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/drogerie.png");
         else 
             displayPOI = false;
        
     } else if (poiType.rfind("cafe") != std::string::npos) {       
         
         if (food) 
-            iconSurface = g->load_png("./libstreetmap/images/coffee.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/coffee.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("place_of_worship") == 0) {        
         
         if (other) 
-            iconSurface = g->load_png("./libstreetmap/images/chapel-2.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/chapel-2.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("bank") == 0) {       
        
         if (finance) 
-            iconSurface = g->load_png("./libstreetmap/images/bank.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/bank.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("atm") == 0) {       
         
         if (finance) 
-            iconSurface = g->load_png("./libstreetmap/images/atm-2.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/atm-2.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("cinema") == 0) {       
         
         if (recreation) 
-            iconSurface = g->load_png("./libstreetmap/images/cinema.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/cinema.png");
         else 
             displayPOI = false;
         
@@ -1267,14 +1267,14 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
             || poiType.find("clinic") != std::string::npos) {        
         
         if (medical) 
-            iconSurface = g->load_png("./libstreetmap/images/hospital-building.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/hospital-building.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("library") == 0) {        
         
         if (education) 
-            iconSurface = g->load_png("./libstreetmap/images/library.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/library.png");
         else 
             displayPOI = false;
         
@@ -1282,14 +1282,14 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
             || poiType.rfind("food_") != std::string::npos)) {        
         
         if (food) 
-            iconSurface = g->load_png("./libstreetmap/images/restaurant.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/restaurant.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("police") == 0) {       
         
         if (gov) 
-            iconSurface = g->load_png("./libstreetmap/images/police.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/police.png");
         else 
             displayPOI = false;
         
@@ -1297,7 +1297,7 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
             || poiType.rfind("weight") != std::string::npos) {
         
         if (recreation) 
-            iconSurface = g->load_png("./libstreetmap/images/fitness.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/fitness.png");
         else 
             displayPOI = false;
         
@@ -1305,59 +1305,59 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
             || poiType.rfind("orthodon") != std::string::npos) {
         
         if (medical) 
-            iconSurface = g->load_png("./libstreetmap/images/dentist.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/dentist.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("bus_s") != std::string::npos) {       
         
         if (transport) 
-            iconSurface = g->load_png("./libstreetmap/images/bus.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/bus.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("fuel") != std::string::npos) {       
         
         if (transport) 
-            iconSurface = g->load_png("./libstreetmap/images/fillingstation.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/fillingstation.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("child") != std::string::npos) {        
         
         if (other) 
-            iconSurface = g->load_png("./libstreetmap/images/daycare.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/daycare.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("bicyle") != std::string::npos) {       
        
         if (transport) 
-            iconSurface = g->load_png("./libstreetmap/images/bicyle_parking.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/bicyle_parking.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("toilets") != std::string::npos) {        
        
         if (other) 
-            iconSurface = g->load_png("./libstreetmap/images/toilets_inclusive.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/toilets_inclusive.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("post_") != std::string::npos) {       
         
-        if (other) iconSurface = g->load_png("./libstreetmap/images/postal.png");
+        if (other) iconSurface = g->load_png("./libstreetmap/resources/images/postal.png");
         else displayPOI = false;
         
     } else if (poiType == "airport" && transport) {     
         
         if (transport) 
-            iconSurface = g->load_png("./libstreetmap/images/airport.png");
+            iconSurface = g->load_png("./libstreetmap/resources/images/airport.png");
         else 
             displayPOI = false;
         
     } else if (other) {
-        iconSurface = g->load_png("./libstreetmap/images/sight-2.png");
+        iconSurface = g->load_png("./libstreetmap/resources/images/sight-2.png");
         
     } else {                                // else do not display anything       
         displayPOI = false;
