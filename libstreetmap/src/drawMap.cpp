@@ -38,10 +38,7 @@ extern std::vector<std::string> cityNames;
 extern std::string mapPath_prefix;
 
 
-std::vector <double> topFeatures;
-std::vector <double> bottomFeatures;
-std::vector <double> leftFeatures;
-std::vector <double> rightFeatures;
+
 std::vector <ezgl::point2d> featureTextPoints;
 std::string selectedPOI = "all";
 
@@ -797,12 +794,10 @@ void initializeFeatureBounding() {
             minY = std::min(minY, y);
             maxY = std::max(maxY, y);
         }
-        
+        Feature keyPoints(maxY, minY, minX, maxX);
         // record the bounding boxes for each feature
-        topFeatures.push_back(maxY);
-        bottomFeatures.push_back(minY);
-        leftFeatures.push_back(minX);
-        rightFeatures.push_back(maxX);
+        citys[currentCityIdx]->featurePts.push_back(keyPoints);
+
     }
 }
 
@@ -817,16 +812,13 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     std::vector <FeatureIdx> islands;
     
     int count = 0;
-    std::clock_t featureBegin = clock();
-
-
     
     //loop through all features, if the feature area is at the predefined ratio of the visible area, draw it
     for (FeatureIdx featureID = 0; featureID < getNumFeatures(); featureID++){
-        double minX = leftFeatures[featureID];
-        double maxX = rightFeatures[featureID];
-        double maxY = topFeatures[featureID];
-        double minY = bottomFeatures[featureID];
+        double minX = citys[currentCityIdx]->featurePts[featureID].left;
+        double maxX = citys[currentCityIdx]->featurePts[featureID].right;
+        double maxY = citys[currentCityIdx]->featurePts[featureID].top;
+        double minY = citys[currentCityIdx]->featurePts[featureID].bottom;
         double featureArea = findFeatureArea(featureID);
         
         // If the feature is in the visible area, call helper function to display the feature.
@@ -850,16 +842,13 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     for (int islandIdx = 0; islandIdx < islands.size(); islandIdx++){
         drawFeatureByID(g, islands[islandIdx]);
     }
-    std::clock_t featureFin = clock();
 
-    double elapsedSecondsFeature = double(featureFin - featureBegin) / CLOCKS_PER_SEC;
-    
     //loop through all features, if the feature area is at the predefined ratio of the visible area, display its name
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
-        double minX = leftFeatures[featureID];
-        double maxX = rightFeatures[featureID];
-        double maxY = topFeatures[featureID];
-        double minY = bottomFeatures[featureID];
+        double minX = citys[currentCityIdx]->featurePts[featureID].left;
+        double maxX = citys[currentCityIdx]->featurePts[featureID].right;
+        double maxY = citys[currentCityIdx]->featurePts[featureID].top;
+        double minY = citys[currentCityIdx]->featurePts[featureID].bottom;
         double featureArea = findFeatureArea(featureID);
         if ((world.contains(minX, minY) || world.contains(minX, maxY)
                 || world.contains(maxX, minY) || world.contains(maxX, maxY)
@@ -871,10 +860,6 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
             }
         }
     }
-    std::clock_t featureNameFin = clock();
-
-    double elapsedSecondsFeatureName = double(featureNameFin - featureFin) / CLOCKS_PER_SEC;
-    std::cout<<count<<"=== time: " << elapsedSecondsFeature<< " feature name time: " << elapsedSecondsFeatureName<<"\n";
 }
 
 //draw a specific feature by a given feature id
@@ -1321,10 +1306,9 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
 
 void loadSubway(ezgl::renderer *g){
     double showTextRatio = 10;
-    double showLineRatio = 30;
+    double showLineRatio = 50;
     std::vector<const OSMRelation *> osm_subway_lines;
     int stepLength = 1000;
-    std::clock_t subwayStart = clock();
     std::vector<OSMID> osm_nodes;
     ezgl::rectangle world = g->get_visible_world();
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
@@ -1363,7 +1347,6 @@ void loadSubway(ezgl::renderer *g){
         for (unsigned j = 0; j < getTagCount(osm_subway_lines[i]); j++) {
             std::pair<std::string, std::string> tagPair = getTagPair(osm_subway_lines[i], j);
             if (tagPair.first == "colour") {
-                std::cout << "Subway line color: " << tagPair.second << std::endl;
                 lineColor = tagPair.second;
             } else if (tagPair.first == "name") {
                 //std::cout << "Subway line name: " << tagPair.second << std::endl;
@@ -1372,8 +1355,7 @@ void loadSubway(ezgl::renderer *g){
 
         // Get relation members
         std::vector<TypedOSMID> route_members = getRelationMembers(osm_subway_lines[i]); 
-        // Print subway station names
-        //std::cout << "Subway line stations:" << std::endl;
+        // Grab subway names
         double prevX = 0, prevY = 0;
         
         for(unsigned j = 0; j < route_members.size(); j++) {
@@ -1411,9 +1393,11 @@ void loadSubway(ezgl::renderer *g){
                     if (tagPair.first == "name") {
                         double x = xFromLon(stationCoord.longitude());
                         double y = yFromLat(stationCoord.latitude());
-                            
+                        
+                        //if the level of detail satisfies the ratio to display subway
                         if (showLineRatio > widthToPixelRatio) {
 
+                            //draw the subway lines and station according to color given
                             g->set_color(244, 208, 163, 255);
                             if (lineColor.compare("green")) {
                                 g->set_color(ezgl::GREEN);
@@ -1437,12 +1421,12 @@ void loadSubway(ezgl::renderer *g){
                                 g->draw_line({prevX, prevY}, {x, y});
                             }
                             
+                            //add the station coordinate and name to the vector
                             if (world.contains(x, y) && showTextRatio > widthToPixelRatio) {
                                 stationCoordindate.push_back({x, y});
                                 stationName.push_back(tagPair.second );
                             }
                         }
-
                         prevX = x;
                         prevY = y;
                         break;
@@ -1451,9 +1435,9 @@ void loadSubway(ezgl::renderer *g){
 
             }
         }
-    
-
     }
+    
+    //display all the station name when it is not overlapped
     std::vector <ezgl::point2d> displayedCoord;
     displayedCoord.clear();
 
@@ -1478,49 +1462,5 @@ void loadSubway(ezgl::renderer *g){
             displayedCoord.push_back(stationCoordindate[stationIdx]);
         }
     } 
-    std::clock_t subwayEnd = clock();
-    double elapsedSecondsSubway = double(subwayEnd - subwayStart) / CLOCKS_PER_SEC;
-    std::cout<<"elapsedSecondsSubway: " << elapsedSecondsSubway << "  r atio:" <<widthToPixelRatio<< std::endl;
 }
 
-
-/*void intersectionPopup(ezgl::application *application, IntersectionIdx id) {
-    GObject *window;            // the parent window over which to add the dialog
-    GtkWidget *content_area;    // the content area of the dialog
-    GtkWidget *label;           // the label we will create to display a message in the contentarea
-    GtkWidget *dialog;          // the dialog box we will create
- 
-    window = application->get_object(application->get_main_window_id().c_str());
-    dialog = gtk_dialog_new_with_buttons(
-            "Intersection",(GtkWindow*) window,GTK_DIALOG_MODAL,
-            ("OK"),GTK_RESPONSE_ACCEPT);
-    
-    
-    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    label = gtk_label_new(citys[currentCityIdx] -> intersection -> intersectionInfo[id].name.c_str());
-    gtk_container_add(GTK_CONTAINER(content_area), label);
-    
-    // The main purpose of this is to show dialog's child widget, label
-    gtk_widget_show_all(dialog);// Connecting the "response" signal from the user to the associated callback function
-    g_signal_connect(GTK_DIALOG(dialog),"response",G_CALLBACK(on_dialog_response),NULL);
-}
-
-void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data){
-    // For demonstration purposes, this will show the int value of the response type
-    std::cout << "response is ";
-    switch(response_id) {
-        case GTK_RESPONSE_ACCEPT:
-            std::cout << "GTK_RESPONSE_ACCEPT ";
-            break;
-        case GTK_RESPONSE_DELETE_EVENT:
-            std::cout << "GTK_RESPONSE_DELETE_EVENT (i.e. ??X?? button) ";
-            break;
-        case GTK_RESPONSE_REJECT:
-            std::cout << "GTK_RESPONSE_REJECT ";
-            break;
-        default:std::cout << "UNKNOWN ";
-        break;
-    }
-    std::cout << "(" << response_id << ")\n";
-    gtk_widget_destroy(GTK_WIDGET (dialog));
-}*/

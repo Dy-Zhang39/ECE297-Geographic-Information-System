@@ -37,6 +37,19 @@ public:
     std::vector<intersectionData> intersectionInfo;
 };
 
+class Feature{
+public:
+    double top;
+    double bottom;
+    double left;
+    double right;
+    Feature (double t, double b, double l, double r){
+        top = t;
+        bottom = b;
+        left = l;
+        right = r;
+    }   
+};
 class City{
 public:
     std::string mapPath;
@@ -49,7 +62,9 @@ public:
     double minLon;
     double avgLat;
     double worldRatio;
-    
+
+    std::vector<Feature> featurePts;
+
 };
 #endif /* GLOBAL_H */
 
