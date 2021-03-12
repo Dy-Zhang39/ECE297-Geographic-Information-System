@@ -57,7 +57,7 @@ std::vector<std::string> cityNames = {
     "Rio De Janeiro, Brazil", "Saint Helena", "Singapore", "Sydney, Australia",
     "Tehran, Iran", "Tokyo, Japan", "Toronto, Canada"
 };
-std::vector<City*> citys;
+std::vector<City*> cities;
 int currentCityIdx;
 std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
 
@@ -78,13 +78,12 @@ char SEPARATE_CHAR_AFTER = 's';
 
 
 bool loadMap(std::string map_streets_database_filename) {
-   std::clock_t loadMapBegin = clock();
     bool alreadyExist = false;
     currentCityIdx = 0;
     
-    for (int cityIdx = 0; cityIdx < citys.size() && !alreadyExist; cityIdx++){
+    for (int cityIdx = 0; cityIdx < cities.size() && !alreadyExist; cityIdx++){
 
-        if (map_streets_database_filename == citys[cityIdx] -> mapPath){
+        if (map_streets_database_filename == cities[cityIdx] -> mapPath){
             alreadyExist = true;
             currentCityIdx = cityIdx;
         }      
@@ -109,8 +108,8 @@ bool loadMap(std::string map_streets_database_filename) {
         newCity->street = new Street;
         newCity ->streetSegment = new StreetSegment;
         newCity ->intersection = new Intersection;
-        citys.push_back(newCity);
-        currentCityIdx = citys.size() - 1;
+        cities.push_back(newCity);
+        currentCityIdx = cities.size() - 1;
     }else{
         double loadAlready = double(osmMapEnd - loadMapEnd) / CLOCKS_PER_SEC;
         std::cout << "The loading process takes " << loadAlready << "s"<< std::endl;
@@ -119,54 +118,90 @@ bool loadMap(std::string map_streets_database_filename) {
 
 
     std::cout << "loadMap: " << map_streets_database_filename << std::endl;
-    
-    /*
-    //dynamic allocate the global variable
-    citys[currentCityIdx]->street = new Street;
-    citys[currentCityIdx]->streetSegment = new StreetSegment;
-    citys[currentCityIdx]->intersection = new Intersection;
-    */
+
     resizeData();               //resize the global vectors
     streetPartialName();        //pre-load partial name index
     street_Intersection();      //pre-load street intersections
     street_Info();              //pre-load information about street length; street travel time; street segment length
+    initializeFeatureBounding();//pre-load the bounding boxes of features
     
-    std::clock_t end = clock();
-    double elapsedSecondsLoadMap = double(loadMapEnd - loadMapBegin) / CLOCKS_PER_SEC;
-    double elapsedSecondsLoadOSM = double(osmMapEnd - loadMapEnd) / CLOCKS_PER_SEC;
-    double elapsedSecondsLoadALL = double(end - loadMapBegin) / CLOCKS_PER_SEC;
-    std::cout<<"elapsedSecondsLoadMap: "<<elapsedSecondsLoadMap<<" elapsedSecondsLoadOSM: "<<elapsedSecondsLoadOSM<<" elapsedSecondsLoadALL: "<<elapsedSecondsLoadALL<<std::endl;
     return load_successful;
     
     
 }
 
+//calculate x coordinate from longitude
+double xFromLon(double lon){
+    return lon * kDegreeToRadian * kEarthRadiusInMeters * std::cos(cities[currentCityIdx] -> avgLat * kDegreeToRadian);
+}
+
+//calculate y coordinate from latitude
+double yFromLat(double lat){
+    return lat * kDegreeToRadian* kEarthRadiusInMeters;
+}
+
+//calculate longitude from x coordinate
+double lonFromX(double x){
+    return x/(kDegreeToRadian * kEarthRadiusInMeters * std::cos(cities[currentCityIdx] -> avgLat * kDegreeToRadian));
+}
+
+//calculate latitude from y coordinate
+double latFromY(double y){
+    return y/(kDegreeToRadian* kEarthRadiusInMeters);
+}
 
 void resizeData(){
-    //    initialize vector<double> streetSegLength;
-    citys[currentCityIdx]->street->streetLength.resize(getNumStreets());
-    citys[currentCityIdx]->street->streetSegments.resize(getNumStreets());
+    // initialize vector<double> streetSegLength;
+    cities[currentCityIdx]->street->streetLength.resize(getNumStreets());
+    cities[currentCityIdx]->street->streetSegments.resize(getNumStreets());
     // Load index vectors used to quick search street names
-    // Load street name into the vector using first 1 characters as index for citys[currentCityIdx]->street->streetNamesOneChar,
-    // Load street name into the vector using first 2 characters as index for citys[currentCityIdx]->street->streetNamedTwoChar,
-    // Load street name into the vector using first 3 characters as index for citys[currentCityIdx]->street->streetNamesThreeChar.
-    citys[currentCityIdx]->street->streetNames.resize(getNumStreets());
-    citys[currentCityIdx]->street->streetNamesOneChar.resize(CHAR_SIZE);
-    citys[currentCityIdx]->street->streetNamesTwoChar.resize(CHAR_SIZE * CHAR_SIZE);
-    citys[currentCityIdx]->street->streetNamesThreeChar.resize(CHAR_SIZE * CHAR_SIZE * 3);
+    // Load street name into the vector using first 1 characters as index for cities[currentCityIdx]->street->streetNamesOneChar,
+    // Load street name into the vector using first 2 characters as index for cities[currentCityIdx]->street->streetNamedTwoChar,
+    // Load street name into the vector using first 3 characters as index for cities[currentCityIdx]->street->streetNamesThreeChar.
+    cities[currentCityIdx]->street->streetNames.resize(getNumStreets());
+    cities[currentCityIdx]->street->streetNamesOneChar.resize(CHAR_SIZE);
+    cities[currentCityIdx]->street->streetNamesTwoChar.resize(CHAR_SIZE * CHAR_SIZE);
+    cities[currentCityIdx]->street->streetNamesThreeChar.resize(CHAR_SIZE * CHAR_SIZE * 3);
     
-    //Find streets length and their corresponding travel time
-    citys[currentCityIdx]->streetSegment->streetSegLength.resize(getNumStreetSegments());
-    citys[currentCityIdx]->streetSegment->streetSegTravelTime.resize(getNumStreetSegments());
-    citys[currentCityIdx]->streetSegment->streetSegPoint.resize(getNumStreetSegments());
+    // Find streets length and their corresponding travel time
+    cities[currentCityIdx]->streetSegment->streetSegLength.resize(getNumStreetSegments());
+    cities[currentCityIdx]->streetSegment->streetSegTravelTime.resize(getNumStreetSegments());
+    cities[currentCityIdx]->streetSegment->streetSegPoint.resize(getNumStreetSegments());
     
+}
+
+// initialize the bounding coordinates of all features into vectors
+void initializeFeatureBounding() {
+    
+    for (int featureID = 0; featureID < getNumFeatures(); featureID++){
+        double minX = xFromLon(getFeaturePoint(featureID, 0).longitude());
+        double maxX = minX;
+        double minY = yFromLat(getFeaturePoint(featureID, 0).latitude());
+        double maxY = minY;
+        
+        // find bounding box of feature
+        for (int pt = 1; pt < getNumFeaturePoints(featureID); pt++){
+            double x, y;
+            x = xFromLon(getFeaturePoint(featureID, pt).longitude());
+            y = yFromLat(getFeaturePoint(featureID, pt).latitude());
+
+            minX = std::min(minX, x);
+            maxX = std::max(maxX, x);
+            minY = std::min(minY, y);
+            maxY = std::max(maxY, y);
+        }
+        Feature keyPoints(maxY, minY, minX, maxX);
+        // record the bounding boxes for each feature
+        cities[currentCityIdx]->featurePts.push_back(keyPoints);
+
+    }
 }
 
 void streetPartialName(){
     
     for (int i = 0; i < getNumStreets(); i++){
         //initialize all the element in the street length to 0 to prevent undefined variable
-        citys[currentCityIdx]->street->streetLength[i] = 0;
+        cities[currentCityIdx]->street->streetLength[i] = 0;
         
         // Get street name, remove space and convert to lower cases. Got only the first 2 letters.
         std::string streetName = getStreetName(i);
@@ -180,24 +215,24 @@ void streetPartialName(){
             }
             
             if (streetName[j] != ' ') {
-                citys[currentCityIdx]->street->streetNames[i].push_back(tolower(streetName[j]));
+                cities[currentCityIdx]->street->streetNames[i].push_back(tolower(streetName[j]));
             }
         }
 
         // Store the street id into the index vector: streetNamesOneChar, streetNamesTwoChar
         if (streetNameSub.length() > 0)
-            citys[currentCityIdx]->street->streetNamesOneChar[tolower(streetNameSub[0])].push_back(i);
+            cities[currentCityIdx]->street->streetNamesOneChar[tolower(streetNameSub[0])].push_back(i);
         
         if (streetNameSub.length() > 1)
-            citys[currentCityIdx]->street->streetNamesTwoChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
+            cities[currentCityIdx]->street->streetNamesTwoChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
 
         if (streetNameSub.length() > PREFIX_NUM_CHAR) {
             if (tolower(streetNameSub[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR)) {
-                citys[currentCityIdx]->street->streetNamesThreeChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
+                cities[currentCityIdx]->street->streetNamesThreeChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
             } else if (tolower(streetNameSub[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR_AFTER)) {
-                citys[currentCityIdx]->street->streetNamesThreeChar[(tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])) + CHAR_SIZE * CHAR_SIZE].push_back(i);
+                cities[currentCityIdx]->street->streetNamesThreeChar[(tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])) + CHAR_SIZE * CHAR_SIZE].push_back(i);
             } else {
-                citys[currentCityIdx]->street->streetNamesThreeChar[(tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])) + CHAR_SIZE * CHAR_SIZE + CHAR_SIZE * CHAR_SIZE].push_back(i);
+                cities[currentCityIdx]->street->streetNamesThreeChar[(tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])) + CHAR_SIZE * CHAR_SIZE + CHAR_SIZE * CHAR_SIZE].push_back(i);
             }
         }
     }
@@ -205,9 +240,9 @@ void streetPartialName(){
     
 }
 void street_Intersection(){
-    citys[currentCityIdx]->intersection->intersectionStreetSegments.resize(getNumIntersections()); //create empty vector for each intersection
-    citys[currentCityIdx]->street->streetIntersections.resize(getNumStreets());
-    citys[currentCityIdx] -> intersection -> intersectionInfo.resize(getNumIntersections());
+    cities[currentCityIdx]->intersection->intersectionStreetSegments.resize(getNumIntersections()); //create empty vector for each intersection
+    cities[currentCityIdx]->street->streetIntersections.resize(getNumStreets());
+    cities[currentCityIdx] -> intersection -> intersectionInfo.resize(getNumIntersections());
     
     double maxLat = getIntersectionPosition(0).latitude();
     double minLat = maxLat;
@@ -217,13 +252,13 @@ void street_Intersection(){
     //iterate through all intersections
     for(int intersectionID = 0; intersectionID < getNumIntersections(); ++intersectionID){
         
-        citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position = getIntersectionPosition(intersectionID);
-        citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].name = getIntersectionName(intersectionID);
+        cities[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position = getIntersectionPosition(intersectionID);
+        cities[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].name = getIntersectionName(intersectionID);
 
-        maxLat = std::max(maxLat, citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.latitude());
-        minLat = std::min(minLat, citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position. latitude());
-        maxLon = std::max(maxLon, citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.longitude());
-        minLon = std::min(minLon, citys[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.longitude());
+        maxLat = std::max(maxLat, cities[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.latitude());
+        minLat = std::min(minLat, cities[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position. latitude());
+        maxLon = std::max(maxLon, cities[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.longitude());
+        minLon = std::min(minLon, cities[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position.longitude());
         
         for(int i = 0; i < getNumIntersectionStreetSegment(intersectionID); ++i) {         
         
@@ -232,19 +267,19 @@ void street_Intersection(){
             auto streetSegInfo = getStreetSegmentInfo(streetSegID);
             auto streetID = streetSegInfo.streetID;
 
-            if (citys[currentCityIdx]->street->streetIntersections[streetID].size() == 0 || citys[currentCityIdx]->street->streetIntersections[streetID].back() < intersectionID) {
-                citys[currentCityIdx]->street->streetIntersections[streetID].push_back(intersectionID);              //save the intersection to the street it belongs to
+            if (cities[currentCityIdx]->street->streetIntersections[streetID].size() == 0 || cities[currentCityIdx]->street->streetIntersections[streetID].back() < intersectionID) {
+                cities[currentCityIdx]->street->streetIntersections[streetID].push_back(intersectionID);              //save the intersection to the street it belongs to
             }
             
-            citys[currentCityIdx]->intersection->intersectionStreetSegments[intersectionID].push_back(streetSegID);  //save segments connected to intersection
+            cities[currentCityIdx]->intersection->intersectionStreetSegments[intersectionID].push_back(streetSegID);  //save segments connected to intersection
         }
     }
     
-    citys[currentCityIdx] -> maxLat = maxLat;
-    citys[currentCityIdx] -> minLat = minLat;
-    citys[currentCityIdx] -> maxLon = maxLon;
-    citys[currentCityIdx] -> minLon = minLon;
-    citys[currentCityIdx] -> avgLat = (maxLat + minLat)/2;
+    cities[currentCityIdx] -> maxLat = maxLat;
+    cities[currentCityIdx] -> minLat = minLat;
+    cities[currentCityIdx] -> maxLon = maxLon;
+    cities[currentCityIdx] -> minLon = minLon;
+    cities[currentCityIdx] -> avgLat = (maxLat + minLat)/2;
             
 }
 //street length; street travel time; street segment length
@@ -254,16 +289,16 @@ void street_Info(){
         double streetSegmentLength = 0;
         struct StreetSegmentInfo streetSegmentID = getStreetSegmentInfo(street_segment_id);
         int twoTerminals = 2;
-        citys[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id].resize(twoTerminals + streetSegmentID.numCurvePoints);
+        cities[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id].resize(twoTerminals + streetSegmentID.numCurvePoints);
         //find the starting and ending position of given street segment
         auto from = getIntersectionPosition(streetSegmentID.from);
         auto to = getIntersectionPosition(streetSegmentID.to);
         
         //put the street segment into the street that it belong to
-        citys[currentCityIdx]->street->streetSegments[streetSegmentID.streetID].push_back(street_segment_id);  
+        cities[currentCityIdx]->street->streetSegments[streetSegmentID.streetID].push_back(street_segment_id);  
         
-        citys[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][0] = from;
-        citys[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][twoTerminals + streetSegmentID.numCurvePoints - 1] = to;
+        cities[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][0] = from;
+        cities[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][twoTerminals + streetSegmentID.numCurvePoints - 1] = to;
         
         //find curve points on the given street segment (more than one curve point)
         if (streetSegmentID.numCurvePoints > 1) {
@@ -272,18 +307,18 @@ void street_Info(){
             //calculate distance between start point and first curve point
             streetSegmentLength = findDistanceBetweenTwoPoints(firstPoints);
             
-            citys[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][1] = getStreetSegmentCurvePoint(street_segment_id, 0);
+            cities[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][1] = getStreetSegmentCurvePoint(street_segment_id, 0);
             int i = 1;
             for (; i < streetSegmentID.numCurvePoints; i++) {
                 std::pair <LatLon, LatLon> curvePoints(getStreetSegmentCurvePoint(street_segment_id, i - 1), getStreetSegmentCurvePoint(street_segment_id, i));
                 
-                citys[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][i+1] = getStreetSegmentCurvePoint(street_segment_id, i);
+                cities[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][i+1] = getStreetSegmentCurvePoint(street_segment_id, i);
                 //add the distance between each curve points
                 streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(curvePoints);
             }
             
-            //check if the citys[currentCityIdx]->streetSegment vector is properly filled
-            if(citys[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][i+1].latitude()!= to.latitude()){
+            //check if the cities[currentCityIdx]->streetSegment vector is properly filled
+            if(cities[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][i+1].latitude()!= to.latitude()){
                 std::cout<<"STREEET_SEGMENTS not properly filled"<<std::endl;
                 exit (-1);
             }
@@ -291,33 +326,33 @@ void street_Info(){
             //add the distance between last curve point and end point
             std::pair <LatLon, LatLon> lastPoints(getStreetSegmentCurvePoint(street_segment_id, i - 1), to);
             streetSegmentLength = streetSegmentLength + findDistanceBetweenTwoPoints(lastPoints);
-            citys[currentCityIdx]->streetSegment->streetSegLength[street_segment_id] = streetSegmentLength;
+            cities[currentCityIdx]->streetSegment->streetSegLength[street_segment_id] = streetSegmentLength;
 
         } else if (streetSegmentID.numCurvePoints == 1) { //only has one curve point
             std::pair <LatLon, LatLon> firstPoints(from, getStreetSegmentCurvePoint(street_segment_id, 0));
             std::pair <LatLon, LatLon> lastPoints(getStreetSegmentCurvePoint(street_segment_id, 0), to);
             
-            citys[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][1] = getStreetSegmentCurvePoint(street_segment_id, 0);
+            cities[currentCityIdx]->streetSegment->streetSegPoint[street_segment_id][1] = getStreetSegmentCurvePoint(street_segment_id, 0);
             
             // add distance from start point to the only curve point to the end point 
             streetSegmentLength = findDistanceBetweenTwoPoints(firstPoints) + findDistanceBetweenTwoPoints(lastPoints);
-            citys[currentCityIdx]->streetSegment->streetSegLength[street_segment_id] = streetSegmentLength;
+            cities[currentCityIdx]->streetSegment->streetSegLength[street_segment_id] = streetSegmentLength;
 
         } else {
             //straight segment
             std::pair <LatLon, LatLon> points(from, to);
             //calculate distance between start and end point
             streetSegmentLength = findDistanceBetweenTwoPoints(points);
-            citys[currentCityIdx]->streetSegment->streetSegLength[street_segment_id] = streetSegmentLength;
+            cities[currentCityIdx]->streetSegment->streetSegLength[street_segment_id] = streetSegmentLength;
         }
         
         
         //find street segment travel time
         double speedLimit = streetSegmentID.speedLimit;
-        citys[currentCityIdx]->streetSegment->streetSegTravelTime[street_segment_id] = streetSegmentLength / speedLimit;
+        cities[currentCityIdx]->streetSegment->streetSegTravelTime[street_segment_id] = streetSegmentLength / speedLimit;
         
         //find street length
-        citys[currentCityIdx]->street->streetLength[streetSegmentID.streetID] += streetSegmentLength;
+        cities[currentCityIdx]->street->streetLength[streetSegmentID.streetID] += streetSegmentLength;
     }
 }
     
@@ -325,20 +360,20 @@ void street_Info(){
 //clear all the global data structure to prevent it get bigger and bigger    
 void closeMap() {
     /*
-    delete citys[currentCityIdx]->street;
-    delete citys[currentCityIdx]->streetSegment;
-    delete citys[currentCityIdx]->intersection;
+    delete cities[currentCityIdx]->street;
+    delete cities[currentCityIdx]->streetSegment;
+    delete cities[currentCityIdx]->intersection;
     */
     
     closeDataBase();
-    for(int cityIdx = 0; cityIdx < citys.size(); cityIdx++){
-        delete (citys[cityIdx]-> street);
-        delete (citys[cityIdx]-> streetSegment);
-        delete (citys[cityIdx]-> intersection);
-        delete citys[cityIdx];
+    for(int cityIdx = 0; cityIdx < cities.size(); cityIdx++){
+        delete (cities[cityIdx]-> street);
+        delete (cities[cityIdx]-> streetSegment);
+        delete (cities[cityIdx]-> intersection);
+        delete cities[cityIdx];
     }
     
-    citys.clear();
+    cities.clear();
     
     //Clean-up your map related data structures here
 
@@ -371,16 +406,16 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
         //according to the length of streetPrefix, use the correct index vector to retrieve the street names starting with the first 1, 2 or 3 characters of streetPrefix
         if (streetPrefix.length() > PREFIX_NUM_CHAR) {
             if (tolower(streetPrefix[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR)) {
-                adjustedNameList = citys[currentCityIdx]->street->streetNamesThreeChar[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
+                adjustedNameList = cities[currentCityIdx]->street->streetNamesThreeChar[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
             } else if (tolower(streetPrefix[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR_AFTER)) {
-                adjustedNameList = citys[currentCityIdx]->street->streetNamesThreeChar[(tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])) + CHAR_SIZE * CHAR_SIZE];
+                adjustedNameList = cities[currentCityIdx]->street->streetNamesThreeChar[(tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])) + CHAR_SIZE * CHAR_SIZE];
             } else {
-                adjustedNameList = citys[currentCityIdx]->street->streetNamesThreeChar[(tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])) + CHAR_SIZE * CHAR_SIZE + CHAR_SIZE * CHAR_SIZE];
+                adjustedNameList = cities[currentCityIdx]->street->streetNamesThreeChar[(tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])) + CHAR_SIZE * CHAR_SIZE + CHAR_SIZE * CHAR_SIZE];
             }
         } else if (streetPrefix.length() > 1) {
-            adjustedNameList = citys[currentCityIdx]->street->streetNamesTwoChar[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
+            adjustedNameList = cities[currentCityIdx]->street->streetNamesTwoChar[tolower(streetPrefix[0]) * CHAR_SIZE + tolower(streetPrefix[1])];
         } else {
-            adjustedNameList = citys[currentCityIdx]->street->streetNamesOneChar[tolower(streetPrefix[0])];
+            adjustedNameList = cities[currentCityIdx]->street->streetNamesOneChar[tolower(streetPrefix[0])];
         }
         
         //loop through the street names within the index vector
@@ -427,7 +462,7 @@ double findStreetLength(StreetIdx street_id){
     if (street_id < 0 || street_id >= getNumStreets()){
         return 0.0;
     }
-    return citys[currentCityIdx]->street->streetLength[street_id];
+    return cities[currentCityIdx]->street->streetLength[street_id];
 }
 
 // Return the smallest axis-aligned rectangle that contains all the intersections and curve points of the given street
@@ -638,7 +673,7 @@ std::vector<IntersectionIdx> findIntersectionsOfStreet(StreetIdx street_id){
         return empty;
     }
     
-    return citys[currentCityIdx]->street->streetIntersections[street_id];
+    return cities[currentCityIdx]->street->streetIntersections[street_id];
 
 }
 
@@ -707,7 +742,7 @@ double findStreetSegmentLength(StreetSegmentIdx street_segment_id) {
     if(street_segment_id < 0 || street_segment_id >= getNumStreetSegments()){
         return 0;
     }
-    return citys[currentCityIdx]->streetSegment->streetSegLength[street_segment_id];
+    return cities[currentCityIdx]->streetSegment->streetSegLength[street_segment_id];
     
 }
 
@@ -723,7 +758,7 @@ double findStreetSegmentTravelTime(StreetSegmentIdx street_segment_id) {
         return 0;
     }
     
-    return citys[currentCityIdx]->streetSegment->streetSegTravelTime[street_segment_id];
+    return cities[currentCityIdx]->streetSegment->streetSegTravelTime[street_segment_id];
 
 }
 
@@ -754,6 +789,6 @@ std::vector<StreetSegmentIdx> findStreetSegmentsOfIntersection(IntersectionIdx i
         return empty;
     }
     
-    return citys[currentCityIdx]->intersection->intersectionStreetSegments[intersection_id];
+    return cities[currentCityIdx]->intersection->intersectionStreetSegments[intersection_id];
     
 }
