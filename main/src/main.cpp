@@ -31,20 +31,20 @@ constexpr int BAD_ARGUMENTS_EXIT_CODE = 2;  //Invalid command-line usage
 
 void getCityName(std::string* s);        //get city name from the user
 void clearAllMap();                      //clear all the global variable in citys
-std::vector<std::string> cityNames = {
+/*std::vector<std::string> cityNames = {
     "beijing_china", "cairo_egypt", "cape-town_south-africa", "golden-horseshoe_canada",
     "hamilton_canada", "hong-kong_china", "iceland", "interlaken_switzerland",
     "london_england", "moscow_russia", "new-delhi_india", "new-york_usa",
     "rio-de-janeiro_brazil", "saint-helena", "singapore", "sydney_australia",
     "tehran_iran", "tokyo_japan", "toronto_canada"
-};
+};*/
 //The default map to load if none is specified
 
 std::string default_mapPath = "/cad2/ece297s/public/maps/tokyo_japan";
 std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
-std::vector<City*> citys;
-bool isFinished = false;
-int currentCityIdx;
+extern std::vector<City*> citys;
+extern bool isFinished;
+//int currentCityIdx;
 
 // The start routine of your program (main) when you are running your standalone
 // mapper program. This main routine is *never called* when you are running 
@@ -116,7 +116,7 @@ void getCityName(std::string* s){
     std::cout << "Please enter the name of the city: ";
     std::cin >> name;
 
-    *s = mapPath_prefix + name;
+    *s = mapPath_prefix + name + ".streets.bin";
 }
 
 void clearAllMap(){
@@ -124,6 +124,7 @@ void clearAllMap(){
         delete citys[cityIdx]-> street;
         delete citys[cityIdx]->streetSegment;
         delete citys[cityIdx]-> intersection;
+        
         delete citys[cityIdx];
     }
     

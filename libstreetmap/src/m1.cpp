@@ -32,9 +32,9 @@
 #include<ctype.h>
 #include<boost/algorithm/string.hpp>
 
-extern int currentCityIdx;
-extern std::vector<City*> citys;
-extern std::string mapPath;
+//extern int currentCityIdx;
+//extern std::vector<City*> citys;
+//extern std::string mapPath;
 
 // loadMap will be called with the name of the file that stores the "layer-2"
 // map data accessed through StreetsDatabaseAPI: the street and intersection 
@@ -55,6 +55,17 @@ Street* citys[currentCityIdx]->street;
 StreetSegment* citys[currentCityIdx]->streetSegment;
 Intersection* citys[currentCityIdx]->intersection;
 */
+std::vector<std::string> cityNames = {
+    "beijing_china", "cairo_egypt", "cape-town_south-africa", "golden-horseshoe_canada",
+    "hamilton_canada", "hong-kong_china", "iceland", "interlaken_switzerland",
+    "london_england", "moscow_russia", "new-delhi_india", "new-york_usa",
+    "rio-de-janeiro_brazil", "saint-helena", "singapore", "sydney_australia",
+    "tehran_iran", "tokyo_japan", "toronto_canada"
+};
+std::vector<City*> citys;
+int currentCityIdx;
+bool isFinished = false;
+
 // Number of different characters possible.
 int CHAR_SIZE = 256;
 
@@ -76,8 +87,9 @@ void resizeData();
 
 
 bool loadMap(std::string map_streets_database_filename) {
-   
+   std::clock_t loadMapBegin = clock();
     bool alreadyExist = false;
+    currentCityIdx = 0;
     
     for (int cityIdx = 0; cityIdx < citys.size() && !alreadyExist; cityIdx++){
 
@@ -86,15 +98,17 @@ bool loadMap(std::string map_streets_database_filename) {
             currentCityIdx = cityIdx;
         }      
     }
-    bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename + ".streets.bin"); //Indicates whether the map has loaded successfully
+    bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded successfully
     if(!load_successful){
         return load_successful;
     }
-    
-    load_successful = loadOSMDatabaseBIN(map_streets_database_filename + ".osm.bin");
+    std::clock_t loadMapEnd = clock();
+    std::string osm_filename = map_streets_database_filename.substr(0, map_streets_database_filename.length() - 12);
+   // std::cout<<osm_filename;
+    load_successful = loadOSMDatabaseBIN(osm_filename + ".osm.bin");
     if(!load_successful)
         return load_successful;
-    
+    std::clock_t osmMapEnd = clock();
     if(!alreadyExist){
         City* newCity = new City;
         newCity->mapPath = map_streets_database_filename;
@@ -117,7 +131,15 @@ bool loadMap(std::string map_streets_database_filename) {
     streetPartialName();        //pre-load partial name index
     street_Intersection();      //pre-load street intersections
     street_Info();              //pre-load information about street length; street travel time; street segment length
-    return load_successful;
+    
+    std::clock_t end = clock();
+    double elapsedSecondsLoadMap = double(loadMapEnd - loadMapBegin) / CLOCKS_PER_SEC;
+    double elapsedSecondsLoadOSM = double(osmMapEnd - loadMapEnd) / CLOCKS_PER_SEC;
+    double elapsedSecondsLoadALL = double(end - loadMapBegin) / CLOCKS_PER_SEC;
+    std::cout<<"elapsedSecondsLoadMap: "<<elapsedSecondsLoadMap<<" elapsedSecondsLoadOSM: "<<elapsedSecondsLoadOSM<<" elapsedSecondsLoadALL: "<<elapsedSecondsLoadALL<<std::endl;
+  return load_successful;
+    
+    
 }
 
 
