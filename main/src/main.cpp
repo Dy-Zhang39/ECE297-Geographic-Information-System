@@ -30,7 +30,7 @@ constexpr int ERROR_EXIT_CODE = 1;          //An error occured
 constexpr int BAD_ARGUMENTS_EXIT_CODE = 2;  //Invalid command-line usage
 
 void getCityName(std::string* s);        //get city name from the user
-void clearAllMap();                      //clear all the global variable in citys
+//void clearAllMap();                      //clear all the global variable in cities
 
 
 
@@ -40,7 +40,7 @@ std::string default_mapPath = "/cad2/ece297s/public/maps/toronto_canada.streets.
 
 
 
-extern std::vector<City*> citys;
+extern std::vector<City*> cities;
 extern std::string mapPath_prefix;
 //int currentCityIdx;
 
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
     closeMap();
    
     std::cout << "Closing all the map";
-    clearAllMap();
+   
     
     /*
     //Load the map and related data structures
@@ -114,14 +114,3 @@ void getCityName(std::string* s){
     *s = mapPath_prefix + name + ".streets.bin";
 }
 
-void clearAllMap(){
-    for(int cityIdx = 0; cityIdx < citys.size(); cityIdx++){
-        delete citys[cityIdx]-> street;
-        delete citys[cityIdx]->streetSegment;
-        delete citys[cityIdx]-> intersection;
-        
-        delete citys[cityIdx];
-    }
-    
-    citys.clear();
-}
