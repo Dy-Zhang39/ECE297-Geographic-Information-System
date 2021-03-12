@@ -188,6 +188,7 @@ void initializeCurrentWorldRatio(){
     cities[currentCityIdx]->worldRatio = (yFromLat(maxLat) - yFromLat(minLat))/(xFromLon(maxLon) - xFromLon(minLon));
 }
 
+//connect the signal to call back function
 void initialSetUp(ezgl::application *application, bool /*new_window*/){
     application->update_message("Map is loaded successfully");
     
@@ -754,10 +755,12 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
                     overlap = true;
                 }
             }
-
-            //correct negative degree
-            if (degree < 0||degree>90){
-                degree = degree+180;
+            
+            //make sure text is readable for user by adjusting rotation
+            if (degree > 90){
+                degree = degree - 180;
+            }else if (degree < -90){
+                degree = degree + 180;
             }
             
             if(!overlap){
