@@ -1476,10 +1476,7 @@ void loadSubway(ezgl::renderer *g){
 
                             //draw the stations
                             g->fill_arc({x, y}, 5 * widthToPixelRatio, 0, 360);
-                            if (prevX != 0 || prevY != 0) {
-                                g->set_line_width(streetSize(world));
-                                g->draw_line({prevX, prevY}, {x, y});
-                            }
+                            
                             
                             //add the station coordinate and name to the vector
                             if (world.contains(x, y) && showTextRatio > widthToPixelRatio) {
