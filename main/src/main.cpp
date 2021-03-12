@@ -38,10 +38,10 @@ void clearAllMap();                      //clear all the global variable in city
 
 std::string default_mapPath = "/cad2/ece297s/public/maps/toronto_canada.streets.bin";
 
-std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
+
 
 extern std::vector<City*> citys;
-extern bool isFinished;
+extern std::string mapPath_prefix;
 //int currentCityIdx;
 
 

@@ -65,6 +65,7 @@ std::vector<std::string> cityNames = {
 std::vector<City*> citys;
 int currentCityIdx;
 bool isFinished = false;
+std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
 
 // Number of different characters possible.
 int CHAR_SIZE = 256;
