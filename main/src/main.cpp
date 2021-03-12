@@ -29,20 +29,14 @@ constexpr int SUCCESS_EXIT_CODE = 0;        //Everyting went OK
 constexpr int ERROR_EXIT_CODE = 1;          //An error occured
 constexpr int BAD_ARGUMENTS_EXIT_CODE = 2;  //Invalid command-line usage
 
-void getCityName(std::string* s);        //get city name from the user
-//void clearAllMap();                      //clear all the global variable in citys
-
-
-
 //The default map to load if none is specified
 
 std::string default_mapPath = "/cad2/ece297s/public/maps/toronto_canada.streets.bin";
 
-
-
-extern std::vector<City*> citys;
+extern std::vector<City*> cities;
 extern std::string mapPathPrefix;
-//int currentCityIdx;
+
+
 
 
 // The start routine of your program (main) when you are running your standalone
@@ -84,25 +78,6 @@ int main(int argc, char** argv) {
    
     std::cout << "Closing all the map";
    
-    
-    /*
-    //Load the map and related data structures
-    bool load_success = loadMap(mapPath);
-    if(!load_success) {
-        std::cerr << "Failed to load map '" << mapPath << "'\n";
-        return ERROR_EXIT_CODE;
-    }
-
-    std::cout << "Successfully loaded map '" << mapPath << "'\n";
-
-    //You can now do something with the map data
-    
-    drawMap();
-    
-    //Clean-up the map data and related data structures
-    std::cout << "Closing map\n";
-    closeMap(); 
-     */
     return SUCCESS_EXIT_CODE;
 }
 

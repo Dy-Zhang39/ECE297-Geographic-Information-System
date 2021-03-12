@@ -23,7 +23,11 @@ void streetPartialName();
 
 //resize all the global variable
 void resizeData();
-
+void initializeFeatureBounding();
+double xFromLon(double lon);  //convert longitude to meter
+double yFromLat(double lat);  //convert latitude to meter
+double lonFromX(double x);    //convert meter to longitude
+double latFromY(double y);    //convert meter to latitude
 //close the streetMap data base and osm data base
 void closeDataBase();
 

@@ -10,6 +10,14 @@ struct intersectionData {
   bool isHighlight = false;
 };
 
+struct oneWaySegInfo {
+    int fromX;
+    int fromY;
+    int toX;
+    int toY;
+    int distance;
+};
+
 class Street {
 public:
     std::vector<std::vector<IntersectionIdx>> streetIntersections; //store all intersection in one specific street for every street
@@ -24,6 +32,7 @@ public:
 //class for global variables about street segment
 class StreetSegment{
 public:
+    std::vector<oneWaySegInfo> oneWaySegment;
     std::vector<double> streetSegLength;                                    //the length of every street segment
     std::vector<double> streetSegTravelTime;                                //the time required to tavel every street segment
     std::vector<std::vector<LatLon>> streetSegPoint;                         //the outside vector has the content of each street segment

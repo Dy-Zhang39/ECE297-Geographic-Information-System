@@ -18,6 +18,7 @@
 
 #include "ezgl/callback.hpp"
 #include "../drawMap.h"
+#include "../dataHandler.h"
 #include "StreetsDatabaseAPI.h"
 
 extern LatLon positionOfClicked;
