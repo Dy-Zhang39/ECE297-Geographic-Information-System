@@ -27,10 +27,10 @@
 #include <map>
 #include "OSMDatabaseAPI.h"
 #include "dataHandler.h"
-#include<bits/stdc++.h>
-#include<stdio.h>
-#include<ctype.h>
-#include<boost/algorithm/string.hpp>
+#include <bits/stdc++.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <boost/algorithm/string.hpp>
 
 
 

@@ -13,6 +13,7 @@
 #include "m1.h"
 #include "global.h"
 #include "dataHandler.h"
+#include "callBack.h"
 #include "StreetsDatabaseAPI.h"
 #include "OSMDatabaseAPI.h"
 #include <chrono>
@@ -27,77 +28,16 @@ double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.09;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 bool showSubways = false;
+std::vector<IntersectionIdx> previousHighlight;
+LatLon positionOfClicked;
+std::vector <ezgl::point2d> featureTextPoints;      //coordinates for display feature text
+std::string selectedPOI = "all";                    //selected POI type to display
 
 extern std::vector<City*> cities;
 extern int currentCityIdx;
 extern std::vector<std::string> cityNames;
 extern std::string mapPathPrefix;
 
-LatLon positionOfClicked;
-
-
-std::vector <ezgl::point2d> featureTextPoints;      //coordinates for display feature text
-std::string selectedPOI = "all";                    //selected POI type to display
-
-
-std::vector<IntersectionIdx> previousHighlight;
-
-//helper functions
-void initialSetUp(ezgl::application *application, bool new_window);
-void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
-void clearHighlightIntersection();
-void initializeCurrentWorldRatio();
-bool isAve(std::string streetName);
-
-//call back function for search button
-gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
-
-//call back function for text field
-gboolean textEntryPressedEnter(GtkWidget *, gpointer data);
-
-//change the map when user switch to different Map
-gboolean changeMap(GtkWidget *, gpointer data);
-
-void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
-double textSize(ezgl::rectangle world);
-double streetSize(ezgl::rectangle world);
-void displayStreetName(ezgl::renderer *g, ezgl::rectangle world);
-
-//functions for drawing features and display their names
-void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
-void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id);
-void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea, double widthToPixelRatio, double heightToPixelRatio);
-
-
-void displayHighlightedIntersection(ezgl::renderer *g);
-void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world);
-
-//functions for displaying POI
-void displayPOI(ezgl::renderer *g);
-void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
-
-void drawOneWayStreet(ezgl::renderer *g, double diagLength);
-void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta);
-//callback function for POI selection buttons
-gboolean toggleAllPOI(GtkWidget *, gpointer data);
-gboolean toggleEducationPOI(GtkWidget *, gpointer data);
-gboolean toggleFoodPOI(GtkWidget *, gpointer data);
-gboolean toggleMedicalPOI(GtkWidget *, gpointer data);
-gboolean toggleTransportPOI(GtkWidget *, gpointer data);
-gboolean toggleRecreationPOI(GtkWidget *, gpointer data);
-gboolean toggleFinancePOI(GtkWidget *, gpointer data);
-gboolean toggleGovPOI(GtkWidget *, gpointer data);
-gboolean toggleOtherPOI(GtkWidget *, gpointer data);
-
-std::string convertNameToPath(std::string name);
-void importNameToTheBar(GtkComboBoxText* bar);
-
-//functions for displaying subways
-void loadSubway(ezgl::renderer *g);
-gboolean toggleSubway(GtkWidget *, gpointer data);
-
-
-void draw_main_canvas (ezgl::renderer *g);
 void drawMap(){
 
     // Initialize coordinates for feature bounding boxes.
@@ -120,12 +60,12 @@ void drawMap(){
     ezgl::rectangle initial_world({xFromLon(minLon), yFromLat(minLat)},
                                 {xFromLon(maxLon), yFromLat(maxLat)});
     
-    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+    application.add_canvas("MainCanvas", drawMainCanvas, initial_world);
     //initial set up, act on mouse press, act on mouse move, act on key press
     application.run(initialSetUp, actOnMouseClick, nullptr, nullptr);
 }
 
-void draw_main_canvas (ezgl::renderer *g){
+void drawMainCanvas (ezgl::renderer *g){
     
 
     g->format_font("Noto Sans CJK SC", ezgl::font_slant::normal, ezgl::font_weight::normal, 10);
@@ -181,6 +121,7 @@ void draw_main_canvas (ezgl::renderer *g){
 
 //set the height to width ratio of a current city
 void initializeCurrentWorldRatio(){
+    
     double maxLat = cities[currentCityIdx] -> maxLat;
     double minLat = cities[currentCityIdx] -> minLat;
     double maxLon = cities[currentCityIdx] -> maxLon;
@@ -190,6 +131,7 @@ void initializeCurrentWorldRatio(){
 
 //connect the signal to call back function
 void initialSetUp(ezgl::application *application, bool /*new_window*/){
+    
     application->update_message("Map is loaded successfully");
     
     GObject *search = application->get_object("SearchButton");
@@ -241,6 +183,7 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 void importNameToTheBar(GtkComboBoxText* bar){
     
     for(int idx = 0; idx < cityNames.size(); idx++){
+        
         std::string name = cityNames[idx];
         gtk_combo_box_text_append_text(bar, name.c_str());
     }
@@ -249,65 +192,79 @@ void importNameToTheBar(GtkComboBoxText* bar){
 
 //triggered showSubway check box changed
 gboolean toggleSubway(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     showSubways = !showSubways;
     application->refresh_drawing();
+    
     return true;
 }
 
 
 //triggered when all POI button is changed
 gboolean toggleAllPOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("all") != 0) {
+        
         selectedPOI = "all";
         application->refresh_drawing();
     }
+    
     return true;
 }
 
 //triggered when education POI button is changed
 gboolean toggleEducationPOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("education") != 0) {
         selectedPOI = "education";
         application->refresh_drawing();
     }
+    
     return true;
 }
 
 //triggered when Food POI button is changed
 gboolean toggleFoodPOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("food") != 0) {
         selectedPOI = "food";
         application->refresh_drawing();
     }
+    
     return true;
 }
 
 //triggered when Medical POI button is changed
 gboolean toggleMedicalPOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("medical") != 0) {
         selectedPOI = "medical";
         application->refresh_drawing();
     }
+    
     return true;
 }
 
 //triggered when Transport POI button is changed
 gboolean toggleTransportPOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("transport") != 0) {
         selectedPOI = "transport";
         application->refresh_drawing();
     }
+    
     return true;
 }
 
 //triggered when Finance POI button is changed
 gboolean toggleFinancePOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("finance") != 0) {
         selectedPOI = "finance";
@@ -318,37 +275,44 @@ gboolean toggleFinancePOI(GtkWidget *, gpointer data) {
 
 //triggered when Recreation POI button is changed
 gboolean toggleRecreationPOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("recreation") != 0) {
         selectedPOI = "recreation";
         application->refresh_drawing();
     }
+    
     return true;
 }
 
 //triggered when Government POI button is changed
 gboolean toggleGovPOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("gov") != 0) {
         selectedPOI = "gov";
         application->refresh_drawing();
     }
+    
     return true;
 }
 
 //triggered when Other POI button is changed
 gboolean toggleOtherPOI(GtkWidget *, gpointer data) {
+    
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("other") != 0) {
         selectedPOI = "other";
         std::cout << selectedPOI << "\n";
         application->refresh_drawing();
     }
+    
     return true;
 }
 
 //Search when user press the enter in the text field
 gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
+    
     return searchButtonIsClicked(widget, data);
     
 }
@@ -409,13 +373,17 @@ std::string convertNameToPath(std::string name){
         if (name[c] == ' ' && previous != ','){
             
             nameInLower.push_back('-');
+            
         }else if (name[c] == ','){
             
             nameInLower.push_back('_');
+            
         }else if (previous != ','){
             
             nameInLower.push_back(tolower(name[c]));
+            
         }
+        
         previous = name[c];
     }
     
@@ -481,22 +449,24 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
                 
                 commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(*firstStreetIdx, *secondStreetIdx));
                 if (commonIntersection.size() > 0){
+                    
                     output = getStreetName(*firstStreetIdx) + ", " + getStreetName(*secondStreetIdx);
                     firstStreetIdx = partialResultFirst.end();
                     secondStreetIdx = partialResultSecond.end();
                 }else {
+                    
                     secondStreetIdx++;
                 }
             }
             
             if(firstStreetIdx != partialResultFirst.end()){
+                
                 firstStreetIdx++;
             }
         }
 
 
         if (commonIntersection.size() > 0){
-            
             
             //position in latitude and longitude
             for (int idx = 0; idx < commonIntersection.size(); idx++){
@@ -509,18 +479,22 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
                 sum.y += positionInY;
                 
                 if (positionInX > largest.x){
+                    
                     largest.x = positionInX;
                 }
                 
                 if (positionInX < smallest.x){
+                    
                     smallest.x = positionInX;
                 }
                 
                 if (positionInY > largest.y){
+                    
                     largest.y = positionInY;
                 }
                 
                 if (positionInY < smallest.y){
+                    
                     smallest.y = positionInY;
                 }
                 
@@ -590,9 +564,11 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
     IntersectionIdx id = findClosestIntersection(pos);
     
     if (previousHighlight.size() == 1 && previousHighlight[0] == id){
+        
         cities[currentCityIdx] -> intersection -> intersectionInfo[id].isHighlight = false;
         clearHighlightIntersection(); 
     }else{
+        
         clearHighlightIntersection();
         cities[currentCityIdx] -> intersection -> intersectionInfo[id].isHighlight = true;
         previousHighlight.push_back(id);
@@ -605,6 +581,7 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
 
 //clear all the highlight intersection
 void clearHighlightIntersection(){
+    
     for (auto iterator = previousHighlight.begin(); iterator != previousHighlight.end(); iterator++){
         cities[currentCityIdx] -> intersection -> intersectionInfo[*iterator].isHighlight = false;
     }
@@ -614,6 +591,7 @@ void clearHighlightIntersection(){
 bool isAve(std::string streetName){
     bool isAve =false;
     std::string s1 ("Avenue\0");
+    
     if (streetName.find(s1) != std::string::npos){
         isAve = true;
     }
@@ -656,14 +634,17 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                     double speedLimit = getStreetSegmentInfo(streetSegmentsID).speedLimit;
                     
                     if(speedLimit>highwaySpeed){// draw highway
+                        
                        g->set_color(244, 208, 63, 255);
                        g->set_line_width(1.3 * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else if(!isAve(streetName)){ //draw main road and street
+                        
                        g->set_color(210,223,227,255);
                        g->set_line_width(streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else if(isAve(streetName)&&findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * aveToWorldRatio1){ 
+                        
                         //draw avenue
                        g->set_color(210,223,227,255);
                        g->set_line_width(0.5 * streetSize(world));
@@ -678,6 +659,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
 }
 
 double textSize(ezgl::rectangle world){
+    
     double mapArea = world.area();
     double k=3.5;
     double textSize = k*log(log(1000/sqrt(mapArea)+1.5))+5;
@@ -686,6 +668,7 @@ double textSize(ezgl::rectangle world){
 }
 
 double streetSize(ezgl::rectangle world){
+    
     double mapArea = world.area();
     double k=6;
     double streetSize = k*log(log(1000/sqrt(mapArea)+1.5))+5;
@@ -695,6 +678,7 @@ double streetSize(ezgl::rectangle world){
 
 
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
+    
     std::vector<ezgl::point2d> displayedNames;
 
     
@@ -702,6 +686,7 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
     double streetNameSize = 200;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
     displayedNames.clear();
+    
     for(int streetID = 0; streetID < getNumStreets(); streetID++ ){
         //get segments position that within the screen
         std::vector<ezgl::point2d> inViewSegment;
@@ -724,8 +709,10 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
 
                 if (world.contains(xFrom, yFrom) || world.contains(xTo, yTo)){
                     inViewSegment.push_back({xFrom, yFrom});
-                    //store the segment that is one way
+                    
+                    //store the segment that is one way                   
                     if(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).oneWay){
+                        
                         oneWaySegInfo oneWay;
                         oneWay.fromX=xFrom;
                         oneWay.fromY=yFrom;
@@ -739,17 +726,22 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         }
 
         if (inViewSegment.size() > 2) {
+            
             //find the middle segment of the street on the screen
             ezgl::point2d midPoint = inViewSegment[inViewSegment.size()/2];
             ezgl::point2d midNextPoint = inViewSegment[inViewSegment.size()/2 + 1];
+            
             //find the degree to rotate
             double degree = atan2(midNextPoint.y - midPoint.y, midNextPoint.x - midPoint.x) / kDegreeToRadian;
             bool overlap = false;
+            
             //estimate the text width and height
             double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
             double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
+            
             //check if the street name overlap with each other
             for (int displayedNamesNum = 0; displayedNamesNum < displayedNames.size(); displayedNamesNum++ ){
+                
                 if(abs(midPoint.x - displayedNames[displayedNamesNum].x) < streetNameSize * widthToPixelRatio && 
                     abs(midPoint.y - displayedNames[displayedNamesNum].y) < streetNameSize * heightToPixelRatio){
                     overlap = true;
@@ -783,6 +775,7 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
     double h=8;
     double b=3;
     std::vector<ezgl::point2d> points;
+    
     //point 1
     ezgl::point2d firstPoint(position.x+h*cos(theta*kDegreeToRadian),position.y+h*sin(theta*kDegreeToRadian));
     ezgl::point2d secondPoint(position.x+b*cos((90+theta)*kDegreeToRadian),position.y+h*sin((90+theta)*kDegreeToRadian));
@@ -795,6 +788,7 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
     
 }
 void drawOneWayStreet(ezgl::renderer *g, double diagLength){
+    
     for(int oneWaySegId = 1; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
                     if(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1*diagLength){
                         
@@ -802,7 +796,7 @@ void drawOneWayStreet(ezgl::renderer *g, double diagLength){
                         cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
                                 cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toX - 
                         cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX) / kDegreeToRadian;
-                        
+                                                           
                         ezgl::point2d position(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX ,
                                 cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY);
                         
@@ -824,7 +818,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double visibleArea = world.area();
     
     //level of detail ratio to display feature
-    double featureToWorldRatio = 0.00001;    
+    double featureToWorldRatio = 0.00005;    
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
     
@@ -833,6 +827,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     //loop through all features, if the feature area is at the predefined ratio 
     //of the visible area and within the window, draw it
     for (FeatureIdx featureID = 0; featureID < getNumFeatures(); featureID++){
+        
         double minX = cities[currentCityIdx]->featurePts[featureID].left;
         double maxX = cities[currentCityIdx]->featurePts[featureID].right;
         double maxY = cities[currentCityIdx]->featurePts[featureID].top;
@@ -847,8 +842,10 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
                 && featureArea >= visibleArea * featureToWorldRatio){
                     
             if(getFeatureType(featureID) == ISLAND){
+                
                 islands.push_back(featureID);
             }else{
+                
                 drawFeatureByID(g, featureID);
             }
         }
@@ -890,7 +887,7 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
     FeatureType featureType = getFeatureType(id);   
     switch (featureType) {
         case PARK:
-            g->set_color(204, 255, 153, 255);
+            g->set_color(128, 234, 85, 255);
             break;
         case BEACH:
             g->set_color(236, 226, 149, 255);
@@ -903,13 +900,13 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
             g->set_color(102, 204, 255, 255);
             break;
         case ISLAND:
-            g->set_color(204, 255, 153, 255);
+            g->set_color(245, 224, 136, 255);
             break;
         case BUILDING:
             g->set_color(ezgl::GREY_75);
             break;
         case GREENSPACE:
-            g->set_color(204, 255, 153, 255);
+            g->set_color(128, 234, 85, 255);
             break;
         case GOLFCOURSE:
             g->set_color(110, 184, 66, 255);
@@ -957,10 +954,12 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     double y = yFromLat(getFeaturePoint(id, 0).latitude());
     std::string featureName = getFeatureName(id); 
     FeatureType featureType = getFeatureType(id);
+    
     if(id==6){
             std::cout<<x<<" "<<y<<std::endl;
             
-        }
+     }
+    
     for (int pt = 1; pt < getNumFeaturePoints(id); pt++){
         double x1, y1;
         x1 = xFromLon(getFeaturePoint(id, pt).longitude());
@@ -1028,6 +1027,7 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
 
     //identify if the text will overlap with others
     for(int displayedNameIdx = 0; displayedNameIdx < featureTextPoints.size(); displayedNameIdx++){
+        
         if(abs(xAvg - featureTextPoints[displayedNameIdx].x) < featureRangeX * widthToPixelRatio && 
            abs(yAvg - featureTextPoints[displayedNameIdx].y) < featureRangeY * heightToPixelRatio){
             overlapped = true;
@@ -1047,6 +1047,7 @@ void displayHighlightedIntersection(ezgl::renderer *g) {
     ezgl::rectangle world = g->get_visible_world();
     double width = 6 * world.width() / g->get_visible_screen().width();
     double height = width;
+    
     for (size_t i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); ++i) {
         float x = xFromLon(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.longitude());
         float y = yFromLat(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.latitude());
@@ -1134,11 +1135,13 @@ void displayPOI(ezgl::renderer *g) {
         //prevent overlapping of POI: if the POI is in a certain range of a previously displayed POI, it will not be displayed
         bool overlapped = false;
         for(int displayedPOIIdx = 0; displayedPOIIdx < displayedPoints.size(); displayedPOIIdx++){
+            
             if(abs(x - displayedPoints[displayedPOIIdx].x) < POIRange * widthToPixelRatio && 
                     abs(y - displayedPoints[displayedPOIIdx].y) < POIRange * heightToPixelRatio){
                 overlapped = true;
             }
         }
+        
         // if the map is showing enough level of detail, and the poi is visible in the screen, then display it. 
         if (world.contains({x, y}) && world.area() < areaToShowPOI && !overlapped) {
             displayPOIById(g, i, widthToPixelRatio, heightToPixelRatio);
@@ -1174,12 +1177,14 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     
     //load icon image by poiType
     if (poiType.compare("ferry_termial") == 0){   
+        
         if (transport) 
             iconSurface = g->load_png("./libstreetmap/images/ferry.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("theatre") != std::string::npos && recreation) {       
+        
         if(recreation) 
             iconSurface = g->load_png("./libstreetmap/images/theater.png");
         else 
@@ -1188,60 +1193,70 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     } else if ((poiType.rfind("school") != std::string::npos 
             || poiType.rfind("university") != std::string::npos 
             || poiType.rfind("college") != std::string::npos)) {
+        
         if (education) 
             iconSurface = g->load_png("./libstreetmap/images/university.png");
         else 
             displayPOI = false;
 
     } else if (poiType.rfind("parking") != std::string::npos) {       
+        
         if (transport) 
             iconSurface = g->load_png("./libstreetmap/images/parkinggarage.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("fast_food") != std::string::npos) {       
+        
         if (food) 
             iconSurface = g->load_png("./libstreetmap/images/fastfood.png");
         else 
             displayPOI = false;
 
     } else if (poiType.compare("community_centre") == 0) {       
+        
         if (other) 
             iconSurface = g->load_png("./libstreetmap/images/communitycentre.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("pharmacy") == 0) {       
+        
         if (medical) 
             iconSurface = g->load_png("./libstreetmap/images/drogerie.png");
         else 
             displayPOI = false;
        
     } else if (poiType.rfind("cafe") != std::string::npos) {       
+        
         if (food) 
             iconSurface = g->load_png("./libstreetmap/images/coffee.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("place_of_worship") == 0) {        
+        
         if (other) 
             iconSurface = g->load_png("./libstreetmap/images/chapel-2.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("bank") == 0) {       
+       
         if (finance) 
             iconSurface = g->load_png("./libstreetmap/images/bank.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("atm") == 0) {       
+        
         if (finance) 
             iconSurface = g->load_png("./libstreetmap/images/atm-2.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("cinema") == 0) {       
+        
         if (recreation) 
             iconSurface = g->load_png("./libstreetmap/images/cinema.png");
         else 
@@ -1250,12 +1265,14 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     } else if (poiType.compare("hospital") == 0 
             || poiType.compare("doctors") == 0 
             || poiType.find("clinic") != std::string::npos) {        
+        
         if (medical) 
             iconSurface = g->load_png("./libstreetmap/images/hospital-building.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("library") == 0) {        
+        
         if (education) 
             iconSurface = g->load_png("./libstreetmap/images/library.png");
         else 
@@ -1263,12 +1280,14 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
         
     } else if ((poiType.rfind("restaurant") != std::string::npos 
             || poiType.rfind("food_") != std::string::npos)) {        
+        
         if (food) 
             iconSurface = g->load_png("./libstreetmap/images/restaurant.png");
         else 
             displayPOI = false;
         
     } else if (poiType.compare("police") == 0) {       
+        
         if (gov) 
             iconSurface = g->load_png("./libstreetmap/images/police.png");
         else 
@@ -1276,6 +1295,7 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
         
     } else if (poiType.rfind("gym") != std::string::npos 
             || poiType.rfind("weight") != std::string::npos) {
+        
         if (recreation) 
             iconSurface = g->load_png("./libstreetmap/images/fitness.png");
         else 
@@ -1283,46 +1303,54 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
         
     } else if (poiType.rfind("dentist") != std::string::npos 
             || poiType.rfind("orthodon") != std::string::npos) {
+        
         if (medical) 
             iconSurface = g->load_png("./libstreetmap/images/dentist.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("bus_s") != std::string::npos) {       
+        
         if (transport) 
             iconSurface = g->load_png("./libstreetmap/images/bus.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("fuel") != std::string::npos) {       
+        
         if (transport) 
             iconSurface = g->load_png("./libstreetmap/images/fillingstation.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("child") != std::string::npos) {        
+        
         if (other) 
             iconSurface = g->load_png("./libstreetmap/images/daycare.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("bicyle") != std::string::npos) {       
+       
         if (transport) 
             iconSurface = g->load_png("./libstreetmap/images/bicyle_parking.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("toilets") != std::string::npos) {        
+       
         if (other) 
             iconSurface = g->load_png("./libstreetmap/images/toilets_inclusive.png");
         else 
             displayPOI = false;
         
     } else if (poiType.rfind("post_") != std::string::npos) {       
+        
         if (other) iconSurface = g->load_png("./libstreetmap/images/postal.png");
         else displayPOI = false;
         
     } else if (poiType == "airport" && transport) {     
+        
         if (transport) 
             iconSurface = g->load_png("./libstreetmap/images/airport.png");
         else 
@@ -1336,6 +1364,7 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     }
     
     if (displayPOI) {
+        
         // make the middle bottom of the icon at the poi location
         double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
         double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
@@ -1400,10 +1429,9 @@ void loadSubway(ezgl::renderer *g){
         // Get subway line color and name
         for (unsigned j = 0; j < getTagCount(osm_subway_lines[i]); j++) {
             std::pair<std::string, std::string> tagPair = getTagPair(osm_subway_lines[i], j);
+            
             if (tagPair.first == "colour") {
                 lineColor = tagPair.second;
-            } else if (tagPair.first == "name") {
-                //std::cout << "Subway line name: " << tagPair.second << std::endl;
             }
         }
 
@@ -1411,7 +1439,7 @@ void loadSubway(ezgl::renderer *g){
         std::vector<TypedOSMID> route_members = getRelationMembers(osm_subway_lines[i]); 
         
         // Grab subway names
-        double prevX = 0, prevY = 0;        
+      
         for(unsigned j = 0; j < route_members.size(); j++) {
 
             // A member of type node represents a subway station
@@ -1422,6 +1450,7 @@ void loadSubway(ezgl::renderer *g){
                 
                 //find the osm_nodes (section including [stepLength] of nodes) that contains the OSM Node for the station
                 for (unsigned k = 0; k < osm_nodes.size(); k++) {
+                    
                     if (route_members[j] < osm_nodes[k]) {
                         indexRange = k;
                         break;
@@ -1430,12 +1459,16 @@ void loadSubway(ezgl::renderer *g){
                 unsigned startIdx = 0, endIdx = getNumberOfNodes();      
                 
                 //loop through all OSM Nodes in the found osm_nodes section
-                if ((indexRange - 1) * stepLength > 0) startIdx = (indexRange - 1) * stepLength;
-                if ((indexRange + 1) * stepLength < endIdx) endIdx = (indexRange + 1) * stepLength ;
+                if ((indexRange - 1) * stepLength > 0) 
+                    startIdx = (indexRange - 1) * stepLength;
+                
+                if ((indexRange + 1) * stepLength < endIdx) 
+                    endIdx = (indexRange + 1) * stepLength ;
 
                 // Node lookup by OSMID
                 for (unsigned k = startIdx; k < endIdx; k++) {
                     currNode = getNodeByIndex(k);
+                    
                     if (currNode->id() == route_members[j]) {
                         break;
                     }
@@ -1445,6 +1478,7 @@ void loadSubway(ezgl::renderer *g){
                 for (unsigned k = 0; k < getTagCount(currNode); k++) {
                     std::pair<std::string, std::string> tagPair = getTagPair(currNode, k);
                     LatLon stationCoord = getNodeCoords(currNode);
+                    
                     if (tagPair.first == "name") {
                         double x = xFromLon(stationCoord.longitude());
                         double y = yFromLat(stationCoord.latitude());
@@ -1454,6 +1488,7 @@ void loadSubway(ezgl::renderer *g){
 
                             //draw the subway lines and station according to color given
                             g->set_color(12, 124, 92, 255);
+                            
                             if (lineColor.compare("green") == 0) {
                                 g->set_color(57, 180, 96, 255);
                                 
@@ -1484,8 +1519,7 @@ void loadSubway(ezgl::renderer *g){
                                 stationName.push_back(tagPair.second );
                             }
                         }
-                        prevX = x;
-                        prevY = y;
+
                         break;
                     }
                 }

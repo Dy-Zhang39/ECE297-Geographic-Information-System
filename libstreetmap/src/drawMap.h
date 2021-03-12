@@ -14,11 +14,64 @@
 #ifndef DRAWMAP_H
 #define DRAWMAP_H
 
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "ezgl/point.hpp"
 #include "StreetsDatabaseAPI.h"
+#include "OSMDatabaseAPI.h"
 
 //highlight the closest intersection when user click somewhere 
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 
+//helper functions
+
+//unhighlight all the highlight intersection
+void clearHighlightIntersection();
+
+//world width to height ratio
+void initializeCurrentWorldRatio();
+
+bool isAve(std::string streetName);
+
+void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
+
+double textSize(ezgl::rectangle world);
+
+double streetSize(ezgl::rectangle world);
+
+void displayStreetName(ezgl::renderer *g, ezgl::rectangle world);
+
+//functions for drawing features and display their names
+void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
+
+void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id);
+
+void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea, double widthToPixelRatio, double heightToPixelRatio);
+
+void displayHighlightedIntersection(ezgl::renderer *g);
+
+void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world);
+
+//functions for displaying POI
+void displayPOI(ezgl::renderer *g);
+
+void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
+
+void drawOneWayStreet(ezgl::renderer *g, double diagLength);
+
+void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta);
+
+//covert name of the city to the path to the city file
+std::string convertNameToPath(std::string name);
+
+//import every name to the drop-down bar
+void importNameToTheBar(GtkComboBoxText* bar);
+
+//functions for displaying subways
+void loadSubway(ezgl::renderer *g);
+
+
+void drawMainCanvas (ezgl::renderer *g);
 
 #endif /* DRAWMAP_H */
 
