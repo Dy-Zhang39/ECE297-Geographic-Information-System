@@ -12,6 +12,7 @@
 #include "ezgl/point.hpp"
 #include "m1.h"
 #include "global.h"
+#include "dataHandler.h"
 #include "StreetsDatabaseAPI.h"
 #include "OSMDatabaseAPI.h"
 #include <chrono>
@@ -363,7 +364,7 @@ gboolean changeMap(GtkWidget *, gpointer data){
     std::string newMapPath = convertNameToPath(map);
     
     //close the database
-    closeMap();
+    closeDataBase();
     bool loadSucessfully = loadMap(newMapPath);
     if(!loadSucessfully){
         std::cerr << "Failed to load map '" << newMapPath << "'\n";

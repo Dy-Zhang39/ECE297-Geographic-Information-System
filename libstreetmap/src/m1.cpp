@@ -26,7 +26,7 @@
 #include <math.h>
 #include <map>
 #include "OSMDatabaseAPI.h"
-
+#include "dataHandler.h"
 #include<bits/stdc++.h>
 #include<stdio.h>
 #include<ctype.h>
@@ -49,12 +49,7 @@
 // ".streets" to ".osm" in the map_streets_database_filename to get the proper
 // name.
 
-//global variable
-/*
-Street* citys[currentCityIdx]->street;
-StreetSegment* citys[currentCityIdx]->streetSegment;
-Intersection* citys[currentCityIdx]->intersection;
-*/
+
 std::vector<std::string> cityNames = {
     "Beijing, China", "Cairo, Egypt", "Cape Town, South Africa", "Golden Horseshoe, Canada",
     "Hamilton, Canada", "Hong Kong, China", "Iceland", "Interlaken, Switzerland",
@@ -64,7 +59,6 @@ std::vector<std::string> cityNames = {
 };
 std::vector<City*> citys;
 int currentCityIdx;
-bool isFinished = false;
 std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
 
 // Number of different characters possible.
@@ -81,10 +75,6 @@ char SEPARATE_CHAR = 'k';
 char SEPARATE_CHAR_AFTER = 's';
 
 //helper function
-void street_Intersection();
-void street_Info();
-void streetPartialName();
-void resizeData();
 
 
 bool loadMap(std::string map_streets_database_filename) {
@@ -122,6 +112,8 @@ bool loadMap(std::string map_streets_database_filename) {
         citys.push_back(newCity);
         currentCityIdx = citys.size() - 1;
     }else{
+        double loadAlready = double(osmMapEnd - loadMapEnd) / CLOCKS_PER_SEC;
+        std::cout << "The loading process takes " << loadAlready << "s"<< std::endl;
         return true;
     }
 
@@ -144,7 +136,7 @@ bool loadMap(std::string map_streets_database_filename) {
     double elapsedSecondsLoadOSM = double(osmMapEnd - loadMapEnd) / CLOCKS_PER_SEC;
     double elapsedSecondsLoadALL = double(end - loadMapBegin) / CLOCKS_PER_SEC;
     std::cout<<"elapsedSecondsLoadMap: "<<elapsedSecondsLoadMap<<" elapsedSecondsLoadOSM: "<<elapsedSecondsLoadOSM<<" elapsedSecondsLoadALL: "<<elapsedSecondsLoadALL<<std::endl;
-  return load_successful;
+    return load_successful;
     
     
 }
@@ -199,7 +191,7 @@ void streetPartialName(){
         if (streetNameSub.length() > 1)
             citys[currentCityIdx]->street->streetNamesTwoChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
 
-        if (streetNameSub.length() > PREFIX_NUM_CHAR && PREFIX_NUM_CHAR > 1) {
+        if (streetNameSub.length() > PREFIX_NUM_CHAR) {
             if (tolower(streetNameSub[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR)) {
                 citys[currentCityIdx]->street->streetNamesThreeChar[tolower(streetNameSub[0]) * CHAR_SIZE + tolower(streetNameSub[1])].push_back(i);
             } else if (tolower(streetNameSub[PREFIX_NUM_CHAR]) < tolower(SEPARATE_CHAR_AFTER)) {
@@ -337,13 +329,26 @@ void closeMap() {
     delete citys[currentCityIdx]->streetSegment;
     delete citys[currentCityIdx]->intersection;
     */
-    closeOSMDatabase();
-    closeStreetDatabase();
+    
+    closeDataBase();
+    for(int cityIdx = 0; cityIdx < citys.size(); cityIdx++){
+        delete (citys[cityIdx]-> street);
+        delete (citys[cityIdx]-> streetSegment);
+        delete (citys[cityIdx]-> intersection);
+        delete citys[cityIdx];
+    }
+    
+    citys.clear();
+    
     //Clean-up your map related data structures here
 
     
 }
 
+void closeDataBase(){
+    closeOSMDatabase();
+    closeStreetDatabase();
+}
 
 
 //Returns all street ids corresponding to street names that start with the given prefix
