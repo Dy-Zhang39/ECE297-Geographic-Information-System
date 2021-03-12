@@ -1420,24 +1420,24 @@ void loadSubway(ezgl::renderer *g){
                         if (showLineRatio > widthToPixelRatio) {
 
                             //draw the subway lines and station according to color given
-                            g->set_color(244, 208, 163, 255);
-                            if (lineColor.compare("green")) {
-                                g->set_color(ezgl::GREEN);
+                            g->set_color(12, 124, 92, 255);
+                            if (lineColor.compare("green") == 0) {
+                                g->set_color(57, 180, 96, 255);
                                 
                             } else if (lineColor.compare("purple") == 0) {
                                 g->set_color(ezgl::PURPLE);
                                 
                             } else if (lineColor.compare("yellow") == 0) {
-                                g->set_color(ezgl::YELLOW);
+                                g->set_color(199, 182, 39, 255);
                                 
                             } else if (lineColor.compare("brown") == 0) {
                                 g->set_color(128, 0, 0, 255);
                                 
-                            } else if (lineColor.at(0) == '#' && lineColor.length() == 7) {
+                            } else if ( lineColor.length() == 7 && lineColor.at(0) == '#') {
                                 //convert given HEX color into RGB
-                                int rColor = std::stoi(lineColor.substr(1,2));
-                                int gColor = std::stoi(lineColor.substr(3,2));
-                                int bColor = std::stoi(lineColor.substr(5,2));
+                                int rColor = std::stoi(lineColor.substr(1,2), nullptr, 16);
+                                int gColor = std::stoi(lineColor.substr(3,2), nullptr, 16);
+                                int bColor = std::stoi(lineColor.substr(5,2), nullptr, 16);
                                 g->set_color(rColor,gColor,bColor,255);   
                             }
 
