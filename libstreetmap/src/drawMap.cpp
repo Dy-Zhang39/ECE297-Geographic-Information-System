@@ -124,6 +124,18 @@ void draw_main_canvas (ezgl::renderer *g){
     g->format_font("Noto Sans CJK SC", ezgl::font_slant::normal, ezgl::font_weight::normal, 10);
 
     ezgl::rectangle world = g->get_visible_world();
+    double xMin, xMax, yMin, yMax;
+
+    yMax = yFromLat(cities[currentCityIdx] -> maxLat);
+    yMin = yFromLat(cities[currentCityIdx] -> minLat);
+    xMax = xFromLon(cities[currentCityIdx] -> maxLon);
+    xMin = xFromLon(cities[currentCityIdx] -> minLon);
+    ezgl::point2d start(xMin, yMin);
+    ezgl::point2d end(xMax, yMax);
+    
+    g->draw_rectangle(start, end);
+    g->set_color(255, 247, 224, 255);
+    g->fill_rectangle(start, end);
     //timing function
     std::clock_t begin = clock();
 
@@ -714,7 +726,7 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
             }
 
             //correct negative degree
-            if (degree < 0){
+            if (degree < 0||degree>90){
                 degree = degree+180;
             }
             
