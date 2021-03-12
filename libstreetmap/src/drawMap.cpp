@@ -1267,6 +1267,7 @@ void loadSubway(ezgl::renderer *g){
     //level of detail ratios for display
     double showTextRatio = 10;
     double showLineRatio = 50;
+    double stationWidth = 30;
     ezgl::rectangle world = g->get_visible_world();
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     
@@ -1416,8 +1417,8 @@ void loadSubway(ezgl::renderer *g){
         bool displayStation = true;
 
         for (int j = 0; j < displayedCoord.size(); j ++) {
-            if (abs(stationCoordindate[stationIdx].x - displayedCoord[j].x) < (30* widthToPixelRatio) 
-                    && abs(stationCoordindate[stationIdx].y - displayedCoord[j].y) < (30 * widthToPixelRatio)) {
+            if (abs(stationCoordindate[stationIdx].x - displayedCoord[j].x) < (stationWidth * widthToPixelRatio) 
+                    && abs(stationCoordindate[stationIdx].y - displayedCoord[j].y) < (stationWidth * widthToPixelRatio)) {
                 displayStation = false;
                 break;
             }
