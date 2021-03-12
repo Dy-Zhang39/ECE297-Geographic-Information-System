@@ -21,10 +21,7 @@
 #include <chrono>
 #include <thread>
 
-double xFromLon(double lon);  //convert longitude to meter
-double yFromLat(double lat);  //convert latitude to meter
-double lonFromX(double x);    //convert meter to longitude
-double latFromY(double y);    //convert meter to latitude
+
 double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.09;
@@ -36,8 +33,8 @@ bool showSubways = false;
 extern std::vector<City*> citys;
 extern int currentCityIdx;
 extern std::vector<std::string> cityNames;
-extern std::string mapPath_prefix;
-
+extern std::string mapPathPrefix;
+LatLon positionOfClicked;
 
 
 std::vector <ezgl::point2d> featureTextPoints;
@@ -67,10 +64,11 @@ gboolean toggleOtherPOI(GtkWidget *, gpointer data);
 //call back function for text field
 gboolean textEntryPressedEnter(GtkWidget *, gpointer data);
 
+//change the map when user switch to different Map
 gboolean changeMap(GtkWidget *, gpointer data);
 
 
-IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
+
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world);
 
 void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
@@ -97,7 +95,6 @@ void importNameToTheBar(GtkComboBoxText* bar);
 
 void loadSubway(ezgl::renderer *g);
 gboolean toggleSubway(GtkWidget *, gpointer data);
-
 
 
 
@@ -133,9 +130,9 @@ void draw_main_canvas (ezgl::renderer *g){
     g->format_font("Noto Sans CJK SC", ezgl::font_slant::normal, ezgl::font_weight::normal, 10);
     
     
-    g->draw_rectangle({0,0}, {1000,1000});
    
     ezgl::rectangle world = g->get_visible_world();
+    
     //timing function
     std::clock_t begin = clock();
 
@@ -181,6 +178,7 @@ void initializeCurrentWorldRatio(){
     
     citys[currentCityIdx]->worldRatio = (yFromLat(maxLat) - yFromLat(minLat))/(xFromLon(maxLon) - xFromLon(minLon));
 }
+
 double xFromLon(double lon){
     return lon * kDegreeToRadian * kEarthRadiusInMeters * std::cos(citys[currentCityIdx] -> avgLat * kDegreeToRadian);
 }
@@ -349,11 +347,13 @@ gboolean toggleOtherPOI(GtkWidget *, gpointer data) {
     return true;
 }
 
+//Search when user press the enter in the text field
 gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
     return searchButtonIsClicked(widget, data);
     
 }
 
+//change the map when the user switch to a different map
 gboolean changeMap(GtkWidget *, gpointer data){
     
     auto application = static_cast<ezgl::application *>(data);
@@ -363,7 +363,11 @@ gboolean changeMap(GtkWidget *, gpointer data){
     
     std::string newMapPath = convertNameToPath(map);
     
-    //close the database
+    //does not change the map if the user is choose the current map
+    if (newMapPath == citys[currentCityIdx] -> mapPath){
+        return true;
+    }
+
     closeDataBase();
     bool loadSucessfully = loadMap(newMapPath);
     if(!loadSucessfully){
@@ -379,6 +383,7 @@ gboolean changeMap(GtkWidget *, gpointer data){
     double maxLon = citys[currentCityIdx] -> maxLon;
     double minLon = citys[currentCityIdx] -> minLon;
     
+    //new world coordinate
     ezgl::rectangle newWorld({xFromLon(minLon), yFromLat(minLat)},
                                 {xFromLon(maxLon), yFromLat(maxLat)});
     
@@ -393,24 +398,33 @@ gboolean changeMap(GtkWidget *, gpointer data){
     
 }
 
+//covert a city name to a mapPath
 std::string convertNameToPath(std::string name){
+    
     std::string nameInLower;
     char previous = '1';
+    
+    //covert the name into file format
     for (int c = 0; c < name.size(); c++){
+        
         if (name[c] == ' ' && previous != ','){
+            
             nameInLower.push_back('-');
         }else if (name[c] == ','){
+            
             nameInLower.push_back('_');
         }else if (previous != ','){
+            
             nameInLower.push_back(tolower(name[c]));
         }
         previous = name[c];
     }
     
-    std::string path = mapPath_prefix + nameInLower + ".streets.bin";
+    std::string path = mapPathPrefix + nameInLower + ".streets.bin";
     return path;
 }
-    
+
+//search the intersections of two streets
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
     
@@ -421,23 +435,29 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     
     std::string text = gtk_entry_get_text(textEntry);
     std::string firstStreet, secondStreet;
-    bool firstFinished = false;         //finished reading the first street
-
     clearHighlightIntersection();
+   
     
+    
+    bool firstFinished = false;         //finished reading the first street  
+    
+    //split the input into two street name
     for (auto iterator = text.begin(); iterator != text.end(); iterator++){
         
         if (!firstFinished){
             
             if (*iterator != ',' && *iterator != ' '){
+                
                 firstStreet.push_back(tolower(*iterator));
             }else if (*iterator == ','){
+                
                 firstFinished = true;
             }
             
         }else{
             
             if (*iterator != ' '){
+                
                 secondStreet.push_back(tolower(*iterator));
             }
             
@@ -446,7 +466,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     
     std::string output;
     
-    //StreetIdx firstStreetIdx = -1, secondStreetIdx = -1;
+ 
     std::vector<StreetIdx> partialResultFirst = findStreetIdsFromPartialStreetName(firstStreet);
     std::vector<StreetIdx> partialResultSecond = findStreetIdsFromPartialStreetName(secondStreet);
     
@@ -458,7 +478,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     ezgl::point2d sum(0, 0), center(0,0), largest(-1 * EARTH_CIRCUMFERENCE, -1 * EARTH_CIRCUMFERENCE), smallest(EARTH_CIRCUMFERENCE, EARTH_CIRCUMFERENCE);
 
     
-    if (partialResultFirst.size() >= 1 && partialResultSecond.size() >= 1){
+    if (partialResultFirst.size() > 0 && partialResultSecond.size() > 0){
         
        
         std::vector<IntersectionIdx> commonIntersection;
@@ -519,12 +539,15 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
             center.x = sum.x/commonIntersection.size();
             center.y = sum.y/commonIntersection.size();
             
+            //make sure the interested region has some distance with the windows margin
+            double gap = 500;
+            
             //set up the world zoom level
             double left, bottom, top, right;
-            left = smallest.x - 500;
-            bottom = smallest.y - 500;
-            right = largest.x + 500;
-            top = largest.y + 500;
+            left = smallest.x - gap;
+            bottom = smallest.y - gap;
+            right = largest.x + gap;
+            top = largest.y + gap;
             
             double width = right - left;
             double height = top - bottom;
@@ -563,15 +586,12 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
     std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
     std::cout << "Button " << event->button << " is clicked\n";
     
-    LatLon pos = LatLon(latFromY(y), lonFromX(x));
-    clickToHighlightClosestIntersection(pos);
-    
-    //intersectionPopup(app, id);
-    app->refresh_drawing();
+    if (event ->button == 1){
+        positionOfClicked = LatLon(latFromY(y), lonFromX(x));
+    }    
 }
 
 //mouse click to highlight the closest intersection
-
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
     IntersectionIdx id = findClosestIntersection(pos);
     
@@ -589,6 +609,7 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
     return id;
 }
 
+//clear all the highlight intersection
 void clearHighlightIntersection(){
     for (auto iterator = previousHighlight.begin(); iterator != previousHighlight.end(); iterator++){
         citys[currentCityIdx] -> intersection -> intersectionInfo[*iterator].isHighlight = false;
@@ -658,9 +679,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
 
                 }
             }
-        }
-        
-        
+        }        
     }
     return;
 }

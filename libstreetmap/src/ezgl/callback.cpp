@@ -17,16 +17,20 @@
  */
 
 #include "ezgl/callback.hpp"
+#include "../drawMap.h"
+#include "StreetsDatabaseAPI.h"
 
-
+extern LatLon positionOfClicked;
 namespace ezgl {
 
 // File wide static variables to track whether the middle mouse
 // button is currently pressed AND the old x and y positions of the mouse pointer
 bool middle_mouse_button_pressed = false;
 bool left_mouse_button_pressed = false;
+bool leftMouseIsPressedAndNotMoving = false;
 int last_panning_event_time = 0;
 double prev_x = 0, prev_y = 0;
+
 
 gboolean press_key(GtkWidget *, GdkEventKey *event, gpointer data)
 {
@@ -58,6 +62,8 @@ gboolean press_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
       left_mouse_button_pressed = true;
       prev_x = event->x;
       prev_y = event->y;
+      leftMouseIsPressedAndNotMoving = true;
+      
     }
 
     // Call the user-defined mouse press callback if defined
@@ -75,12 +81,20 @@ gboolean press_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
   return TRUE; // consume the event
 }
 
-gboolean release_mouse(GtkWidget *, GdkEventButton *event, gpointer )
-{
+gboolean release_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
+{   
+  auto application = static_cast<ezgl::application *>(data);
   if(event->type == GDK_BUTTON_RELEASE) {
     // Check for Middle mouse release to support dragging
     if(event->button == 1) {
       left_mouse_button_pressed = false;
+      
+      if (leftMouseIsPressedAndNotMoving){
+   
+          clickToHighlightClosestIntersection(positionOfClicked);
+          leftMouseIsPressedAndNotMoving = false;
+          application ->refresh_drawing();
+      }
     }
   }
 
@@ -95,6 +109,7 @@ gboolean move_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
 
     // Check if the middle mouse is pressed to support dragging
     if(left_mouse_button_pressed) {
+      leftMouseIsPressedAndNotMoving = false;
       // drop this panning event if we have just served another one
       if(gtk_get_current_event_time() - last_panning_event_time < 100)
         return true;

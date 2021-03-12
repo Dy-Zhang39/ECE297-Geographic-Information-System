@@ -57,9 +57,12 @@ std::vector<std::string> cityNames = {
     "Rio De Janeiro, Brazil", "Saint Helena", "Singapore", "Sydney, Australia",
     "Tehran, Iran", "Tokyo, Japan", "Toronto, Canada"
 };
+
+//all the global variables in each city
 std::vector<City*> citys;
-int currentCityIdx;
-std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
+//the index of current map that is being drawn
+int currentCityIdx = 0;
+std::string mapPathPrefix = "/cad2/ece297s/public/maps/";
 
 // Number of different characters possible.
 int CHAR_SIZE = 256;
@@ -80,8 +83,8 @@ char SEPARATE_CHAR_AFTER = 's';
 bool loadMap(std::string map_streets_database_filename) {
    std::clock_t loadMapBegin = clock();
     bool alreadyExist = false;
-    currentCityIdx = 0;
     
+    //check if the map is already loaded
     for (int cityIdx = 0; cityIdx < citys.size() && !alreadyExist; cityIdx++){
 
         if (map_streets_database_filename == citys[cityIdx] -> mapPath){
@@ -91,10 +94,14 @@ bool loadMap(std::string map_streets_database_filename) {
     }
 
     bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded successfully
+    
     if(!load_successful){
         return load_successful;
     }
+    
     std::clock_t loadMapEnd = clock();
+    
+    //change to osm file name
     std::string osm_filename = map_streets_database_filename.substr(0, map_streets_database_filename.length() - 12);
     
     load_successful = loadOSMDatabaseBIN(osm_filename + ".osm.bin");
@@ -102,16 +109,19 @@ bool loadMap(std::string map_streets_database_filename) {
     if(!load_successful)
         return load_successful;
     std::clock_t osmMapEnd = clock();
-
+    
+    //create new global variable for new city
     if(!alreadyExist){
+        
         City* newCity = new City;
         newCity->mapPath = map_streets_database_filename;
         newCity->street = new Street;
         newCity ->streetSegment = new StreetSegment;
         newCity ->intersection = new Intersection;
         citys.push_back(newCity);
-        currentCityIdx = citys.size() - 1;
+        currentCityIdx = citys.size() - 1;      //reset the index to the newest city
     }else{
+        
         double loadAlready = double(osmMapEnd - loadMapEnd) / CLOCKS_PER_SEC;
         std::cout << "The loading process takes " << loadAlready << "s"<< std::endl;
         return true;
@@ -120,12 +130,7 @@ bool loadMap(std::string map_streets_database_filename) {
 
     std::cout << "loadMap: " << map_streets_database_filename << std::endl;
     
-    /*
-    //dynamic allocate the global variable
-    citys[currentCityIdx]->street = new Street;
-    citys[currentCityIdx]->streetSegment = new StreetSegment;
-    citys[currentCityIdx]->intersection = new Intersection;
-    */
+    
     resizeData();               //resize the global vectors
     streetPartialName();        //pre-load partial name index
     street_Intersection();      //pre-load street intersections
@@ -247,6 +252,7 @@ void street_Intersection(){
     citys[currentCityIdx] -> avgLat = (maxLat + minLat)/2;
             
 }
+
 //street length; street travel time; street segment length
 void street_Info(){
     
@@ -324,11 +330,6 @@ void street_Info(){
     
 //clear all the global data structure to prevent it get bigger and bigger    
 void closeMap() {
-    /*
-    delete citys[currentCityIdx]->street;
-    delete citys[currentCityIdx]->streetSegment;
-    delete citys[currentCityIdx]->intersection;
-    */
     
     closeDataBase();
     for(int cityIdx = 0; cityIdx < citys.size(); cityIdx++){
@@ -339,12 +340,12 @@ void closeMap() {
     }
     
     citys.clear();
-    
-    //Clean-up your map related data structures here
+
 
     
 }
 
+//close the database
 void closeDataBase(){
     closeOSMDatabase();
     closeStreetDatabase();

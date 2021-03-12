@@ -41,7 +41,7 @@ std::string default_mapPath = "/cad2/ece297s/public/maps/toronto_canada.streets.
 
 
 extern std::vector<City*> citys;
-extern std::string mapPath_prefix;
+extern std::string mapPathPrefix;
 //int currentCityIdx;
 
 
@@ -106,11 +106,4 @@ int main(int argc, char** argv) {
     return SUCCESS_EXIT_CODE;
 }
 
-void getCityName(std::string* s){
-    std::string name;
-    std::cout << "Please enter the name of the city: ";
-    std::cin >> name;
-
-    *s = mapPath_prefix + name + ".streets.bin";
-}
 

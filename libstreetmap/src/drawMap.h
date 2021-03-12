@@ -14,6 +14,14 @@
 #ifndef DRAWMAP_H
 #define DRAWMAP_H
 
+#include "StreetsDatabaseAPI.h"
+
+//highlight the closest intersection when user click somewhere 
+IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
+double xFromLon(double lon);  //convert longitude to meter
+double yFromLat(double lat);  //convert latitude to meter
+double lonFromX(double x);    //convert meter to longitude
+double latFromY(double y);    //convert meter to latitude
 
 
 #endif /* DRAWMAP_H */
