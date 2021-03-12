@@ -532,7 +532,6 @@ void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, do
     LatLon pos = LatLon(latFromY(y), lonFromX(x));
     clickToHighlightClosestIntersection(pos);
     
-    //intersectionPopup(app, id);
     app->refresh_drawing();
 }
 
@@ -747,7 +746,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double visibleArea = world.area();
     
     //level of detail ratio to display feature
-    double featureToWorldRatio = 0.0001;    
+    double featureToWorldRatio = 0.00001;    
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
     
@@ -875,18 +874,29 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     //obtain the middle point of the feature
     double xAvg = 0;
     double yAvg = 0;
-    
+    double area = 0;
+    double x = xFromLon(getFeaturePoint(id, 0).longitude());
+    double y = yFromLat(getFeaturePoint(id, 0).latitude());
+    std::string featureName = getFeatureName(id); 
     FeatureType featureType = getFeatureType(id);
+    if(id==6){
+            std::cout<<x<<" "<<y<<std::endl;
+            
+        }
     for (int pt = 1; pt < getNumFeaturePoints(id); pt++){
         double x1, y1;
-        x1 = xFromLon(getFeaturePoint(id, pt - 1).longitude());
-        y1 = yFromLat(getFeaturePoint(id, pt - 1).latitude());
+        x1 = xFromLon(getFeaturePoint(id, pt).longitude());
+        y1 = yFromLat(getFeaturePoint(id, pt).latitude());
         
-        xAvg += x1;
-        yAvg += y1; 
+        area += (x * y1 -x1 * y) / 2;
+        xAvg += (x * y1 - x1 * y) * (x + x1);
+        yAvg += (x * y1 - x1 * y) * (y + y1);
+        x = x1;
+        y = y1;
     }
-    xAvg /= getNumFeaturePoints(id) - 1;
-    yAvg /= getNumFeaturePoints(id) - 1;
+    
+    xAvg /= 6*area;
+    yAvg /= 6*area;
     
     //display the name only with features that is not type UNKNOWN
     bool displayName = false;
@@ -948,7 +958,6 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     }
     //display the feature name at predefined text display ratio when its name is not <noname>,
     //at the predefined level of detail ratio, and not overlapping with other texts
-    std::string featureName = getFeatureName(id); 
     if (displayName && featureName.compare("<noname>") != 0 && featureArea > visibleArea * textDisplayRatio && !overlapped){
         g->draw_text({xAvg, yAvg}, featureName);
         featureTextPoints.push_back({xAvg, yAvg});
@@ -1025,7 +1034,7 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
 void displayPOI(ezgl::renderer *g) {
     
     //if the visible world area is smaller than this number, the POI will be displayed
-    double areaToShowPOI = 4200000;   
+    double areaToShowPOI = 8400000;   
     
     //approximate range of an POI icon
     double POIRange = 60;
