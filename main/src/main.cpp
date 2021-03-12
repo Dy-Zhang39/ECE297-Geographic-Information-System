@@ -31,6 +31,7 @@ constexpr int BAD_ARGUMENTS_EXIT_CODE = 2;  //Invalid command-line usage
 
 void getCityName(std::string* s);        //get city name from the user
 void clearAllMap();                      //clear all the global variable in citys
+
 std::vector<std::string> cityNames = {
     "Beijing, China", "Cairo, Egypt", "Cape Town, South Africa", "Golden Horseshoe, Canada",
     "Hamilton, Canada", "Hong Kong, China", "Iceland", "Interlaken, Switzerland",
@@ -38,8 +39,11 @@ std::vector<std::string> cityNames = {
     "Rio De Janeiro, Brazil", "Saint Helena", "Singapore", "Sydney, Australia",
     "Tehran, Iran", "Tokyo, Japan", "Toronto, Canada"
 };
+
 //The default map to load if none is specified
-std::string default_mapPath = "/cad2/ece297s/public/maps/toronto_canada.streets.bin";
+
+std::string default_mapPath = "/cad2/ece297s/public/maps/toronto_canada";
+
 std::string mapPath_prefix = "/cad2/ece297s/public/maps/";
 std::vector<City*> citys;
 
@@ -48,7 +52,7 @@ int currentCityIdx;
 // The start routine of your program (main) when you are running your standalone
 // mapper program. This main routine is *never called* when you are running 
 // ece297exercise (the unit tests) -- those tests have their own main routine
-// and directly call your functions in /libstreetmap/src/ to test them.
+// and directly call your functions in /libstreetmap/src/ to testtext to replacetext to replace them.
 // Don't write any code in this file that you want run by ece297exerise -- it 
 // will not be called!
 int main(int argc, char** argv) {
@@ -56,8 +60,8 @@ int main(int argc, char** argv) {
     std::string mapPath;
     if(argc == 1) {
         //Use a default map
-        getCityName(&mapPath);
-        //mapPath = default_mapPath;
+        //getCityName(&mapPath);
+        mapPath = default_mapPath;
     } else if (argc == 2) {
         //Get the map from the command line
         mapPath = argv[1];
@@ -110,7 +114,12 @@ void getCityName(std::string* s){
     std::string name;
     std::cout << "Please enter the name of the city: ";
     std::cin >> name;
-    *s = mapPath_prefix + name + ".streets.bin";
+//<<<<<<< HEAD
+//    *s = mapPath_prefix + name + ".streets.bin";
+//    
+//=======
+
+    *s = mapPath_prefix + name;
 }
 
 void clearAllMap(){

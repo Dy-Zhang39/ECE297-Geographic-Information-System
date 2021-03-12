@@ -13,6 +13,7 @@
 #include "m1.h"
 #include "global.h"
 #include "StreetsDatabaseAPI.h"
+#include "OSMDatabaseAPI.h"
 #include <chrono>
 
 #include <iostream>
@@ -27,6 +28,7 @@ double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.09;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
+bool showSubways = false;
 
 //extern StreetSegment* citys[currentCityIdx]->streetSegment;
 //extern Street* citys[currentCityIdx]->street;
@@ -90,13 +92,20 @@ double streetSize(ezgl::rectangle world);
 void displayPOI(ezgl::renderer *g);
 void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
 
+
 std::string convertNameToPath(std::string name);
 void importNameToTheBar(GtkComboBoxText* bar);
+
+
+void loadSubway(ezgl::renderer *g);
+gboolean toggleSubway(GtkWidget *, gpointer data);
+
 
 
 
 void draw_main_canvas (ezgl::renderer *g);
 void drawMap(){
+
     // Initialize coordinates for feature bounding boxes.
     initializeFeatureBounding();
 
@@ -123,7 +132,7 @@ void drawMap(){
 }
 
 void draw_main_canvas (ezgl::renderer *g){
-    
+    g->format_font("Noto Sans CJK SC", ezgl::font_slant::normal, ezgl::font_weight::normal, 10);
     
     
     g->draw_rectangle({0,0}, {1000,1000});
@@ -147,6 +156,8 @@ void draw_main_canvas (ezgl::renderer *g){
     
     displayStreetName(g, world);
     std::clock_t streetNameEnd = clock();
+    
+    if (showSubways) loadSubway(g);
 
 
     double elapsedSecondsFeature = double(featureEnd - begin) / CLOCKS_PER_SEC;
@@ -221,6 +232,9 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
     GObject *otherPOI = application->get_object("otherPOIBtn");
     g_signal_connect(otherPOI, "toggled", G_CALLBACK(toggleOtherPOI), application);
+
+    GObject *showSubwayBox = application->get_object("showSubwayBox");
+    g_signal_connect(showSubwayBox, "toggled", G_CALLBACK(toggleSubway), application);
     
     GtkComboBoxText *mapBar = (GtkComboBoxText*) application->get_object("MapBar");
     importNameToTheBar(mapBar);
@@ -234,6 +248,15 @@ void importNameToTheBar(GtkComboBoxText* bar){
         std::string name = cityNames[idx];
         gtk_combo_box_text_append_text(bar, name.c_str());
     }
+}
+
+
+//triggered showSubway check box changed
+gboolean toggleSubway(GtkWidget *, gpointer data) {
+    auto application = static_cast<ezgl::application *>(data);
+    showSubways = !showSubways;
+    application->refresh_drawing();
+    return true;
 }
 
 
@@ -577,14 +600,19 @@ void clearHighlightIntersection(){
 
 bool isAve(std::string streetName){
     bool isAve =false;
+    std::string s1 ("Avenue");
+    if (streetName.find(s1) != std::string::npos){
+        isAve = true;
+    }
     //code here checks the street type,return true if ave still working on...
     return isAve;
 }
 
+
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
-    
+    double aveToWorldRatio1 = 0.13;
 
 
     for(int streetSegmentsID=0; streetSegmentsID<getNumStreetSegments(); streetSegmentsID++ ){
@@ -597,6 +625,9 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         if(!streetName.compare("<unknown>")){
             //draw as user zooms in
         }else if (findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * streetToWorldRatio1){
+
+            //draw street according to the length of the street compare to screen  length
+
             for(int pointsID=1; pointsID < citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID].size(); pointsID++){
                 
                 x1 = xFromLon(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
@@ -606,15 +637,26 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                 y2 = yFromLat(citys[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].latitude());
                 if(world.contains(x1, y1) || world.contains(x2, y2)){
                     double speedLimit = getStreetSegmentInfo(streetSegmentsID).speedLimit;
-                    if(speedLimit>22.23){
+                    
+                    if(speedLimit>22.23){// draw highway
                        g->set_color(244, 208, 63, 255);
                        g->set_line_width(1.3*streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
-                    }else{
+                    }else if(!isAve(streetName)){ //draw main road and street
                        g->set_color(210,223,227,255);
                        g->set_line_width(streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
+                    }else if(isAve(streetName)&&findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * aveToWorldRatio1){ 
+                        //draw avenue according to the screen length
+                       g->set_color(210,223,227,255);
+                       g->set_line_width(0.5*streetSize(world));
+                       g->draw_line({x1,y1}, {x2, y2});
                     }
+                    //indicate one way street
+//                    if(getStreetSegmentInfo(streetSegmentsID).oneWay){
+//                         drawOneWay(g, x1, y1, x2, y2);
+//
+//                    }
 
                 }
             }
@@ -622,8 +664,6 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         
         
     }
-    //  std::cout<<"Diag size: "<<diagLength<<std::endl;
-    //  std::cout<<"street size: "<<streetSize(world)<<std::endl;
     return;
 }
 
@@ -639,27 +679,38 @@ double streetSize(ezgl::rectangle world){
     double mapArea = world.area();
     double k=3.5;
     double streetSize = k*log(log(1000/sqrt(mapArea)+1.5))+5;
-    
-   //std::cout<<"text size: "<<textSize<<std::endl;
+ 
     return streetSize;
 }
 
 
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
     std::vector<ezgl::point2d> displayedNames;
+    struct oneWaySegInfo{
+        int x;
+        int y;
+        int distance;
+    };
     
     double fontSize = 10;
     double streetNameSize = 200;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
     displayedNames.clear();
     for(int streetID = 0; streetID < getNumStreets(); streetID++ ){
+        //get segments position that within the screen
         std::vector<ezgl::point2d> inViewSegment;
         inViewSegment.clear();
+        
+        std::vector<oneWaySegInfo> oneWaySegment;
+        inViewSegment.clear();
+        
         std::string streetName = getStreetName(streetID);
+        
         double x = 0, y = 0, x1 = 0, y1 = 0;
         for(int segmentIndex = 0; segmentIndex < citys[currentCityIdx]->street->streetSegments[streetID].size(); segmentIndex++){
             
             if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
+
                 x = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).longitude());
                 y = yFromLat(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).latitude());
                 x1 = xFromLon(getIntersectionPosition(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).longitude());
@@ -667,41 +718,65 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
 
                 if (world.contains(x, y) || world.contains(x1, y1)){
                     inViewSegment.push_back({x, y});
+                    //store the segment that is one way
+                    if(getStreetSegmentInfo(citys[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).oneWay){
+                        oneWaySegInfo oneWay;
+                        oneWay.x=x1;
+                        oneWay.y=y1;
+                        oneWay.distance=sqrt((x1-x)*(x1-x)+(y1-y)*(y1-y));
+                        oneWaySegment.push_back(oneWay);
+                    }
                 }
             }
         }
 
         if (inViewSegment.size() > 2) {
+            //find the middle segment of the street on the screen
             ezgl::point2d midPoint = inViewSegment[inViewSegment.size()/2];
             ezgl::point2d midNextPoint = inViewSegment[inViewSegment.size()/2 + 1];
+            //find the degree to rotate
             double degree = atan2(midNextPoint.y - midPoint.y, midNextPoint.x - midPoint.x) / kDegreeToRadian;
             bool overlap = false;
+            //estimate the text width and height
             double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
             double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
+            //check if the street name overlap with each other
             for (int displayedNamesNum = 0; displayedNamesNum < displayedNames.size(); displayedNamesNum++ ){
                 if(abs(midPoint.x - displayedNames[displayedNamesNum].x) < streetNameSize * widthToPixelRatio && 
-                        abs(midPoint.y - displayedNames[displayedNamesNum].y) < streetNameSize * heightToPixelRatio){
+                    abs(midPoint.y - displayedNames[displayedNamesNum].y) < streetNameSize * heightToPixelRatio){
                     overlap = true;
                 }
             }
-            
-           
-            
+
+            //correct negative degree
             if (degree < 0){
                 degree = degree+180;
             }
             
-
             if(!overlap){
                 g->set_font_size(fontSize);
                 g->set_color(ezgl::BLACK);
                 g->set_text_rotation(degree);
                 g->draw_text(midPoint, streetName);
+                
+                
+                //save the place where a name has been displayed
                 displayedNames.push_back(midPoint);
             }
+            //draw one way symbol
+           
+                for(int oneWaySegId = 1; oneWaySegId < oneWaySegment.size(); oneWaySegId++){
+                    if(oneWaySegment[oneWaySegId].distance > 0.1*diagLength){
+                        g->set_text_rotation(degree);
+                        ezgl::point2d position(oneWaySegment[oneWaySegId].x,oneWaySegment[oneWaySegId].y);
+                        g->draw_text(position, ">");
+                        
+                    }
+                }
         }
     }
 }
+
 
 // initialize the bounding coordinates of all features into vectors
 void initializeFeatureBounding() {
@@ -1243,6 +1318,171 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
         g->draw_text({x, y }, poiName);
     }
 }
+
+void loadSubway(ezgl::renderer *g){
+    double showTextRatio = 10;
+    double showLineRatio = 30;
+    std::vector<const OSMRelation *> osm_subway_lines;
+    int stepLength = 1000;
+    std::clock_t subwayStart = clock();
+    std::vector<OSMID> osm_nodes;
+    ezgl::rectangle world = g->get_visible_world();
+    double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
+    std::vector<ezgl::point2d> stationCoordindate;
+    std::vector<std::string> stationName;
+    std::string lineColor;
+    // Create index for the nodes by grouping them
+    for (unsigned k = 0; k < getNumberOfNodes(); k++) {
+        const OSMNode  *newNode = getNodeByIndex(k);
+        if (k % stepLength == 0) {
+            osm_nodes.push_back(newNode->id());
+        }
+    }
+
+    // Loop through all OSM relations
+    for (unsigned i = 0; i < getNumberOfRelations(); i++) {
+        const OSMRelation *currRel = getRelationByIndex(i);
+
+        // Check the tag of the currRel
+        for (unsigned j = 0; j < getTagCount(currRel); j++) {
+            std::pair<std::string, std::string> tagPair = getTagPair(currRel, j);
+
+            // Push relations with the route=subway tag
+            if (tagPair.first == "route" && tagPair.second == "subway") {
+                osm_subway_lines.push_back(currRel);
+                break;
+            }
+        }
+    }
+
+    
+    // For each subway line (relation), get its name, color, and members
+    for (unsigned i = 0; i < osm_subway_lines.size(); i++) {
+
+        // Get subway line color and name
+        for (unsigned j = 0; j < getTagCount(osm_subway_lines[i]); j++) {
+            std::pair<std::string, std::string> tagPair = getTagPair(osm_subway_lines[i], j);
+            if (tagPair.first == "colour") {
+                std::cout << "Subway line color: " << tagPair.second << std::endl;
+                lineColor = tagPair.second;
+            } else if (tagPair.first == "name") {
+                //std::cout << "Subway line name: " << tagPair.second << std::endl;
+            }
+        }
+
+        // Get relation members
+        std::vector<TypedOSMID> route_members = getRelationMembers(osm_subway_lines[i]); 
+        // Print subway station names
+        //std::cout << "Subway line stations:" << std::endl;
+        double prevX = 0, prevY = 0;
+        
+        for(unsigned j = 0; j < route_members.size(); j++) {
+
+            // A member of type node represents a subway station
+            if(route_members[j].type() == TypedOSMID::Node) {
+
+                const OSMNode *currNode = nullptr;
+                unsigned indexRange = 0;
+                
+                for (unsigned k = 0; k < osm_nodes.size(); k++) {
+                    if (route_members[j] < osm_nodes[k]) {
+                        indexRange = k;
+                        break;
+                    }
+                }
+
+                unsigned startIdx = 0, endIdx = getNumberOfNodes();      
+                
+                if ((indexRange - 1) * stepLength > 0) startIdx = (indexRange - 1) * stepLength;
+                if ((indexRange + 1) * stepLength < endIdx) endIdx = (indexRange + 1) * stepLength ;
+
+                // Node lookup by OSMID
+                for (unsigned k = startIdx; k < endIdx; k++) {
+                    currNode = getNodeByIndex(k);
+                    if (currNode->id() == route_members[j]) {
+                        break;
+                    }
+                }
+
+                // Get the name tag of that node
+                for (unsigned k = 0; k < getTagCount(currNode); k++) {
+                    std::pair<std::string, std::string> tagPair = getTagPair(currNode, k);
+                    LatLon stationCoord = getNodeCoords(currNode);
+                    if (tagPair.first == "name") {
+                        double x = xFromLon(stationCoord.longitude());
+                        double y = yFromLat(stationCoord.latitude());
+                            
+                        if (showLineRatio > widthToPixelRatio) {
+
+                            g->set_color(244, 208, 163, 255);
+                            if (lineColor.compare("green")) {
+                                g->set_color(ezgl::GREEN);
+                            } else if (lineColor.compare("purple") == 0) {
+                                g->set_color(ezgl::PURPLE);
+                            } else if (lineColor.compare("yellow") == 0) {
+                                g->set_color(ezgl::YELLOW);
+                            } else if (lineColor.compare("brown") == 0) {
+                                g->set_color(128, 0, 0, 255);
+                            } else if (lineColor.at(0) == '#' && lineColor.length() == 7) {
+                                int rColor = std::stoi(lineColor.substr(1,2));
+                                int gColor = std::stoi(lineColor.substr(3,2));
+                                int bColor = std::stoi(lineColor.substr(5,2));
+                                g->set_color(rColor,gColor,bColor,255);
+                                
+                            }
+
+                            g->fill_arc({x, y}, 5 * widthToPixelRatio, 0, 360);
+                            if (prevX != 0 || prevY != 0) {
+                                g->set_line_width(streetSize(world));
+                                g->draw_line({prevX, prevY}, {x, y});
+                            }
+                            
+                            if (world.contains(x, y) && showTextRatio > widthToPixelRatio) {
+                                stationCoordindate.push_back({x, y});
+                                stationName.push_back(tagPair.second );
+                            }
+                        }
+
+                        prevX = x;
+                        prevY = y;
+                        break;
+                    }
+                }
+
+            }
+        }
+    
+
+    }
+    std::vector <ezgl::point2d> displayedCoord;
+    displayedCoord.clear();
+
+    for (int stationIdx = 0; stationIdx < stationName.size(); stationIdx ++) {
+        bool displayStation = true;
+
+        for (int j = 0; j < displayedCoord.size(); j ++) {
+            if (abs(stationCoordindate[stationIdx].x - displayedCoord[j].x) < (30* widthToPixelRatio) 
+                    && abs(stationCoordindate[stationIdx].y - displayedCoord[j].y) < (30 * widthToPixelRatio)) {
+                displayStation = false;
+                break;
+            }
+
+        }
+
+        if (displayStation) {
+            //draw the text of the contents
+            g->set_text_rotation(0);
+            g->set_color(ezgl::BLACK);
+            g->set_font_size(10);
+            g->draw_text(stationCoordindate[stationIdx], stationName[stationIdx]);
+            displayedCoord.push_back(stationCoordindate[stationIdx]);
+        }
+    } 
+    std::clock_t subwayEnd = clock();
+    double elapsedSecondsSubway = double(subwayEnd - subwayStart) / CLOCKS_PER_SEC;
+    std::cout<<"elapsedSecondsSubway: " << elapsedSecondsSubway << "  r atio:" <<widthToPixelRatio<< std::endl;
+}
+
 
 /*void intersectionPopup(ezgl::application *application, IntersectionIdx id) {
     GObject *window;            // the parent window over which to add the dialog

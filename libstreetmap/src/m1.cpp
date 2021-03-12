@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <math.h>
 #include <map>
-
+#include "OSMDatabaseAPI.h"
 
 #include<bits/stdc++.h>
 #include<stdio.h>
@@ -48,7 +48,6 @@ extern std::vector<City*> citys;
 // name of the ".osm.bin" file that matches your map -- just change 
 // ".streets" to ".osm" in the map_streets_database_filename to get the proper
 // name.
-
 
 //global variable
 /*
@@ -77,7 +76,7 @@ void resizeData();
 
 
 bool loadMap(std::string map_streets_database_filename) {
-    
+   
     bool alreadyExist = false;
     
     for (int cityIdx = 0; cityIdx < citys.size() && !alreadyExist; cityIdx++){
@@ -87,14 +86,21 @@ bool loadMap(std::string map_streets_database_filename) {
             currentCityIdx = cityIdx;
         }      
     }
-    bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded successfully
-    
+
+    bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename + ".streets.bin"); //Indicates whether the map has loaded successfully
+
     if(!load_successful){
         return load_successful;
     }
     
+
     
-    std::cout << "loadMap: " << map_streets_database_filename << std::endl;
+ 
+
+    load_successful = loadOSMDatabaseBIN(map_streets_database_filename + ".osm.bin");
+    if(!load_successful)
+        return load_successful;
+
     
     if(!alreadyExist){
         City* newCity = new City;
@@ -107,6 +113,10 @@ bool loadMap(std::string map_streets_database_filename) {
     }else{
         return true;
     }
+
+
+    std::cout << "loadMap: " << map_streets_database_filename << std::endl;
+    
     /*
     //dynamic allocate the global variable
     citys[currentCityIdx]->street = new Street;
