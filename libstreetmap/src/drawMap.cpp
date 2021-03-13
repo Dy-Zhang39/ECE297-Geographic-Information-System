@@ -826,6 +826,7 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
 void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
     double delta = 15;
     double h = 10;
+    double arrowThickness = 0.1;
     
     //points for the arrow
     ezgl::point2d firstPoint(position.x + h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
@@ -833,6 +834,7 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
     ezgl::point2d thirdPoint(firstPoint.x + h * cos((theta - delta) * kDegreeToRadian), firstPoint.y + h * sin((theta - delta) * kDegreeToRadian));
 
     //draw the arrow
+    g->set_line_width(arrowThickness * streetSize(g->get_visible_world()));
     g->draw_line(firstPoint, secondPoint);
     g->draw_line(firstPoint, thirdPoint);
 }
