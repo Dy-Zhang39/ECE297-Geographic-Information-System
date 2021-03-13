@@ -25,7 +25,7 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos);
 
 //helper functions
 
-//unhighlight all the highlight intersection
+//un-highlight all the highlight intersection
 void clearHighlightIntersection();
 
 //world width to height ratio
@@ -47,6 +47,8 @@ void drawFeature(ezgl::renderer *g, ezgl::rectangle world);
 void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id);
 
 void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureArea, double visibleArea, double widthToPixelRatio, double heightToPixelRatio);
+
+void storeStreetSeg(std::string streetName, std::vector<ezgl::point2d> &inViewSegment, int streetID, int diagLength, ezgl::rectangle world);
 
 void displayHighlightedIntersection(ezgl::renderer *g);
 

@@ -662,7 +662,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double highwayWidth = 1.3;
 
     for(int streetSegmentsID=0; streetSegmentsID<getNumStreetSegments(); streetSegmentsID++ ){
-        //get street segment streetID
+        //get street segment streetID, loop through each ID and connect its point.
         StreetIdx streetId =getStreetSegmentInfo(streetSegmentsID).streetID;
         //get street name of this street segment
         std::string streetName = getStreetName(streetId);
@@ -714,123 +714,121 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     return;
 }
 
-double textSize(ezgl::rectangle world){
-    
-    double mapArea = world.area();
-    double k=3.5;
-    double textSize = k*log(log(1000/sqrt(mapArea)+1.5))+5;
-    
-    return textSize;
-}
 
 double streetSize(ezgl::rectangle world){
-    
+    //this function make the streetSize change as the  map area changes, 
+    //it is bounded by ln(), size between around 0.5 - 10
     double mapArea = world.area();
-    double k=6;
-    double streetSize = k*log(log(1000/sqrt(mapArea)+1.5))+5;
+    //function parameter
+    double par1=6;
+    double par2=1000;
+    double par3=1.5;
+    double par4=5;
+    //adjust street size
+    double streetSize = par1*log(log(par2/sqrt(mapArea)+par3))+par4;
  
     return streetSize;
 }
 
-
-void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
-    
+void displayStreetName(ezgl::renderer *g, ezgl::rectangle world) {
+    //collect the street name that has been display in a vector
     std::vector<ezgl::point2d> displayedNames;
-
-    
-    double fontSize = 10;
-    double streetNameSize = 200;
-    double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
+    double fontSize = 10; //street name size
+    double boundStreetNameSize = 200; //the street name text is bounded within the size
+    double diagLength = sqrt(world.height() * world.height() + world.width() * world.width());
     displayedNames.clear();
-    
-    for(int streetID = 0; streetID < getNumStreets(); streetID++ ){
+
+    for (int streetID = 0; streetID < getNumStreets(); streetID++) {
         //get segments position that within the screen
         std::vector<ezgl::point2d> inViewSegment;
         inViewSegment.clear();
-        
-        inViewSegment.clear();
-        
+
+        //get street name
         std::string streetName = getStreetName(streetID);
-        
-        double xFrom = 0, yFrom = 0, xTo = 0, yTo = 0;
-        for(int segmentIndex = 0; segmentIndex < cities[currentCityIdx]->street->streetSegments[streetID].size(); segmentIndex++){
-            
-            if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
-
-                xFrom = xFromLon(getIntersectionPosition(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).longitude());
-                yFrom = yFromLat(getIntersectionPosition(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).latitude());
-                xTo = xFromLon(getIntersectionPosition(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).longitude());
-                yTo = yFromLat(getIntersectionPosition(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).latitude());
-
-                if (world.contains(xFrom, yFrom) || world.contains(xTo, yTo)){
-                    inViewSegment.push_back({xFrom, yFrom});
-                    
-                    //store the segment that is one way                   
-                    if(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).oneWay){
-                        
-                        oneWaySegInfo oneWay;
-                        oneWay.fromX=xFrom;
-                        oneWay.fromY=yFrom;
-                        oneWay.toX=xTo;
-                        oneWay.toY=yTo;
-                        oneWay.distance=sqrt((xTo-xFrom)*(xTo-xFrom)+(yTo-yFrom)*(yTo-yFrom));
-                        cities[currentCityIdx]->streetSegment->oneWaySegment.push_back(oneWay);
-                    }
-                }
-            }
-        }
+        //store the one way segments and segments that with the screen view
+        storeStreetSeg(streetName, inViewSegment, streetID, diagLength, world);
 
         if (inViewSegment.size() > 2) {
-            
             //find the middle segment of the street on the screen
-            ezgl::point2d midPoint = inViewSegment[inViewSegment.size()/2];
-            ezgl::point2d midNextPoint = inViewSegment[inViewSegment.size()/2 + 1];
-            
+            ezgl::point2d midPoint = inViewSegment[inViewSegment.size() / 2];
+            ezgl::point2d midNextPoint = inViewSegment[inViewSegment.size() / 2 + 1];
+
             //find the degree to rotate
             double degree = atan2(midNextPoint.y - midPoint.y, midNextPoint.x - midPoint.x) / kDegreeToRadian;
             bool overlap = false;
-            
+
             //estimate the text width and height
-            double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
-            double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
-            
+            double widthToPixelRatio = world.width() / g->get_visible_screen().width();
+            double heightToPixelRatio = world.height() / g->get_visible_screen().height();
+
             //check if the street name overlap with each other
-            for (int displayedNamesNum = 0; displayedNamesNum < displayedNames.size(); displayedNamesNum++ ){
-                
-                if(abs(midPoint.x - displayedNames[displayedNamesNum].x) < streetNameSize * widthToPixelRatio && 
-                    abs(midPoint.y - displayedNames[displayedNamesNum].y) < streetNameSize * heightToPixelRatio){
+            for (int displayedNamesNum = 0; displayedNamesNum < displayedNames.size(); displayedNamesNum++) {
+                if (abs(midPoint.x - displayedNames[displayedNamesNum].x) < boundStreetNameSize * widthToPixelRatio &&
+                        abs(midPoint.y - displayedNames[displayedNamesNum].y) < boundStreetNameSize * heightToPixelRatio) {
                     overlap = true;
                 }
             }
-            
+
             //make sure text is readable for user by adjusting rotation
-            if (degree > 90){
+            if (degree > 90) {
                 degree = degree - 180;
-            }else if (degree < -90){
+            } else if (degree < -90) {
                 degree = degree + 180;
             }
-            
-            if(!overlap){
+
+            if (!overlap) { // if not overlap then display
                 g->set_font_size(fontSize);
                 g->set_color(textColor);
                 g->set_text_rotation(degree);
                 g->draw_text(midPoint, streetName);
-                
-                
                 //save the place where a name has been displayed
                 displayedNames.push_back(midPoint);
             }
             //draw one way symbol
-           drawOneWayStreet(g, diagLength);
-              
+            drawOneWayStreet(g, diagLength);
+
+        }
+    }
+    return;
+}
+
+//store the one way street segment in oneWayStreetSegmentInfo and in view segment in inVewSegment for later use
+void storeStreetSeg(std::string streetName, std::vector<ezgl::point2d> &inViewSegment, int streetID, int diagLength, ezgl::rectangle world) {
+    //get the start and end position of the street segment
+    double xFrom = 0, yFrom = 0, xTo = 0, yTo = 0;
+    for (int segmentIndex = 0; segmentIndex < cities[currentCityIdx]->street->streetSegments[streetID].size(); segmentIndex++) {
+        //check if the street name is unknown, unknown street name is not displayed, since it is useless
+        if (streetName.compare("<unknown>") != 0 && findStreetLength(streetID) > diagLength * streetToWorldRatio) {
+            //get the x,y position of the point on the map
+            xFrom = xFromLon(getIntersectionPosition(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).longitude());
+            yFrom = yFromLat(getIntersectionPosition(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).from).latitude());
+            xTo = xFromLon(getIntersectionPosition(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).longitude());
+            yTo = yFromLat(getIntersectionPosition(getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).to).latitude());
+            //save the points that within the screen
+            if (world.contains(xFrom, yFrom) || world.contains(xTo, yTo)) {
+                inViewSegment.push_back({xFrom, yFrom});
+
+                //store the segment that is one way                   
+                if (getStreetSegmentInfo(cities[currentCityIdx]->street->streetSegments[streetID][segmentIndex]).oneWay) {
+                    oneWaySegInfo oneWay;
+                    oneWay.fromX = xFrom;
+                    oneWay.fromY = yFrom;
+                    oneWay.toX = xTo;
+                    oneWay.toY = yTo;
+                    oneWay.distance = sqrt((xTo - xFrom)*(xTo - xFrom)+(yTo - yFrom)*(yTo - yFrom));
+
+                    cities[currentCityIdx]->streetSegment->oneWaySegment.push_back(oneWay);
+                }
+            }
         }
     }
 }
-void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
+
+void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta) {
     double delta = 15;
     double h = 10;
     double arrowThickness = 0.1;
-    
+
     //points for the arrow
     ezgl::point2d firstPoint(position.x + h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
     ezgl::point2d secondPoint(firstPoint.x + h * cos((theta + delta) * kDegreeToRadian), firstPoint.y + h * sin((theta + delta) * kDegreeToRadian));
@@ -840,26 +838,28 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
     g->set_line_width(arrowThickness * streetSize(g->get_visible_world()));
     g->draw_line(firstPoint, secondPoint);
     g->draw_line(firstPoint, thirdPoint);
+
+    return;
 }
 
-void drawOneWayStreet(ezgl::renderer *g, double diagLength){
-    
-    for(int oneWaySegId = 0; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
-        if(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1 * diagLength){
-
-            double degree = atan2(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toY - 
-            cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
-                    cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toX - 
-            cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX) / kDegreeToRadian;
-
-            ezgl::point2d position(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX ,
+void drawOneWayStreet(ezgl::renderer *g, double diagLength) {
+    //loop through the one way street segment, and draw arrow based on the direction
+    for (int oneWaySegId = 0; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++) {
+        if (cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1 * diagLength) {
+            //find the direction to draw arrow based on the degree
+            double degree = atan2(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toY -
+                    cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
+                    cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toX -
+                    cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX) / kDegreeToRadian;
+            //find the position to draw arrow
+            ezgl::point2d position(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX,
                     cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY);
-
+            //draw the arrow
             g->set_text_rotation(degree);
             drawArrow(g, position, degree);
-
         }
     }
+    return;
 }
 
 
