@@ -657,7 +657,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
     double aveToWorldRatio1 = 0.13;
     double highwaySpeed = 22.23;
-    double visibleStreetLenRatio = 1.5;
+    double visibleStreetLenRatio = 1.2;
     double streetWidth = 0.5;
     double highwayWidth = 1.3;
 
@@ -864,10 +864,6 @@ void drawOneWayStreet(ezgl::renderer *g, double diagLength) {
     }
     return;
 }
-
-
-
-
 
 
 //draw all features in map
@@ -1107,13 +1103,13 @@ void displayHighlightedIntersection(ezgl::renderer *g) {
     double height = width;
     
     for (size_t i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); ++i) {
+        //get x,y position of the intersection
         float x = xFromLon(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.longitude());
         float y = yFromLat(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.latitude());
         
         if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
-
             g->set_color(ezgl::GREY_75);
-            
+            //display pop up box
             if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].name.compare("<unknown>") != 0){
                 displayPopupBox(g, "Intersection: ", cities[currentCityIdx] -> intersection -> intersectionInfo[i].name, x, y, world);
             }
@@ -1123,6 +1119,7 @@ void displayHighlightedIntersection(ezgl::renderer *g) {
                               {x + width/2, y + height/2});
         }
     }
+    return;
 }
 
 //display a pop-up box at given location with given title and content
