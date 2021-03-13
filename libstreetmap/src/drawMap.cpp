@@ -657,6 +657,9 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
     double aveToWorldRatio1 = 0.13;
     double highwaySpeed = 22.23;
+    double visibleStreetLenRatio = 1.5;
+    double streetWidth = 0.5;
+    double highwayWidth = 1.3;
 
     for(int streetSegmentsID=0; streetSegmentsID<getNumStreetSegments(); streetSegmentsID++ ){
         //get street segment streetID
@@ -667,9 +670,9 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         //if the street name is unknown, draw when user zoom in
         if(!streetName.compare("<unknown>")){
             //draw as user zooms in
-            if(findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * 1.5*streetToWorldRatio1){
+            if(findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * visibleStreetLenRatio * streetToWorldRatio1){
                 g->set_color(streetColor);
-                g->set_line_width(0.5 * streetSize(world));
+                g->set_line_width(streetWidth * streetSize(world));
                 g->draw_line({x1,y1}, {x2, y2});
             }
             
@@ -689,7 +692,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                     if(speedLimit>highwaySpeed){// draw highway
                         
                        g->set_color(highwayColor);
-                       g->set_line_width(1.3 * streetSize(world));
+                       g->set_line_width(highwayWidth * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else if(!isAve(streetName)){ //draw main road and street
                         
@@ -700,7 +703,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                         
                         //draw avenue
                        g->set_color(streetColor);
-                       g->set_line_width(0.5 * streetSize(world));
+                       g->set_line_width(streetWidth * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }
 
@@ -744,7 +747,6 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         //get segments position that within the screen
         std::vector<ezgl::point2d> inViewSegment;
         inViewSegment.clear();
-        
         
         inViewSegment.clear();
         
@@ -825,39 +827,39 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
     }
 }
 void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
-    double h=8;
-    double b=3;
-    std::vector<ezgl::point2d> points;
+    double delta = 15;
+    double h = 10;
+    double arrowThickness = 0.1;
     
-    //point 1
-    ezgl::point2d firstPoint(position.x+h*cos(theta*kDegreeToRadian),position.y+h*sin(theta*kDegreeToRadian));
-    ezgl::point2d secondPoint(position.x+b*cos((90+theta)*kDegreeToRadian),position.y+h*sin((90+theta)*kDegreeToRadian));
-    ezgl::point2d thirdPoint(position.x+b*cos((theta-90)*kDegreeToRadian),position.y+b*sin((theta-90)*kDegreeToRadian));
-    points.push_back(firstPoint);
-    points.push_back(secondPoint);
-    points.push_back(thirdPoint);
-    
-    g->fill_poly(points);
-    
+    //points for the arrow
+    ezgl::point2d firstPoint(position.x + h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
+    ezgl::point2d secondPoint(firstPoint.x + h * cos((theta + delta) * kDegreeToRadian), firstPoint.y + h * sin((theta + delta) * kDegreeToRadian));
+    ezgl::point2d thirdPoint(firstPoint.x + h * cos((theta - delta) * kDegreeToRadian), firstPoint.y + h * sin((theta - delta) * kDegreeToRadian));
+
+    //draw the arrow
+    g->set_line_width(arrowThickness * streetSize(g->get_visible_world()));
+    g->draw_line(firstPoint, secondPoint);
+    g->draw_line(firstPoint, thirdPoint);
 }
+
 void drawOneWayStreet(ezgl::renderer *g, double diagLength){
     
-    for(int oneWaySegId = 1; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
-                    if(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1*diagLength){
-                        
-                        double degree = atan2(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toY - 
-                        cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
-                                cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toX - 
-                        cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX) / kDegreeToRadian;
-                                                           
-                        ezgl::point2d position(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX ,
-                                cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY);
-                        
-                        g->set_text_rotation(degree);
-                        drawArrow(g, position, degree);
-                        
-                    }
-                }
+    for(int oneWaySegId = 0; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
+        if(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1 * diagLength){
+
+            double degree = atan2(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toY - 
+            cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
+                    cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toX - 
+            cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX) / kDegreeToRadian;
+
+            ezgl::point2d position(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX ,
+                    cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY);
+
+            g->set_text_rotation(degree);
+            drawArrow(g, position, degree);
+
+        }
+    }
 }
 
 
