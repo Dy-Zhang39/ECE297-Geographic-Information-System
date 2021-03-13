@@ -83,7 +83,7 @@ char SEPARATE_CHAR_AFTER = 's';
 
 bool loadMap(std::string map_streets_database_filename) {
     bool alreadyExist = false;
-    
+   
 
     //check if the map is already loaded
     for (int cityIdx = 0; cityIdx < cities.size() && !alreadyExist; cityIdx++){
@@ -93,20 +93,22 @@ bool loadMap(std::string map_streets_database_filename) {
             currentCityIdx = cityIdx;
         }      
     }
+    
 
     bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded successfully
-    
+
     if(!load_successful){
         return load_successful;
     }
     
     std::clock_t loadMapEnd = clock();
     
+   
     //change to osm file name
     std::string osm_filename = map_streets_database_filename.substr(0, map_streets_database_filename.length() - 12);
     
     load_successful = loadOSMDatabaseBIN(osm_filename + ".osm.bin");
-
+    
     if(!load_successful)
         return load_successful;
     std::clock_t osmMapEnd = clock();
