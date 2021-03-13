@@ -31,5 +31,7 @@ double latFromY(double y);    //convert meter to latitude
 //close the streetMap data base and osm data base
 void closeDataBase();
 
+// find a min/max LatLon from 2 points
+LatLon findMaxMin(LatLon point, LatLon current, std::string method);
 #endif /* DATAHANDLER_H */
 

@@ -733,9 +733,11 @@ double streetSize(ezgl::rectangle world){
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world) {
     //collect the street name that has been display in a vector
     std::vector<ezgl::point2d> displayedNames;
+
     double fontSize = 10; //street name size
     double boundStreetNameSize = 200; //the street name text is bounded within the size
     double diagLength = sqrt(world.height() * world.height() + world.width() * world.width());
+
     displayedNames.clear();
 
     for (int streetID = 0; streetID < getNumStreets(); streetID++) {
@@ -841,6 +843,7 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta) {
 
     return;
 }
+
 
 void drawOneWayStreet(ezgl::renderer *g, double diagLength) {
     //loop through the one way street segment, and draw arrow based on the direction
