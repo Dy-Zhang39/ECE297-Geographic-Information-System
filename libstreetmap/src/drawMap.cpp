@@ -657,6 +657,9 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
     double aveToWorldRatio1 = 0.13;
     double highwaySpeed = 22.23;
+    double visibleStreetLenRatio = 1.5;
+    double streetWidth = 0.5;
+    double highwayWidth = 1.3;
 
     for(int streetSegmentsID=0; streetSegmentsID<getNumStreetSegments(); streetSegmentsID++ ){
         //get street segment streetID
@@ -667,9 +670,9 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         //if the street name is unknown, draw when user zoom in
         if(!streetName.compare("<unknown>")){
             //draw as user zooms in
-            if(findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * 1.5*streetToWorldRatio1){
+            if(findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * visibleStreetLenRatio * streetToWorldRatio1){
                 g->set_color(streetColor);
-                g->set_line_width(0.5 * streetSize(world));
+                g->set_line_width(streetWidth * streetSize(world));
                 g->draw_line({x1,y1}, {x2, y2});
             }
             
@@ -689,7 +692,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                     if(speedLimit>highwaySpeed){// draw highway
                         
                        g->set_color(highwayColor);
-                       g->set_line_width(1.3 * streetSize(world));
+                       g->set_line_width(highwayWidth * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else if(!isAve(streetName)){ //draw main road and street
                         
@@ -700,7 +703,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                         
                         //draw avenue
                        g->set_color(streetColor);
-                       g->set_line_width(0.5 * streetSize(world));
+                       g->set_line_width(streetWidth * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }
 
