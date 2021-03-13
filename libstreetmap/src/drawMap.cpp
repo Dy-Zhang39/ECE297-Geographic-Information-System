@@ -844,22 +844,22 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
 
 void drawOneWayStreet(ezgl::renderer *g, double diagLength){
     
-    for(int oneWaySegId = 1; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
-                    if(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1*diagLength){
-                        
-                        double degree = atan2(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toY - 
-                        cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
-                                cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toX - 
-                        cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX) / kDegreeToRadian;
-                                                           
-                        ezgl::point2d position(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX ,
-                                cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY);
-                        
-                        g->set_text_rotation(degree);
-                        drawArrow(g, position, degree);
-                        
-                    }
-                }
+    for(int oneWaySegId = 0; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
+        if(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1 * diagLength){
+
+            double degree = atan2(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toY - 
+            cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
+                    cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toX - 
+            cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX) / kDegreeToRadian;
+
+            ezgl::point2d position(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromX ,
+                    cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY);
+
+            g->set_text_rotation(degree);
+            drawArrow(g, position, degree);
+
+        }
+    }
 }
 
 
