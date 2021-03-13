@@ -52,6 +52,9 @@ extern std::vector<City*> cities;
 extern int currentCityIdx;
 extern std::vector<std::string> cityNames;
 extern std::string mapPathPrefix;
+extern std::vector<StreetIdx> mostSimilarFirstName;
+extern std::vector<StreetIdx> mostSimilarSecondName;
+extern bool checkingFirstName;
 
 void drawMap(){
 
@@ -456,10 +459,12 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     std::string text = gtk_entry_get_text(textEntry);
     std::string firstStreet, secondStreet;
     clearHighlightIntersection();
-   
-    
+    mostSimilarFirstName.clear();            //make sure number of element is not more than 2
+    mostSimilarSecondName.clear();            //make sure number of element is not more than 2
+    checkingFirstName = true;
     
     bool firstFinished = false;         //finished reading the first street  
+    
     
     //split the input into two street name
     for (auto iterator = text.begin(); iterator != text.end(); iterator++){
@@ -485,40 +490,58 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     
     std::string output;
     
- 
+    //make sure user enter two streets name
+    if (firstStreet.size() == 0 && secondStreet.size()){
+        application ->update_message("You need to enter two streets separated by the commas");
+        return TRUE;
+    }
+    
     std::vector<StreetIdx> partialResultFirst = findStreetIdsFromPartialStreetName(firstStreet);
+    checkingFirstName = false;
     std::vector<StreetIdx> partialResultSecond = findStreetIdsFromPartialStreetName(secondStreet);
- 
+    
+    
+    //put all the similar name to the partial name for finding common intersection
+    for (int idx = 0; idx < mostSimilarFirstName.size(); idx++){
+        partialResultFirst.push_back(mostSimilarFirstName[idx]);
+    }
+    
+    for (int idx = 0; idx < mostSimilarSecondName.size(); idx++){
+        partialResultFirst.push_back(mostSimilarSecondName[idx]);
+    }
+    
     ezgl::point2d sum(0, 0), center(0,0), largest(-1 * EARTH_CIRCUMFERENCE, -1 * EARTH_CIRCUMFERENCE), smallest(EARTH_CIRCUMFERENCE, EARTH_CIRCUMFERENCE);
 
     
-    if (partialResultFirst.size() > 0 && partialResultSecond.size() > 0){
+    if ((partialResultFirst.size() > 0 && partialResultSecond.size() > 0)){
+        
+        std::vector<IntersectionIdx> commonIntersection;
         
        
-        std::vector<IntersectionIdx> commonIntersection;
-        for (auto firstStreetIdx = partialResultFirst.begin(); firstStreetIdx != partialResultFirst.end();){
-            
-            for (auto secondStreetIdx= partialResultSecond.begin(); secondStreetIdx != partialResultSecond.end();){
+        for (auto firstStreetIdx = partialResultFirst.begin(); firstStreetIdx != partialResultFirst.end();) {
+
+            for (auto secondStreetIdx = partialResultSecond.begin(); secondStreetIdx != partialResultSecond.end();) {
                 
                 commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(*firstStreetIdx, *secondStreetIdx));
-                if (commonIntersection.size() > 0){
-                    
+                if (commonIntersection.size() > 0) {
+
                     output = getStreetName(*firstStreetIdx) + ", " + getStreetName(*secondStreetIdx);
                     firstStreetIdx = partialResultFirst.end();
                     secondStreetIdx = partialResultSecond.end();
-                }else {
-                    
+                } else {
+
                     secondStreetIdx++;
                 }
             }
-            
-            if(firstStreetIdx != partialResultFirst.end()){
-                
+
+            if (firstStreetIdx != partialResultFirst.end()) {
+
                 firstStreetIdx++;
             }
         }
-
-
+        
+        
+        
         if (commonIntersection.size() > 0){
             
             //position in latitude and longitude

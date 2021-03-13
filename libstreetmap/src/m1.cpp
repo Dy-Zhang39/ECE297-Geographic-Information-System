@@ -78,6 +78,9 @@ int PREFIX_NUM_CHAR = 2;
 char SEPARATE_CHAR = 'k';
 char SEPARATE_CHAR_AFTER = 's';
 
+std::vector<StreetIdx> mostSimilarFirstName;
+std::vector<StreetIdx> mostSimilarSecondName;
+bool checkingFirstName = true;
 //helper function
 
 
@@ -428,11 +431,34 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
             adjustedNameList = cities[currentCityIdx]->street->streetNamesOneChar[tolower(streetPrefix[0])];
         }
         
+        int leastEdit = INT_MAX;            //numbers of edits requires to change from input name to the similar name
+        
         //loop through the street names within the index vector
         for (int i = 0; i < adjustedNameList.size(); i++){
 
             std::string streetName = getStreetName(adjustedNameList[i]);
+            
+            //find the more similar name to the input
+            int numOfEdit = levenshteinDistance(street_prefix, streetName);
+            if (numOfEdit < leastEdit){
+                
+                if (checkingFirstName){
+                    mostSimilarFirstName.clear();
+                    mostSimilarFirstName.push_back(adjustedNameList[i]);
+                }else{
+                    mostSimilarSecondName.clear();
+                    mostSimilarSecondName.push_back(adjustedNameList[i]);
+                }
+            }else if (numOfEdit == leastEdit){
+                
+                if (checkingFirstName){
 
+                    mostSimilarFirstName.push_back(adjustedNameList[i]);
+                }else{
+                    mostSimilarSecondName.push_back(adjustedNameList[i]);
+                }
+            }
+            
             //compare streetName and streetPrefix character by character
             int k = 1;
             if (streetPrefix.length() == 1){
@@ -461,6 +487,7 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
             }
 
         }
+        
     }
 
     return streets;
@@ -800,5 +827,49 @@ std::vector<StreetSegmentIdx> findStreetSegmentsOfIntersection(IntersectionIdx i
     }
     
     return cities[currentCityIdx]->intersection->intersectionStreetSegments[intersection_id];
+    
+}
+
+//an algorithm that gives how much edit I need to let the two string to be the same
+int levenshteinDistance(std::string first, std::string second){
+    int rows = first.length() + 1;
+    int cols = second.length() + 1;
+    
+    std::vector<std::vector<int>> matrix;
+    
+    matrix.resize(rows);
+    
+    for (int row = 0; row < rows; row++){
+        matrix[row].resize(cols);
+        for (int col = 0; col < cols; col++){
+            matrix[row][col] = 0;
+        }      
+    }
+    
+    for (int row = 1; row < rows; row++){
+        for(int col = 1; col < cols; col++){
+            matrix[row][0] = row;
+            matrix[0][col] = col;
+        }
+    }
+    
+    for (int col = 1; col < cols; col++){
+        for (int row = 1; row < rows; row++){
+            
+            int adder;
+            
+            if (first[row - 1] == second [col - 1]){
+                adder = 0;
+            }else{
+                adder = 1;
+            }
+            
+            int temp =  std::min(matrix[row - 1][col] + 1, matrix[row][col - 1] + 1);
+            temp = std::min(temp, matrix[row - 1][col - 1] + adder);                         
+            matrix[row][col] = temp;
+        }
+    }
+    
+    return matrix[rows - 1][cols -1];
     
 }
