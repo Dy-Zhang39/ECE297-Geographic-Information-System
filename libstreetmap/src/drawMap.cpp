@@ -745,7 +745,6 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
         std::vector<ezgl::point2d> inViewSegment;
         inViewSegment.clear();
         
-        
         inViewSegment.clear();
         
         std::string streetName = getStreetName(streetID);
@@ -825,21 +824,19 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
     }
 }
 void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
-    double h=8;
-    double b=3;
-    std::vector<ezgl::point2d> points;
+    double delta = 15;
+    double h = 10;
     
-    //point 1
-    ezgl::point2d firstPoint(position.x+h*cos(theta*kDegreeToRadian),position.y+h*sin(theta*kDegreeToRadian));
-    ezgl::point2d secondPoint(position.x+b*cos((90+theta)*kDegreeToRadian),position.y+h*sin((90+theta)*kDegreeToRadian));
-    ezgl::point2d thirdPoint(position.x+b*cos((theta-90)*kDegreeToRadian),position.y+b*sin((theta-90)*kDegreeToRadian));
-    points.push_back(firstPoint);
-    points.push_back(secondPoint);
-    points.push_back(thirdPoint);
-    
-    g->fill_poly(points);
-    
+    //points for the arrow
+    ezgl::point2d firstPoint(position.x + h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
+    ezgl::point2d secondPoint(firstPoint.x + h * cos((theta + delta) * kDegreeToRadian), firstPoint.y + h * sin((theta + delta) * kDegreeToRadian));
+    ezgl::point2d thirdPoint(firstPoint.x + h * cos((theta - delta) * kDegreeToRadian), firstPoint.y + h * sin((theta - delta) * kDegreeToRadian));
+
+    //draw the arrow
+    g->draw_line(firstPoint, secondPoint);
+    g->draw_line(firstPoint, thirdPoint);
 }
+
 void drawOneWayStreet(ezgl::renderer *g, double diagLength){
     
     for(int oneWaySegId = 1; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
