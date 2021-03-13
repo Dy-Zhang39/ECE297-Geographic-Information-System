@@ -737,7 +737,6 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
     
     std::vector<ezgl::point2d> displayedNames;
 
-    
     double fontSize = 10;
     double streetNameSize = 200;
     double diagLength = sqrt(world.height()*world.height() + world.width()*world.width());
@@ -843,9 +842,10 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta){
 }
 
 void drawOneWayStreet(ezgl::renderer *g, double diagLength){
+    double streetDisplayRatio = 0.1;
     
     for(int oneWaySegId = 0; oneWaySegId < cities[currentCityIdx]->streetSegment->oneWaySegment.size(); oneWaySegId++){
-        if(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > 0.1 * diagLength){
+        if(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].distance > streetDisplayRatio * diagLength){
 
             double degree = atan2(cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].toY - 
             cities[currentCityIdx]->streetSegment->oneWaySegment[oneWaySegId].fromY,
