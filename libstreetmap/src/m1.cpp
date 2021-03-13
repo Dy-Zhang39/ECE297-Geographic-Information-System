@@ -449,6 +449,8 @@ std::vector<StreetIdx> findStreetIdsFromPartialStreetName(std::string street_pre
                     mostSimilarSecondName.clear();
                     mostSimilarSecondName.push_back(adjustedNameList[i]);
                 }
+                
+                leastEdit = numOfEdit;
             }else if (numOfEdit == leastEdit){
                 
                 if (checkingFirstName){
@@ -507,28 +509,15 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
     //break the street into intersections, use the first intersection position as min/max LatLon
     std::vector<IntersectionIdx> intersections = findIntersectionsOfStreet(street_id);
     LatLon firstPoint = getIntersectionPosition(intersections[0]);
-    double maxLat = firstPoint.latitude();
-    double minLat = firstPoint.latitude();
-    double maxLon = firstPoint.longitude();
-    double minLon = firstPoint.longitude();
+    LatLon maxPoint = firstPoint;
+    LatLon minPoint = firstPoint;
     
     //loop through all intersections and update the min/max LatLon
     for (int i = 0; i < intersections.size(); i++){
         LatLon point = getIntersectionPosition(intersections[i]);
         
-        //update min/max latitude
-        if (point.latitude() > maxLat){
-            maxLat = point.latitude();
-        } else if (point.latitude() < minLat) {
-            minLat = point.latitude();
-        }
-        
-        //update min/max longitude
-        if (point.longitude() > maxLon){
-            maxLon = point.longitude();
-        } else if (point.longitude() < minLon) {
-            minLon = point.longitude();
-        }
+        minPoint = findMaxMin(minPoint, point, "min");
+        maxPoint = findMaxMin(maxPoint, point, "max");
 
         //loop through the all the Street Segments
         for (int j = 0; j < getNumStreetSegments(); j++){
@@ -540,35 +529,35 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
                 for (int k = 0; k < ss_info.numCurvePoints; k++){
                     point = getStreetSegmentCurvePoint(j, k);
                     
-                    //update min/max latitude
-                    if (point.latitude() > maxLat){
-                        maxLat = point.latitude();
-                    } else if (point.latitude() < minLat) {
-                        minLat = point.latitude();
-                    }
-
-                    //update min/max longitude
-                    if (point.longitude() > maxLon){
-                        maxLon = point.longitude();
-                    } else if (point.longitude() < minLon) {
-                        minLon = point.longitude();
-                    }
+                    minPoint = findMaxMin(minPoint, point, "min");
+                    maxPoint = findMaxMin(maxPoint, point, "max");
                 }
             }
         }
     }
-    
+
     //use the min/max latitude and longitude to create LatLonBounds
-    LatLon min(minLat, minLon);
-    LatLon max(maxLat, maxLon);
     LatLonBounds box;
-    box.min = min;
-    box.max = max;
+    box.min = minPoint;
+    box.max = maxPoint;
     
     return box;
   
 }
 
+// Helper function to find the min/max LatLon point
+LatLon findMaxMin(LatLon point, LatLon current, std::string method) {
+    
+    if (method.compare("max") == 0) {
+        current = LatLon (std::max(current.latitude(), point.latitude()),
+            std::max(current.longitude(), point.longitude()));
+    } else {
+        current = LatLon (std::min(current.latitude(), point.latitude()),
+            std::min(current.longitude(), point.longitude()));
+    }
+    
+    return current;
+}
 // Returns the nearest point of interest of the given name to the given position
 POIIdx findClosestPOI(LatLon my_position, std::string POIname){
     //declare variables
@@ -835,6 +824,8 @@ int levenshteinDistance(std::string first, std::string second){
     int rows = first.length() + 1;
     int cols = second.length() + 1;
     
+    std::cout << first << std::endl;
+    std::cout << second << std::endl;
     std::vector<std::vector<int>> matrix;
     
     matrix.resize(rows);
