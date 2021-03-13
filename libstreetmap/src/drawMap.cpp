@@ -28,6 +28,21 @@ double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.09;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 bool showSubways = false;
+
+bool nightMode;             //Determines whether to show night mode
+
+//global variable storing color for background, text, feature and street
+ezgl::color backgroundColor;
+ezgl::color textColor;
+ezgl::color lakeColor;
+ezgl::color islandColor;
+ezgl::color parkColor;
+ezgl::color buildingColor;
+ezgl::color beachColor;
+ezgl::color golfColor;
+ezgl::color streetColor;
+ezgl::color highwayColor;
+
 std::vector<IntersectionIdx> previousHighlight;
 LatLon positionOfClicked;
 std::vector <ezgl::point2d> featureTextPoints;      //coordinates for display feature text
@@ -67,6 +82,31 @@ void drawMap(){
 
 void drawMainCanvas (ezgl::renderer *g){
     
+    //determine the color used based on night mode selection   
+    if (!nightMode) {
+        backgroundColor= ezgl::color(255, 247, 224, 255);
+        textColor= ezgl::BLACK;
+        lakeColor = ezgl::color(102, 204, 255, 255);
+        islandColor = ezgl::color(221, 251, 109, 255);
+        parkColor = ezgl::color(128, 234, 85, 255);
+        buildingColor = ezgl::GREY_75;
+        beachColor = ezgl::color(236, 226, 149, 255);
+        golfColor = ezgl::color(110, 184, 66, 255);
+        streetColor = ezgl::color(210, 223, 227, 255);
+        highwayColor = ezgl::color(244, 208, 63, 255);
+        
+    } else {
+        backgroundColor = ezgl::color(0,0,0);
+        textColor= ezgl::WHITE;
+        lakeColor = ezgl::color(10, 4, 73);
+        islandColor = ezgl::color(2, 91, 4, 255);
+        parkColor = ezgl::color(19, 100, 20, 255);
+        buildingColor = ezgl::color(98, 98, 98, 255);
+        beachColor = ezgl::color(109, 113, 42, 255);
+        golfColor = ezgl::color(3, 46, 1, 255);
+        streetColor = ezgl::color(142, 142, 142, 255);
+        highwayColor = ezgl::color(191, 131, 0, 255);
+    }
 
     g->format_font("Noto Sans CJK SC", ezgl::font_slant::normal, ezgl::font_weight::normal, 10);
 
@@ -81,7 +121,7 @@ void drawMainCanvas (ezgl::renderer *g){
     ezgl::point2d end(xMax, yMax);
     
     g->draw_rectangle(start, end);
-    g->set_color(255, 247, 224, 255);
+    g->set_color(backgroundColor);
     g->fill_rectangle(start, end);
 
     //timing function
@@ -176,7 +216,10 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *showSubwayBox = application->get_object("showSubwayBox");
     g_signal_connect(showSubwayBox, "toggled", G_CALLBACK(toggleSubway), application);
     
-
+    //check box for using night mode
+    GObject *snightModeBox = application->get_object("nightModeBox");
+    g_signal_connect(snightModeBox, "toggled", G_CALLBACK(toggleNightMode), application);
+    
 }
 
 //input all the city name to the map bar
@@ -189,6 +232,16 @@ void importNameToTheBar(GtkComboBoxText* bar){
     }
 }
 
+
+//triggered night mode check box changed
+gboolean toggleNightMode(GtkWidget *, gpointer data) {
+    
+    auto application = static_cast<ezgl::application *>(data);
+    nightMode = !nightMode;
+    application->refresh_drawing();
+    
+    return true;
+}
 
 //triggered showSubway check box changed
 gboolean toggleSubway(GtkWidget *, gpointer data) {
@@ -615,7 +668,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
         if(!streetName.compare("<unknown>")){
             //draw as user zooms in
             if(findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * 1.5*streetToWorldRatio1){
-                g->set_color(210,223,227,255);
+                g->set_color(streetColor);
                 g->set_line_width(0.5 * streetSize(world));
                 g->draw_line({x1,y1}, {x2, y2});
             }
@@ -635,18 +688,18 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
                     
                     if(speedLimit>highwaySpeed){// draw highway
                         
-                       g->set_color(244, 208, 63, 255);
+                       g->set_color(highwayColor);
                        g->set_line_width(1.3 * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else if(!isAve(streetName)){ //draw main road and street
                         
-                       g->set_color(210,223,227,255);
+                       g->set_color(streetColor);
                        g->set_line_width(streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }else if(isAve(streetName)&&findStreetLength(getStreetSegmentInfo(streetSegmentsID).streetID) > diagLength * aveToWorldRatio1){ 
                         
                         //draw avenue
-                       g->set_color(210,223,227,255);
+                       g->set_color(streetColor);
                        g->set_line_width(0.5 * streetSize(world));
                        g->draw_line({x1,y1}, {x2, y2});
                     }
@@ -757,7 +810,7 @@ void displayStreetName(ezgl::renderer *g, ezgl::rectangle world){
             
             if(!overlap){
                 g->set_font_size(fontSize);
-                g->set_color(ezgl::BLACK);
+                g->set_color(textColor);
                 g->set_text_rotation(degree);
                 g->draw_text(midPoint, streetName);
                 
@@ -887,32 +940,32 @@ void drawFeatureByID(ezgl:: renderer *g, FeatureIdx id){
     FeatureType featureType = getFeatureType(id);   
     switch (featureType) {
         case PARK:
-            g->set_color(128, 234, 85, 255);
+            g->set_color(parkColor);
             break;
         case BEACH:
-            g->set_color(236, 226, 149, 255);
+            g->set_color(beachColor);
             break;
         case LAKE:
             //blue
-            g->set_color(102, 204, 255, 255);
+            g->set_color(lakeColor);
             break;
         case RIVER:
-            g->set_color(102, 204, 255, 255);
+            g->set_color(lakeColor);
             break;
         case ISLAND:
-            g->set_color(221, 251, 109, 255);
+            g->set_color(islandColor);
             break;
         case BUILDING:
-            g->set_color(ezgl::GREY_75);
+            g->set_color(buildingColor);
             break;
         case GREENSPACE:
-            g->set_color(128, 234, 85, 255);
+            g->set_color(parkColor);
             break;
         case GOLFCOURSE:
-            g->set_color(110, 184, 66, 255);
+            g->set_color(golfColor);
             break;
         case STREAM:
-            g->set_color(102, 204, 255, 255);
+            g->set_color(lakeColor);
             break;
         case UNKNOWN:
             g->set_color(ezgl::PURPLE);
@@ -979,42 +1032,42 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     bool displayName = false;
     switch (featureType) {
         case PARK:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             displayName = true;
             break;
         case BEACH:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             displayName = true;
             break;
         case LAKE:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             displayName = true;
             break;
         case RIVER:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             displayName = true;
             break;
         case ISLAND:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             displayName = true;
             break;
         case BUILDING:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             displayName = true;
             break;
         case GREENSPACE:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             displayName = true;
             break;
         case GOLFCOURSE:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             displayName = true;
             break;
         case STREAM:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             break;
         case UNKNOWN:
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             break;
         default:
             break;
@@ -1092,7 +1145,7 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
     //draw the text of the title
     g->set_text_rotation(0);
     g->set_font_size(10);
-    g->set_color(ezgl::BLACK);
+    g->set_color(textColor);
     g->draw_text({x, y}, title);
     
     //draw the rectangle for the contents
@@ -1104,7 +1157,7 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
                        y + world.height() * windowToPopupBoxRatio / screenHeight });
                       
     //draw the text of the contents
-    g->set_color(ezgl::BLACK);
+    g->set_color(textColor);
     g->set_font_size(10);
     g->draw_text({x, y}, content);
 }
@@ -1371,7 +1424,7 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
         g->draw_surface(iconSurface, {x - surfaceWidth / 2 , y + surfaceHeight} );
 
         // display poi name
-        g->set_color(ezgl::BLACK);
+        g->set_color(textColor);
         g->set_font_size(10);
         g->set_text_rotation(0);
         g->draw_text({x, y }, poiName);
@@ -1546,7 +1599,7 @@ void loadSubway(ezgl::renderer *g){
         if (displayStation) {
             //draw the text of the contents
             g->set_text_rotation(0);
-            g->set_color(ezgl::BLACK);
+            g->set_color(textColor);
             g->set_font_size(10);
             g->draw_text(stationCoordindate[stationIdx], stationName[stationIdx]);
             displayedCoord.push_back(stationCoordindate[stationIdx]);
