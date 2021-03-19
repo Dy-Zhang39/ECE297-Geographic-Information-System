@@ -824,8 +824,6 @@ int levenshteinDistance(std::string first, std::string second){
     int rows = first.length() + 1;
     int cols = second.length() + 1;
     
-    std::cout << first << std::endl;
-    std::cout << second << std::endl;
     std::vector<std::vector<int>> matrix;
     
     matrix.resize(rows);
