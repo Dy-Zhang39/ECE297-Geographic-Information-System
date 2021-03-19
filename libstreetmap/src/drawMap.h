@@ -57,7 +57,7 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
 //functions for displaying POI
 void displayPOI(ezgl::renderer *g);
 
-void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio);
+bool displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio, bool transportationOnly);
 
 void drawOneWayStreet(ezgl::renderer *g, double diagLength);
 

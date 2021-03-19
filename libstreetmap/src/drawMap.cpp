@@ -900,6 +900,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
     
     std::vector <FeatureIdx> features;
+    std::vector <double> featuresArea;
 
     //loop through all features, if the feature area is at the predefined ratio 
     //of the visible area and within the window, draw it
@@ -918,23 +919,23 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
                 && minX <= world.right() && maxX >= world.left())) 
                 && featureArea >= visibleArea * featureToWorldRatio){
                     
-            //if(getFeatureType(featureID) == ISLAND){
-                
-                features.push_back(featureID);
-            //}else{
-                
-                //drawFeatureByID(g, featureID);
-            //}
+               
+            features.push_back(featureID);
+            featuresArea.push_back(featureArea);
         }
     }
     
     // Sort features by area
     for (int i = 0; i < features.size(); i++) {
         for (int j = i; j < features.size(); j++) {
-            if (findFeatureArea(features[i]) < findFeatureArea(features[j])) {
+            if (featuresArea[i] < featuresArea[j]) {
                 int temp = features[i];
                 features[i] = features[j];
                 features[j] = temp;
+                
+                double areaTemp = featuresArea[i];
+                featuresArea[i] = featuresArea[j];
+                featuresArea[j] = areaTemp;
             }
         }
     }
@@ -1206,7 +1207,8 @@ void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, 
 void displayPOI(ezgl::renderer *g) {
     
     //if the visible world area is smaller than this number, the POI will be displayed
-    double areaToShowPOI = 8400000;   
+    double areaToShowPOI = 8400000;
+    double transportationOnlyRatio = 840000000;
     
     //approximate range of an POI icon
     double POIRange = 60;
@@ -1236,15 +1238,15 @@ void displayPOI(ezgl::renderer *g) {
         }
         
         // if the map is showing enough level of detail, and the poi is visible in the screen, then display it. 
-        if (world.contains({x, y}) && world.area() < areaToShowPOI && !overlapped) {
-            displayPOIById(g, i, widthToPixelRatio, heightToPixelRatio);
-            displayedPoints.push_back({x, y});
+        if (world.contains({x, y}) && world.area() < transportationOnlyRatio && !overlapped) {
+            if (displayPOIById(g, i, widthToPixelRatio, heightToPixelRatio, world.area() > areaToShowPOI))
+                displayedPoints.push_back({x, y});
         }
     }
 }
 
 //display POI name and icon with a given POI id
-void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio) {
+bool displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, double heightToPixelRatio, bool transportationOnly) {
     ezgl::surface *iconSurface;
     
     //get the coordinates of the POI
@@ -1255,15 +1257,26 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
     //boolean values for whether to call EZGL function to draw POI icon
     displayPOI = true;
     
+    if (transportationOnly) {
+        education = false;
+        food = false;
+        medical = false;
+        transport = (selectedPOI.compare("all") == 0 || selectedPOI.compare("transport") == 0);
+        recreation = false;
+        finance = false;
+        gov = false;
+        other = false;
+    } else {
     //boolean values for whether to display each type of POI
-    education = (selectedPOI.compare("all") == 0 || selectedPOI.compare("education") == 0);
-    food = (selectedPOI.compare("all") == 0 || selectedPOI.compare("food") == 0);
-    medical = (selectedPOI.compare("all") == 0 || selectedPOI.compare("medical") == 0);
-    transport = (selectedPOI.compare("all") == 0 || selectedPOI.compare("transport") == 0);
-    recreation = (selectedPOI.compare("all") == 0 || selectedPOI.compare("recreation") == 0);
-    finance = (selectedPOI.compare("all") == 0 || selectedPOI.compare("finance") == 0);
-    gov = (selectedPOI.compare("all") == 0 || selectedPOI.compare("gov") == 0);
-    other = (selectedPOI.compare("all") == 0 || selectedPOI.compare("other") == 0);
+        education = (selectedPOI.compare("all") == 0 || selectedPOI.compare("education") == 0);
+        food = (selectedPOI.compare("all") == 0 || selectedPOI.compare("food") == 0);
+        medical = (selectedPOI.compare("all") == 0 || selectedPOI.compare("medical") == 0);
+        transport = (selectedPOI.compare("all") == 0 || selectedPOI.compare("transport") == 0);
+        recreation = (selectedPOI.compare("all") == 0 || selectedPOI.compare("recreation") == 0);
+        finance = (selectedPOI.compare("all") == 0 || selectedPOI.compare("finance") == 0);
+        gov = (selectedPOI.compare("all") == 0 || selectedPOI.compare("gov") == 0);
+        other = (selectedPOI.compare("all") == 0 || selectedPOI.compare("other") == 0);
+    }
         
     std::string poiType = getPOIType(id);
     std::string poiName = getPOIName(id);
@@ -1469,6 +1482,8 @@ void displayPOIById(ezgl::renderer *g, POIIdx id, double widthToPixelRatio, doub
         g->set_text_rotation(0);
         g->draw_text({x, y }, poiName);
     }
+    
+    return displayPOI;
 }
 
 //load the subway data
