@@ -418,7 +418,7 @@ gboolean textEntryChanges(GtkWidget *, gpointer data){
         gtk_combo_box_text_append_text (possibleLocationBar, name.c_str());
     }
     
-    application->refresh_drawing();
+
     return TRUE;
 }
 
