@@ -507,7 +507,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     }
     
     for (int idx = 0; idx < mostSimilarSecondName.size(); idx++){
-        partialResultFirst.push_back(mostSimilarSecondName[idx]);
+        partialResultSecond.push_back(mostSimilarSecondName[idx]);
     }
     
     ezgl::point2d sum(0, 0), center(0,0), largest(-1 * EARTH_CIRCUMFERENCE, -1 * EARTH_CIRCUMFERENCE), smallest(EARTH_CIRCUMFERENCE, EARTH_CIRCUMFERENCE);
