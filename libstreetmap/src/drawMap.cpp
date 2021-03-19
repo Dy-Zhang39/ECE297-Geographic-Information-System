@@ -899,7 +899,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
     
-    std::vector <FeatureIdx> islands;
+    std::vector <FeatureIdx> features;
 
     //loop through all features, if the feature area is at the predefined ratio 
     //of the visible area and within the window, draw it
@@ -918,20 +918,35 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
                 && minX <= world.right() && maxX >= world.left())) 
                 && featureArea >= visibleArea * featureToWorldRatio){
                     
-            if(getFeatureType(featureID) == ISLAND){
+            //if(getFeatureType(featureID) == ISLAND){
                 
-                islands.push_back(featureID);
-            }else{
+                features.push_back(featureID);
+            //}else{
                 
-                drawFeatureByID(g, featureID);
+                //drawFeatureByID(g, featureID);
+            //}
+        }
+    }
+    
+    // Sort features by area
+    for (int i = 0; i < features.size(); i++) {
+        for (int j = i; j < features.size(); j++) {
+            if (findFeatureArea(features[i]) < findFeatureArea(features[j])) {
+                int temp = features[i];
+                features[i] = features[j];
+                features[j] = temp;
             }
         }
     }
     
-    //draw the islands last, this prevents lakes from covering and islands
-    for (int islandIdx = 0; islandIdx < islands.size(); islandIdx++){
-        drawFeatureByID(g, islands[islandIdx]);
+    for (int i = 0; i < features.size(); i++) {
+        drawFeatureByID(g, features[i]);
     }
+    
+    //draw the islands last, this prevents lakes from covering and islands
+    /*for (int islandIdx = 0; islandIdx < islands.size(); islandIdx++){
+        drawFeatureByID(g, islands[islandIdx]);
+    }*/
 
     //loop through all features, if the feature area is at the predefined ratio 
     //of the visible area and within the window, display its name
