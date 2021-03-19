@@ -44,6 +44,7 @@ class Intersection{
 public:
     std::vector<std::vector<StreetSegmentIdx>> intersectionStreetSegments;  //store every street segments to one intersection for every intersection
     std::vector<intersectionData> intersectionInfo;
+    std::vector<std::string> intersectionNames;
 };
 
 class Feature{

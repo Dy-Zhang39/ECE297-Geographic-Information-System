@@ -66,12 +66,17 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta);
 //covert name of the city to the path to the city file
 std::string convertNameToPath(std::string name);
 
+//find all the possible location from two sets of street name;
+std::vector<IntersectionIdx> findAllPossibleIntersections (std::vector<StreetIdx> first, std::vector<StreetIdx> second);
+
 //import every name to the drop-down bar
 void importNameToTheBar(GtkComboBoxText* bar);
 
 //functions for displaying subways
 void loadSubway(ezgl::renderer *g);
 
+//change all letters to lower case, ignore all the space, separate two street name from a string
+std::pair <std::string, std::string> getStreetNames(std::string text);
 
 void drawMainCanvas (ezgl::renderer *g);
 

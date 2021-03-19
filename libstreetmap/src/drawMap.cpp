@@ -48,6 +48,9 @@ LatLon positionOfClicked;
 std::vector <ezgl::point2d> featureTextPoints;      //coordinates for display feature text
 std::string selectedPOI = "all";                    //selected POI type to display
 
+//a vector that store the item that is stored in the PossibleLocation drop Down Box
+std::vector<std::pair<std::string, int>> possibleLocations;
+
 extern std::vector<City*> cities;
 extern int currentCityIdx;
 extern std::vector<std::string> cityNames;
@@ -55,6 +58,7 @@ extern std::string mapPathPrefix;
 extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
+
 
 void drawMap(){
 
@@ -182,6 +186,7 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     
     GObject *textEntry = application->get_object("TextInput");
     g_signal_connect(textEntry, "activate", G_CALLBACK(textEntryPressedEnter), application);
+    g_signal_connect(textEntry, "changed", G_CALLBACK(textEntryChanges), application);
     
     GtkComboBoxText *mapBar = (GtkComboBoxText*) application->get_object("MapBar");
     importNameToTheBar(mapBar);
@@ -373,6 +378,101 @@ gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
     
 }
 
+//put the possible location in the drop down bar
+gboolean textEntryChanges(GtkWidget *, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+    GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+    GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
+    
+    possibleLocations.clear();
+    gtk_combo_box_text_remove_all(possibleLocationBar);
+    std::string text = gtk_entry_get_text(textEntry);
+    
+    mostSimilarFirstName.clear();            
+    mostSimilarSecondName.clear();           
+    checkingFirstName = true;
+     
+    auto twoNames = getStreetNames(text);
+    std::string firstStreet = twoNames.first;
+    std::string secondStreet = twoNames.second;
+    
+    auto firstPartialResult = findStreetIdsFromPartialStreetName(firstStreet);
+    auto secondPartialResult = findStreetIdsFromPartialStreetName(secondStreet);
+    
+    //put all the similar name to the partial name for finding common intersection
+    for (int idx = 0; idx < mostSimilarFirstName.size(); idx++){
+        firstPartialResult.push_back(mostSimilarFirstName[idx]);
+    }
+    
+    for (int idx = 0; idx < mostSimilarSecondName.size(); idx++){
+        secondPartialResult.push_back(mostSimilarSecondName[idx]);
+    }
+    
+    auto possibleIntersections = findAllPossibleIntersections(firstPartialResult, secondPartialResult);
+    
+    for(auto it = possibleIntersections.begin(); it != possibleIntersections.end(); it++){
+        
+        auto name = cities[currentCityIdx] -> intersection -> intersectionNames[*it];
+        possibleLocations.push_back(std::make_pair(name, *it));
+        
+        gtk_combo_box_text_append_text (possibleLocationBar, name.c_str());
+    }
+    
+    application->refresh_drawing();
+    return TRUE;
+}
+
+std::pair <std::string, std::string> getStreetNames(std::string text){
+    
+    std::string firstStreet, secondStreet;        
+    
+    bool firstFinished = false;         //finished reading the first street  
+    
+    
+    //split the input into two street name
+    for (auto iterator = text.begin(); iterator != text.end(); iterator++){
+        
+        if (!firstFinished){
+            
+            if (*iterator != ',' && *iterator != ' '){
+                
+                firstStreet.push_back(tolower(*iterator));
+            }else if (*iterator == ','){
+                
+                firstFinished = true;
+            }
+            
+        }else{
+            
+            if (*iterator != ' '){
+                
+                secondStreet.push_back(tolower(*iterator));
+            }    
+        }
+    }
+    
+    return std::make_pair(firstStreet, secondStreet);
+}
+
+
+std::vector<IntersectionIdx> findAllPossibleIntersections (std::vector<StreetIdx> first, std::vector<StreetIdx> second){
+    
+    std::vector<IntersectionIdx> possibleIntersections;
+    
+    for (auto firstStreetIdx = first.begin(); firstStreetIdx != first.end(); firstStreetIdx++) {
+
+            for (auto secondStreetIdx = second.begin(); secondStreetIdx != second.end(); secondStreetIdx++) {
+
+            auto commonIntersections = findIntersectionsOfTwoStreets(std::make_pair(*firstStreetIdx, *secondStreetIdx));
+
+            for (auto commonStreetIdx = commonIntersections.begin(); commonStreetIdx != commonIntersections.end(); commonStreetIdx++) {
+                possibleIntersections.push_back(*commonStreetIdx);
+            }
+        }
+    }
+    
+    return possibleIntersections;
+}
 //change the map when the user switch to a different map
 gboolean changeMap(GtkWidget *, gpointer data){
     
@@ -457,41 +557,19 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
     
     std::string text = gtk_entry_get_text(textEntry);
-    std::string firstStreet, secondStreet;
     clearHighlightIntersection();
     mostSimilarFirstName.clear();            //make sure number of element is not more than 2
     mostSimilarSecondName.clear();            //make sure number of element is not more than 2
     checkingFirstName = true;
     
-    bool firstFinished = false;         //finished reading the first street  
-    
-    
-    //split the input into two street name
-    for (auto iterator = text.begin(); iterator != text.end(); iterator++){
-        
-        if (!firstFinished){
-            
-            if (*iterator != ',' && *iterator != ' '){
-                
-                firstStreet.push_back(tolower(*iterator));
-            }else if (*iterator == ','){
-                
-                firstFinished = true;
-            }
-            
-        }else{
-            
-            if (*iterator != ' '){
-                
-                secondStreet.push_back(tolower(*iterator));
-            }    
-        }
-    }
+    auto twoNames = getStreetNames(text);
+    std::string firstStreet = twoNames.first;
+    std::string secondStreet = twoNames.second;
     
     std::string output;
     
     //make sure user enter two streets name
-    if (firstStreet.size() == 0 && secondStreet.size()){
+    if (firstStreet.size() == 0 || secondStreet.size() == 0){
         application ->update_message("You need to enter two streets separated by the commas");
         return TRUE;
     }

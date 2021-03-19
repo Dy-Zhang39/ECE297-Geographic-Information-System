@@ -187,6 +187,7 @@ void resizeData(){
     cities[currentCityIdx]->streetSegment->streetSegTravelTime.resize(getNumStreetSegments());
     cities[currentCityIdx]->streetSegment->streetSegPoint.resize(getNumStreetSegments());
     
+    cities[currentCityIdx]->intersection->intersectionNames.resize(getNumIntersections());
 }
 
 // initialize the bounding coordinates of all features into vectors
@@ -271,6 +272,7 @@ void street_Intersection(){
     //iterate through all intersections
     for(int intersectionID = 0; intersectionID < getNumIntersections(); ++intersectionID){
         
+        cities[currentCityIdx] -> intersection -> intersectionNames[intersectionID] = getIntersectionName(intersectionID);
         cities[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].position = getIntersectionPosition(intersectionID);
         cities[currentCityIdx] -> intersection -> intersectionInfo[intersectionID].name = getIntersectionName(intersectionID);
 

@@ -12,6 +12,9 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data);
 //call back function for text field
 gboolean textEntryPressedEnter(GtkWidget *, gpointer data);
 
+//call back for text entry change
+gboolean textEntryChanges(GtkWidget *, gpointer data);
+
 //change the map when user switch to different Map
 gboolean changeMap(GtkWidget *, gpointer data);
 
