@@ -78,6 +78,11 @@ void loadSubway(ezgl::renderer *g);
 //change all letters to lower case, ignore all the space, separate two street name from a string
 std::pair <std::string, std::string> getStreetNames(std::string text);
 
+//get the world zoom level that fits all the intersections
+ezgl::rectangle getZoomLevelToIntersections(std::vector<IntersectionIdx> commonIntersection);
+
+////get the world zoom level that fits one intersection
+ezgl::rectangle getZoomLevelToIntersections(IntersectionIdx id);
 void drawMainCanvas (ezgl::renderer *g);
 
 #endif /* DRAWMAP_H */

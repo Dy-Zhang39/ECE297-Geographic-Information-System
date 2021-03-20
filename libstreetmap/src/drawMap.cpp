@@ -29,6 +29,9 @@ double streetToWorldRatio1 = 0.09;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 bool showSubways = false;
 
+//make sure the interested region has some distance with the windows margin
+double GAP = 500;
+
 bool nightMode;             //Determines whether to show night mode
 
 //global variable storing color for background, text, feature and street
@@ -191,6 +194,9 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GtkComboBoxText *mapBar = (GtkComboBoxText*) application->get_object("MapBar");
     importNameToTheBar(mapBar);
     g_signal_connect (mapBar, "changed", G_CALLBACK(changeMap), application);
+
+    GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+    g_signal_connect (possibleLocationBar, "changed", G_CALLBACK(possibleLocationIsChosen), application);
     
     //POI related buttons
     GObject *allPOI = application->get_object("allPOIBtn");
@@ -378,6 +384,54 @@ gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
     
 }
 
+//zoom in to the intersection when user choose a location from the bar
+gboolean possibleLocationIsChosen(GtkWidget*, gpointer data){
+    
+    auto application = static_cast<ezgl::application *>(data);
+    std::string main_canvas_id = application->get_main_canvas_id();
+    auto canvas = application->get_canvas(main_canvas_id);
+    GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+    
+    
+    if (gtk_combo_box_text_get_active_text(possibleLocationBar) == NULL){
+        return TRUE;
+    }
+    
+    clearHighlightIntersection();
+    
+    std::string locationName = gtk_combo_box_text_get_active_text(possibleLocationBar);
+    
+    IntersectionIdx locationIdx = -1;
+    
+    for(auto it = possibleLocations.begin(); it != possibleLocations.end();){
+        
+        if (locationName == it -> first){
+            locationIdx = it -> second;
+            it = possibleLocations.end();
+        }
+        
+        if (it != possibleLocations.end()){
+            it++;
+        }
+    }
+    
+    if (locationIdx == -1){
+        application->update_message("Oops, something went wrong");
+        return TRUE;
+    }
+    
+    auto world = getZoomLevelToIntersections(locationIdx);
+    cities[currentCityIdx] -> intersection -> intersectionInfo[locationIdx].isHighlight = true;
+    previousHighlight.push_back(locationIdx);
+    
+    canvas->get_camera().set_world(world);
+    application->update_message(locationName);
+    application->refresh_drawing();
+    
+    
+    return TRUE;
+}
+
 //put the possible location in the drop down bar
 gboolean textEntryChanges(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
@@ -412,7 +466,7 @@ gboolean textEntryChanges(GtkWidget *, gpointer data){
     
     for(auto it = possibleIntersections.begin(); it != possibleIntersections.end(); it++){
         
-        auto name = cities[currentCityIdx] -> intersection -> intersectionNames[*it];
+        auto name = cities[currentCityIdx] -> intersection -> intersectionInfo[*it].name;
         possibleLocations.push_back(std::make_pair(name, *it));
         
         gtk_combo_box_text_append_text (possibleLocationBar, name.c_str());
@@ -421,6 +475,7 @@ gboolean textEntryChanges(GtkWidget *, gpointer data){
 
     return TRUE;
 }
+
 
 std::pair <std::string, std::string> getStreetNames(std::string text){
     
@@ -622,70 +677,12 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
         
         if (commonIntersection.size() > 0){
             
-            //position in latitude and longitude
+            auto world = getZoomLevelToIntersections(commonIntersection);
             for (int idx = 0; idx < commonIntersection.size(); idx++){
-                //get the position in cartesian coordiante
-                auto positionInLL = getIntersectionPosition(commonIntersection[idx]);
-                double positionInX = xFromLon(positionInLL.longitude());
-                double positionInY = yFromLat(positionInLL.latitude());
-                        
-                sum.x += positionInX;
-                sum.y += positionInY;
-                
-                if (positionInX > largest.x){
-                    
-                    largest.x = positionInX;
-                }
-                
-                if (positionInX < smallest.x){
-                    
-                    smallest.x = positionInX;
-                }
-                
-                if (positionInY > largest.y){
-                    
-                    largest.y = positionInY;
-                }
-                
-                if (positionInY < smallest.y){
-                    
-                    smallest.y = positionInY;
-                }
-                
                 //highlight these cities[currentCityIdx] -> intersection -> intersectionInfo
                 cities[currentCityIdx] -> intersection -> intersectionInfo[commonIntersection[idx]].isHighlight = true;
                 previousHighlight.push_back(commonIntersection[idx]);
-                
             }
-            center.x = sum.x/commonIntersection.size();
-            center.y = sum.y/commonIntersection.size();
-            
-            //make sure the interested region has some distance with the windows margin
-            double gap = 500;
-            
-            //set up the world zoom level
-            double left, bottom, top, right;
-            left = smallest.x - gap;
-            bottom = smallest.y - gap;
-            right = largest.x + gap;
-            top = largest.y + gap;
-            
-            double width = right - left;
-            double height = top - bottom;
-            
-            //making sure the width and height of the screen is in the world ratio
-            if (width * cities[currentCityIdx]->worldRatio > height){
-                
-                bottom = center.y - (width * cities[currentCityIdx]->worldRatio) / 2;
-                top =  center.y + (width * cities[currentCityIdx]->worldRatio) / 2;
-                
-            }else {
-                
-                left = center.x - (height / cities[currentCityIdx]->worldRatio) / 2;
-                right = center.x + (height / cities[currentCityIdx]->worldRatio) / 2;
-                
-            }
-            ezgl::rectangle world({left, bottom}, {right, top});
             canvas->get_camera().set_world(world);
             
         }else{
@@ -702,7 +699,109 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     return true;
 }
 
+ezgl::rectangle getZoomLevelToIntersections(std::vector<IntersectionIdx> commonIntersection){
+    
+    if (commonIntersection.size() == 0){
+        return (ezgl::rectangle({0, 0}, {0, 0}));
+    }
+    
+    ezgl::point2d sum(0, 0), center(0,0), largest(-1 * EARTH_CIRCUMFERENCE, -1 * EARTH_CIRCUMFERENCE), smallest(EARTH_CIRCUMFERENCE, EARTH_CIRCUMFERENCE);
+    
+    for (int idx = 0; idx < commonIntersection.size(); idx++) {
+        //get the position in cartesian coordiante
+        auto positionInLL = getIntersectionPosition(commonIntersection[idx]);
+        double positionInX = xFromLon(positionInLL.longitude());
+        double positionInY = yFromLat(positionInLL.latitude());
 
+        sum.x += positionInX;
+        sum.y += positionInY;
+
+        if (positionInX > largest.x) {
+
+            largest.x = positionInX;
+        }
+
+        if (positionInX < smallest.x) {
+
+            smallest.x = positionInX;
+        }
+
+        if (positionInY > largest.y) {
+
+            largest.y = positionInY;
+        }
+
+        if (positionInY < smallest.y) {
+
+            smallest.y = positionInY;
+        }
+
+        
+        previousHighlight.push_back(commonIntersection[idx]);
+
+    }
+    center.x = sum.x / commonIntersection.size();
+    center.y = sum.y / commonIntersection.size();
+
+    
+
+    //set up the world zoom level
+    double left, bottom, top, right;
+    left = smallest.x - GAP;
+    bottom = smallest.y - GAP;
+    right = largest.x + GAP;
+    top = largest.y + GAP;
+
+    double width = right - left;
+    double height = top - bottom;
+
+    //making sure the width and height of the screen is in the world ratio
+    if (width * cities[currentCityIdx]->worldRatio > height) {
+
+        bottom = center.y - (width * cities[currentCityIdx]->worldRatio) / 2;
+        top = center.y + (width * cities[currentCityIdx]->worldRatio) / 2;
+
+    } else {
+
+        left = center.x - (height / cities[currentCityIdx]->worldRatio) / 2;
+        right = center.x + (height / cities[currentCityIdx]->worldRatio) / 2;
+
+    }
+    return (ezgl::rectangle ({left, bottom}, {right, top}));
+}
+
+ezgl::rectangle getZoomLevelToIntersections(IntersectionIdx id){
+    
+    auto positionInLL = cities[currentCityIdx] -> intersection -> intersectionInfo[id].position;
+    double positionInX = xFromLon(positionInLL.longitude());
+    double positionInY = yFromLat(positionInLL.latitude());
+    
+    //set up the world zoom level
+    double left, bottom, top, right;
+    left = positionInX - GAP;
+    bottom = positionInY - GAP;
+    right = positionInX + GAP;
+    top = positionInY + GAP;
+
+    double width = right - left;
+    double height = top - bottom;
+
+    //making sure the width and height of the screen is in the world ratio
+    if (width * cities[currentCityIdx]->worldRatio > height) {
+
+        bottom = positionInY - (width * cities[currentCityIdx]->worldRatio) / 2;
+        top = positionInY+ (width * cities[currentCityIdx]->worldRatio) / 2;
+
+    } else {
+
+        left = positionInX - (height / cities[currentCityIdx]->worldRatio) / 2;
+        right = positionInX + (height / cities[currentCityIdx]->worldRatio) / 2;
+
+    }
+    
+
+    return (ezgl::rectangle ({left, bottom}, {right, top}));
+}
 void actOnMouseClick(ezgl::application* , GdkEventButton* event, double x, double y){
     std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
     std::cout << "Button " << event->button << " is clicked\n";
@@ -720,7 +819,8 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
     if (previousHighlight.size() == 1 && previousHighlight[0] == id){
         
         cities[currentCityIdx] -> intersection -> intersectionInfo[id].isHighlight = false;
-        clearHighlightIntersection(); 
+        clearHighlightIntersection();
+        
     }else{
         
         clearHighlightIntersection();
