@@ -191,7 +191,6 @@ void resizeData(){
 
 // initialize the bounding coordinates of all features into vectors
 void initializeFeatureBounding() {
-    
     for (int featureID = 0; featureID < getNumFeatures(); featureID++){
         double minX = xFromLon(getFeaturePoint(featureID, 0).longitude());
         double maxX = minX;
@@ -209,10 +208,9 @@ void initializeFeatureBounding() {
             minY = std::min(minY, y);
             maxY = std::max(maxY, y);
         }
-        Feature keyPoints(maxY, minY, minX, maxX);
+        Feature keyPoints(maxY, minY, minX, maxX, findFeatureArea(featureID));
         // record the bounding boxes for each feature
         cities[currentCityIdx]->featurePts.push_back(keyPoints);
-
     }
 }
 

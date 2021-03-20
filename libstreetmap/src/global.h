@@ -52,11 +52,13 @@ public:
     double bottom;
     double left;
     double right;
-    Feature (double t, double b, double l, double r){
+    double area;
+    Feature (double t, double b, double l, double r, double a){
         top = t;
         bottom = b;
         left = l;
         right = r;
+        area = a;
     }   
 };
 class City{

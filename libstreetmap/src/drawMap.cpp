@@ -1078,7 +1078,6 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
     
     std::vector <FeatureIdx> features;
-    std::vector <double> featuresArea;
 
     //loop through all features, if the feature area is at the predefined ratio 
     //of the visible area and within the window, draw it
@@ -1088,7 +1087,7 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
         double maxX = cities[currentCityIdx]->featurePts[featureID].right;
         double maxY = cities[currentCityIdx]->featurePts[featureID].top;
         double minY = cities[currentCityIdx]->featurePts[featureID].bottom;
-        double featureArea = findFeatureArea(featureID);
+        double featureArea = cities[currentCityIdx]->featurePts[featureID].area;
         
         // If the feature is in the visible area, call helper function to display the feature.
         if ((world.contains(minX, minY) || world.contains(minX, maxY)
@@ -1099,21 +1098,17 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
                     
                
             features.push_back(featureID);
-            featuresArea.push_back(featureArea);
         }
     }
     
     // Sort features by area
     for (int i = 0; i < features.size(); i++) {
         for (int j = i; j < features.size(); j++) {
-            if (featuresArea[i] < featuresArea[j]) {
+            if (cities[currentCityIdx]->featurePts[features[i]].area < 
+                    cities[currentCityIdx]->featurePts[features[j]].area) {
                 int temp = features[i];
                 features[i] = features[j];
                 features[j] = temp;
-                
-                double areaTemp = featuresArea[i];
-                featuresArea[i] = featuresArea[j];
-                featuresArea[j] = areaTemp;
             }
         }
     }
