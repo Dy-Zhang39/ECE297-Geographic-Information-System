@@ -25,7 +25,7 @@
 
 double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
-double streetToWorldRatio1 = 0.09;
+double streetToWorldRatio1 = 0.035;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 bool showSubways = false;
 
