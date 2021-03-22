@@ -565,6 +565,9 @@ gboolean changeMap(GtkWidget *, gpointer data){
         return true;
     }
     
+    GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");    
+    possibleLocations.clear();
+    gtk_combo_box_text_remove_all(possibleLocationBar);
     
     double maxLat = cities[currentCityIdx] -> maxLat;
     double minLat = cities[currentCityIdx] -> minLat;
