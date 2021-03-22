@@ -31,6 +31,7 @@ gboolean toggleRecreationPOI(GtkWidget *, gpointer data);
 gboolean toggleFinancePOI(GtkWidget *, gpointer data);
 gboolean toggleGovPOI(GtkWidget *, gpointer data);
 gboolean toggleOtherPOI(GtkWidget *, gpointer data);
+gboolean toggleHidePOI(GtkWidget *, gpointer data);
 
 //call back function for check box used to show subway
 gboolean toggleSubway(GtkWidget *, gpointer data);

@@ -137,13 +137,13 @@ bool loadMap(std::string map_streets_database_filename) {
 
 
     std::cout << "loadMap: " << map_streets_database_filename << std::endl;
-
+    
     resizeData();               //resize the global vectors
     streetPartialName();        //pre-load partial name index
     street_Intersection();      //pre-load street intersections
     street_Info();              //pre-load information about street length; street travel time; street segment length
     initializeFeatureBounding();//pre-load the bounding boxes of features
-    
+    loadSubways();
     return load_successful;
     
     
@@ -211,6 +211,152 @@ void initializeFeatureBounding() {
         Feature keyPoints(maxY, minY, minX, maxX, findFeatureArea(featureID));
         // record the bounding boxes for each feature
         cities[currentCityIdx]->featurePts.push_back(keyPoints);
+    }
+}
+
+void loadSubways() {
+
+    std::vector<const OSMRelation *> osm_subway_lines;
+    
+    //step length for looping and searching with OSM nodes
+    int stepLength = 1000;
+    
+    std::vector<OSMID> osm_nodes;
+    
+    std::vector<ezgl::point2d> stationCoordindate;
+    std::vector<std::string> stationName;
+    std::string lineColor;                  //color of the subway line
+    
+    // Create index for the nodes by grouping them
+    for (unsigned k = 0; k < getNumberOfNodes(); k++) {
+        const OSMNode  *newNode = getNodeByIndex(k);
+        if (k % stepLength == 0) {
+            osm_nodes.push_back(newNode->id());
+        }
+    }
+
+    // Loop through all OSM relations
+    for (unsigned i = 0; i < getNumberOfRelations(); i++) {
+        const OSMRelation *currRel = getRelationByIndex(i);
+
+        // Check the tag of the currRel
+        for (unsigned j = 0; j < getTagCount(currRel); j++) {
+            std::pair<std::string, std::string> tagPair = getTagPair(currRel, j);
+
+            // Push relations with the route=subway tag
+            if (tagPair.first == "route" && tagPair.second == "subway") {
+                osm_subway_lines.push_back(currRel);
+                break;
+            }
+        }
+    }
+
+    
+    // For each subway line (relation), get its name, color, and members
+    for (unsigned i = 0; i < osm_subway_lines.size(); i++) {
+
+        // Get subway line color and name
+        for (unsigned j = 0; j < getTagCount(osm_subway_lines[i]); j++) {
+            std::pair<std::string, std::string> tagPair = getTagPair(osm_subway_lines[i], j);
+            
+            if (tagPair.first == "colour") {
+                lineColor = tagPair.second;
+            }
+        }
+
+        // Get relation members
+        std::vector<TypedOSMID> route_members = getRelationMembers(osm_subway_lines[i]); 
+        
+        // Grab subway names
+      
+        for(unsigned j = 0; j < route_members.size(); j++) {
+
+            // A member of type node represents a subway station
+            if(route_members[j].type() == TypedOSMID::Node) {
+
+                const OSMNode *currNode = nullptr;
+                unsigned indexRange = 0;
+                
+                //find the osm_nodes (section including [stepLength] of nodes) that contains the OSM Node for the station
+                for (unsigned k = 0; k < osm_nodes.size(); k++) {
+                    
+                    if (route_members[j] < osm_nodes[k]) {
+                        indexRange = k;
+                        break;
+                    }
+                }
+                unsigned startIdx = 0, endIdx = getNumberOfNodes();      
+                
+                //loop through all OSM Nodes in the found osm_nodes section
+                if ((indexRange - 1) * stepLength > 0) 
+                    startIdx = (indexRange - 1) * stepLength;
+                
+                if ((indexRange + 1) * stepLength < endIdx) 
+                    endIdx = (indexRange + 1) * stepLength ;
+
+                // Node lookup by OSMID
+                for (unsigned k = startIdx; k < endIdx; k++) {
+                    currNode = getNodeByIndex(k);
+                    
+                    if (currNode->id() == route_members[j]) {
+                        break;
+                    }
+                }
+
+                // Get the name tag of that node
+                for (unsigned k = 0; k < getTagCount(currNode); k++) {
+                    std::pair<std::string, std::string> tagPair = getTagPair(currNode, k);
+                    LatLon stationCoord = getNodeCoords(currNode);
+                    
+                    if (tagPair.first == "name") {
+                        Subway s;
+                        double x = xFromLon(stationCoord.longitude());
+                        double y = yFromLat(stationCoord.latitude());
+                        
+                        s.location = {x, y};
+                        s.red = 12;
+                        s.green = 124;
+                        s.blue = 92;
+
+                        if (lineColor.compare("green") == 0) {
+
+                            s.red = 57;
+                            s.green = 180;
+                            s.blue = 96;
+
+                        } else if (lineColor.compare("purple") == 0) {
+
+                            s.red = 118;
+                            s.green = 23;
+                            s.blue = 132;
+                            
+                        } else if (lineColor.compare("yellow") == 0) {
+
+                            s.red = 199;
+                            s.green = 182;
+                            s.blue = 39;
+                            
+                        } else if (lineColor.compare("brown") == 0) {
+
+                            s.red = 128;
+                            s.green = 0;
+                            s.blue = 0;
+                            
+                        } else if ( lineColor.length() == 7 && lineColor.at(0) == '#') {
+                            //convert given HEX color into RGB
+                            s.red = std::stoi(lineColor.substr(1,2), nullptr, 16);
+                            s.green = std::stoi(lineColor.substr(3,2), nullptr, 16);
+  
+                        }
+
+                        s.name = tagPair.second;
+
+                        cities[currentCityIdx]->subways.push_back(s);
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 

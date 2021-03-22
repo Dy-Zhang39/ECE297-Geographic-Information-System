@@ -62,7 +62,6 @@ extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
 
-
 void drawMap(){
 
     // Initialize coordinates for feature bounding boxes.
@@ -225,6 +224,9 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
     GObject *otherPOI = application->get_object("otherPOIBtn");
     g_signal_connect(otherPOI, "toggled", G_CALLBACK(toggleOtherPOI), application);
+    
+    GObject *hidePOI = application->get_object("hidePOIBtn");
+    g_signal_connect(hidePOI, "toggled", G_CALLBACK(toggleHidePOI), application);
 
     //check box for showing subways
     GObject *showSubwayBox = application->get_object("showSubwayBox");
@@ -370,6 +372,18 @@ gboolean toggleOtherPOI(GtkWidget *, gpointer data) {
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("other") != 0) {
         selectedPOI = "other";
+        std::cout << selectedPOI << "\n";
+        application->refresh_drawing();
+    }
+    
+    return true;
+}
+
+//triggered when the Hide All POIs button is changed
+gboolean toggleHidePOI(GtkWidget *, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+    if (selectedPOI.compare("hide") != 0) {
+        selectedPOI = "hide";
         std::cout << selectedPOI << "\n";
         application->refresh_drawing();
     }
@@ -1665,10 +1679,46 @@ void loadSubway(ezgl::renderer *g){
     double showTextRatio = 10;
     double showLineRatio = 50;
     double stationWidth = 30;
+    std::vector <ezgl::point2d> displayedCoord;
+    displayedCoord.clear();
     ezgl::rectangle world = g->get_visible_world();
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
-    
-    std::vector<const OSMRelation *> osm_subway_lines;
+    std::vector<Subway> displayText;
+    for (int i = 0; i < cities[currentCityIdx]->subways.size(); i++){
+        if (showLineRatio > widthToPixelRatio && world.contains(cities[currentCityIdx]->subways[i].location)) {
+            g->set_color(cities[currentCityIdx]->subways[i].red, cities[currentCityIdx]->subways[i].green,
+                    cities[currentCityIdx]->subways[i].blue, 255);
+            g->fill_arc(cities[currentCityIdx]->subways[i].location, 5 * widthToPixelRatio, 0, 360);
+            
+        }
+        if (world.contains(cities[currentCityIdx]->subways[i].location) && showTextRatio > widthToPixelRatio) {
+            displayText.push_back(cities[currentCityIdx]->subways[i]);
+        }
+    }
+        
+
+    for (int stationIdx = 0; stationIdx < displayText.size(); stationIdx ++) {
+        bool displayStation = true;
+
+        for (int j = 0; j < displayedCoord.size(); j ++) {
+            if (abs(displayText[stationIdx].location.x - displayedCoord[j].x) < (stationWidth * widthToPixelRatio) 
+                    && abs(displayText[stationIdx].location.y - displayedCoord[j].y) < (stationWidth * widthToPixelRatio)) {
+                displayStation = false;
+                break;
+            }
+
+        }
+
+        if (displayStation) {
+            //draw the text of the contents
+            g->set_text_rotation(0);
+            g->set_color(textColor);
+            g->set_font_size(10);
+            g->draw_text(displayText[stationIdx].location, displayText[stationIdx].name);
+            displayedCoord.push_back(displayText[stationIdx].location);
+        }
+    }
+    /*std::vector<const OSMRelation *> osm_subway_lines;
     
     //step length for looping and searching with OSM nodes
     int stepLength = 1000;
@@ -1832,6 +1882,7 @@ void loadSubway(ezgl::renderer *g){
             g->draw_text(stationCoordindate[stationIdx], stationName[stationIdx]);
             displayedCoord.push_back(stationCoordindate[stationIdx]);
         }
-    } 
+    } */
+    
 }
 

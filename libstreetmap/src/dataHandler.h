@@ -41,5 +41,8 @@ int levenshteinDistance(std::string first, std::string second);
 // find a min/max LatLon from 2 points
 LatLon findMaxMin(LatLon point, LatLon current, std::string method);
 
+// load suway info
+void loadSubways();
+
 #endif /* DATAHANDLER_H */
 

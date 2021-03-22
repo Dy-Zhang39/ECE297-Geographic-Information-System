@@ -3,6 +3,7 @@
 #define GLOBAL_H
 
 #include "StreetsDatabaseAPI.h"
+#include "ezgl/point.hpp"
 
 struct intersectionData {
   LatLon position;
@@ -61,6 +62,17 @@ public:
         area = a;
     }   
 };
+
+class Subway {
+public:
+    std::string name;
+    std::string line;
+    ezgl::point2d location = {0, 0};
+    int red;
+    int green;
+    int blue;
+};
+
 class City{
 public:
     std::string mapPath;
@@ -75,7 +87,7 @@ public:
     double worldRatio;
 
     std::vector<Feature> featurePts;
-
+    std::vector<Subway> subways;
 };
 #endif /* GLOBAL_H */
 
