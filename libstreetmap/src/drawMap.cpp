@@ -73,6 +73,7 @@ void searchPathBtnClicked(GtkWidget *, gpointer data);
 
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
+void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
 
 
 void drawMap(){
@@ -1936,6 +1937,23 @@ void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegme
     for (int i = 0; i < route.size(); i ++) {
         drawSegment(g, world, ezgl::RED, route[i]);
     }
+    
+    ezgl::surface *iconSurface;
+    iconSurface = g->load_png("./libstreetmap/resources/images/location-pin.png");
+    drawIcon(g, world, iconSurface, fromPath);
+
+    iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
+    drawIcon(g, world, iconSurface, toPath);
+}
+
+void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, IntersectionIdx location) {
+    double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
+    double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
+    
+    double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
+    double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
+    LatLon locationLatLon = getIntersectionPosition(location);
+    g->draw_surface(iconSurface, {xFromLon(locationLatLon.longitude()) - surfaceWidth / 2 , yFromLat(locationLatLon.latitude()) + surfaceHeight} );
 }
 
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID) {

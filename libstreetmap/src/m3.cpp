@@ -60,8 +60,8 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
     std::vector <PathNode> allIntersections;
     std::vector<StreetSegmentIdx> route;
     
-    double averageSpeed = 8.8;
-    double speedSortingWavefront = 15.7;
+    double averageSpeed = 33;
+    double speedSortingWavefront = 33;
     bool pathFound = false;
     double timeToReach = 99999999;
     int totalIntersections = getNumIntersections();
@@ -95,13 +95,9 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
         wavePoints.pop();
         
         // Find adjacent Intersections.
-        //std::vector<StreetSegmentIdx> adjacentSegments = findStreetSegmentsOfIntersection(wavePoint.idx);
-        std::vector<StreetSegmentIdx> adjacentSegments = 
-                //cities[currentCityIdx]->intersection->intersectionStreetSegments[wavePoint.idx];
-                findStreetSegmentsOfIntersection(wavePoint.idx);
-        int adjacentSize = adjacentSegments.size();
+        std::vector<StreetSegmentIdx> adjacentSegments = findStreetSegmentsOfIntersection(wavePoint.idx);
         
-        for (int i = 0; i < adjacentSize; i++) {
+        for (int i = 0; i < adjacentSegments.size(); i++) {
 
             StreetSegmentInfo segmentInfo = getStreetSegmentInfo(adjacentSegments[i]);
             //this line is use for performance tuning, and to show all the path explored.
@@ -134,8 +130,7 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
 
                     if (lastIntersect.from >= 0) {
                         thisNode.travelTime = lastIntersect.travelTime + 
-                                cities[currentCityIdx]->streetSegment->streetSegTravelTime[adjacentSegments[i]];
-                                //findStreetSegmentTravelTime(adjacentSegments[i]);
+                                findStreetSegmentTravelTime(adjacentSegments[i]);
                         
                         if (turn_penalty != 0) {
                             StreetSegmentInfo segTemp = getStreetSegmentInfo(lastIntersect.from);
@@ -146,9 +141,7 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
                             }
                         }
                     } else {
-                        thisNode.travelTime = 
-                                cities[currentCityIdx]->streetSegment->streetSegTravelTime[adjacentSegments[i]];
-                                //findStreetSegmentTravelTime(adjacentSegments[i]);
+                        thisNode.travelTime = findStreetSegmentTravelTime(adjacentSegments[i]);
                     }
                 }
 
@@ -170,10 +163,11 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
                         if (allIntersections[nextNode].lastIntersection == -1 
                                || allIntersections[nextNode].travelTime > thisNode.travelTime
                            ) {
-
+                            //double adjustedSpeed = std::max(speedSortingWavefront, 0.5 * findDistanceBetweenIntersections(intersect_id_start, nextNode)) / thisNode.travelTime;
+                            double adjustedSpeed = speedSortingWavefront;
                             allIntersections[nextNode] = thisNode;
                             wavePoints.push(WavePoint(nextNode, thisNode.distance 
-                                    + thisNode.travelTime * speedSortingWavefront ));
+                                    + thisNode.travelTime * adjustedSpeed ));
                         }
                     }
                 }
