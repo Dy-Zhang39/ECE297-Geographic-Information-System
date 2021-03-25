@@ -5,6 +5,7 @@
  */
 
 #include "m2.h"
+#include "m3.h"
 #include "drawMap.h"
 
 #include "ezgl/application.hpp"
@@ -46,6 +47,8 @@ ezgl::color golfColor;
 ezgl::color streetColor;
 ezgl::color highwayColor;
 
+ezgl::renderer *gg;
+
 std::vector<IntersectionIdx> previousHighlight;
 LatLon positionOfClicked;
 std::vector <ezgl::point2d> featureTextPoints;      //coordinates for display feature text
@@ -61,6 +64,16 @@ extern std::string mapPathPrefix;
 extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
+
+IntersectionIdx fromPath;
+IntersectionIdx toPath;
+std::vector <StreetSegmentIdx> pathRoute;
+std::vector <StreetSegmentIdx> exploredPath;
+void searchPathBtnClicked(GtkWidget *, gpointer data);
+
+void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
+void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
+
 
 void drawMap(){
 
@@ -165,6 +178,13 @@ void drawMainCanvas (ezgl::renderer *g){
     
     double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
+    
+    if (pathRoute.size() > 0) {
+        for (int i = 0; i < exploredPath.size(); i ++) {
+            drawSegment(g, g->get_visible_world(), ezgl::BLUE, exploredPath[i]);
+        }
+        drawRoute(g, g->get_visible_world(), pathRoute);
+    }
 }
 
 
@@ -236,6 +256,29 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *snightModeBox = application->get_object("nightModeBox");
     g_signal_connect(snightModeBox, "toggled", G_CALLBACK(toggleNightMode), application);
     
+    //check box for using night mode
+    GObject *searchPathBtn = application->get_object("searchPathBtn");
+    g_signal_connect(searchPathBtn, "clicked", G_CALLBACK(searchPathBtnClicked), application);
+    
+}
+
+void searchPathBtnClicked(GtkWidget *, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+    GtkEntry* pathFromEntry = (GtkEntry *) application ->get_object("pathFromInput");
+    fromPath = std::stoi(gtk_entry_get_text(pathFromEntry));
+    GtkEntry* pathToEntry = (GtkEntry *) application ->get_object("pathToInput");
+    toPath = std::stoi(gtk_entry_get_text(pathToEntry));
+    
+    if (toPath >= 0 && fromPath >= 0) {
+        std::clock_t start = clock();
+        pathRoute = findPathBetweenIntersections(fromPath,toPath,15);
+        double travelTime = computePathTravelTime(pathRoute, 15);
+    
+        std::clock_t end = clock();
+        double elapsedSecondsSearchPath = double(end-start) / CLOCKS_PER_SEC;
+        std:: cout << "From: " << fromPath << "  to: " << toPath << " Travel Time: " << travelTime << "  cpu time: " << elapsedSecondsSearchPath << std::endl;
+        application->refresh_drawing();
+    }
 }
 
 //input all the city name to the map bar
@@ -1888,4 +1931,29 @@ void loadSubway(ezgl::renderer *g){
     } */
     
 }
+
+void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route) {
+    for (int i = 0; i < route.size(); i ++) {
+        drawSegment(g, world, ezgl::RED, route[i]);
+    }
+}
+
+void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID) {
+    double x1, y1, x2, y2;
+    double routeWidth = 3;
+    
+    for(int pointsID=1; pointsID < cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID].size(); pointsID++){
+        x1 = xFromLon(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
+        y1 = yFromLat(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID- 1].latitude());
+
+        x2 = xFromLon(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].longitude());
+        y2 = yFromLat(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].latitude());
+        if(world.contains(x1, y1) || world.contains(x2, y2)){
+            g->set_color(segColor);
+            g->set_line_width(routeWidth);
+            g->draw_line({x1,y1}, {x2, y2});
+        }
+    }
+}
+
 

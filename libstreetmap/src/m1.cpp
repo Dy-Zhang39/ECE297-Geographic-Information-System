@@ -663,19 +663,20 @@ LatLonBounds findStreetBoundingBox(StreetIdx street_id){
         minPoint = findMaxMin(minPoint, point, "min");
         maxPoint = findMaxMin(maxPoint, point, "max");
 
-        //loop through the all the Street Segments
-        for (int j = 0; j < getNumStreetSegments(); j++){
-            StreetSegmentInfo ss_info = getStreetSegmentInfo(j);
-        
-            //locate the street id and loop through all the related curve points
-            if(ss_info.streetID == street_id){
-                
-                for (int k = 0; k < ss_info.numCurvePoints; k++){
-                    point = getStreetSegmentCurvePoint(j, k);
-                    
-                    minPoint = findMaxMin(minPoint, point, "min");
-                    maxPoint = findMaxMin(maxPoint, point, "max");
-                }
+       
+    }
+    //loop through the all the Street Segments
+    for (int j = 0; j < getNumStreetSegments(); j++) {
+        StreetSegmentInfo ss_info = getStreetSegmentInfo(j);
+        LatLon point;
+        //locate the street id and loop through all the related curve points
+        if (ss_info.streetID == street_id) {
+
+            for (int k = 0; k < ss_info.numCurvePoints; k++) {
+                point = getStreetSegmentCurvePoint(j, k);
+
+                minPoint = findMaxMin(minPoint, point, "min");
+                maxPoint = findMaxMin(maxPoint, point, "max");
             }
         }
     }
