@@ -26,6 +26,7 @@ double findDistanceBetweenIntersections(IntersectionIdx from, IntersectionIdx to
 
 std::vector <std::string> displayRoute(std::vector <StreetSegmentIdx> route);
 
+// Stores the information of each node that has been calculated
 struct PathNode {
     StreetSegmentIdx from;
     double travelTime;
@@ -60,8 +61,8 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
     std::vector <PathNode> allIntersections;
     std::vector<StreetSegmentIdx> route;
     
-    double averageSpeed = 33;
-    double speedSortingWavefront = 33;
+    double averageSpeed = 30;
+    double speedSortingWavefront = 30;
     bool pathFound = false;
     double timeToReach = 99999999;
     int totalIntersections = getNumIntersections();
@@ -73,7 +74,6 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
         allIntersections[i].lastIntersection = -1;
         allIntersections[i].travelTime = -1;
     }
-    
     
     // Prepare the variables for the start intersection.
     PathNode node;
@@ -112,16 +112,17 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
 
                 thisNode.from = adjacentSegments[i];
                 
-                // Calculate distance for the next intersection to destination.
+                // Calculate distance for the next intersection and store it in the lastIntersection property.
                 if (segmentInfo.from == wavePoint.idx) {
                     nextNode = segmentInfo.to;
                     if (segmentInfo.from < allIntersections.size()) thisNode.lastIntersection = segmentInfo.from;
-                    thisNode.distance = findDistanceBetweenIntersections(segmentInfo.to, intersect_id_destination);
                 } else {
                     nextNode = segmentInfo.from;
                     if (segmentInfo.to < allIntersections.size()) thisNode.lastIntersection = segmentInfo.to;
-                    thisNode.distance = findDistanceBetweenIntersections(segmentInfo.from, intersect_id_destination);
                 }
+                
+                // Calculate distance for the next intersection to destination.
+                thisNode.distance = findDistanceBetweenIntersections(nextNode, intersect_id_destination);
                 
                 // calculate the travel time for the current segment according to the travel time stored 
                 // in the last intersection.
@@ -146,7 +147,7 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
                 }
 
                 // If the total travel time of the current route can still be less than the fasted path we found,
-                if ((thisNode.travelTime + thisNode.distance/averageSpeed + turn_penalty) < timeToReach) {
+                if ((thisNode.travelTime + thisNode.distance/averageSpeed) < timeToReach) {
                 
                     // If one of the intersection of the segment is the destination, we found the path.
                     if (segmentInfo.to == intersect_id_destination || segmentInfo.from == intersect_id_destination) {
@@ -163,11 +164,9 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
                         if (allIntersections[nextNode].lastIntersection == -1 
                                || allIntersections[nextNode].travelTime > thisNode.travelTime
                            ) {
-                            //double adjustedSpeed = std::max(speedSortingWavefront, 0.5 * findDistanceBetweenIntersections(intersect_id_start, nextNode)) / thisNode.travelTime;
-                            double adjustedSpeed = speedSortingWavefront;
                             allIntersections[nextNode] = thisNode;
                             wavePoints.push(WavePoint(nextNode, thisNode.distance 
-                                    + thisNode.travelTime * adjustedSpeed ));
+                                    + thisNode.travelTime * speedSortingWavefront ));
                         }
                     }
                 }
@@ -200,19 +199,16 @@ double computePathTravelTime(const std::vector<StreetSegmentIdx>& path,const dou
     double travelTimeTotal = 0;
     for (int i = 0; i < path.size(); i ++) {
         StreetSegmentInfo currentStreet = getStreetSegmentInfo(path[i]);
-        travelTimeTotal += 
-                cities[currentCityIdx]->streetSegment->streetSegTravelTime[path[i]];
-                //findStreetSegmentTravelTime(path[i]);
+        travelTimeTotal += findStreetSegmentTravelTime(path[i]);
         
         // If street ID changes, turn penalty need to be considered
-        if (currentStreet.streetID != previousStreet && previousStreet > 0) {
+        if (currentStreet.streetID != previousStreet && previousStreet >= 0) {
             travelTimeTotal += turn_penalty;
         }
 
         previousStreet = currentStreet.streetID;
     }
     
-    //std::cout << "Total travel time: " << travelTimeTotal << " Turn penalty: " << turn_penalty << std::endl;
     return travelTimeTotal;
 }
 
@@ -223,6 +219,8 @@ double findDistanceBetweenIntersections(IntersectionIdx from, IntersectionIdx to
 
     return findDistanceBetweenTwoPoints(points);;
 }
+
+//TO BE ELABORATED
 std::vector <std::string> displayRoute(std::vector <StreetSegmentIdx> route) {
     std::vector <std::string> instructions;
     StreetIdx lastStreetIdx = -1;
