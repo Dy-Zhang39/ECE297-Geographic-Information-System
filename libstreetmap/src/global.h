@@ -89,5 +89,19 @@ public:
     std::vector<Feature> featurePts;
     std::vector<Subway> subways;
 };
+
+class WavePoint {
+public:
+    //virtual ~WavePoint();
+    IntersectionIdx idx;
+    double optDistance;
+
+    friend bool operator < (const WavePoint& lhs, const WavePoint& rhs);
+    friend bool operator > (const WavePoint& lhs, const WavePoint& rhs);
+    
+    WavePoint();
+    WavePoint(IntersectionIdx idx, double optDistance);
+
+};
 #endif /* GLOBAL_H */
 
