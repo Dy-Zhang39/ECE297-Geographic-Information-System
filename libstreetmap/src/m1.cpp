@@ -80,13 +80,15 @@ char SEPARATE_CHAR_AFTER = 's';
 
 std::vector<StreetIdx> mostSimilarFirstName;
 std::vector<StreetIdx> mostSimilarSecondName;
+bool streetDataBaseIsLoaded = false;
+bool OSMIsLoaded = false;
 bool checkingFirstName = true;
 //helper function
 
 
 bool loadMap(std::string map_streets_database_filename) {
     bool alreadyExist = false;
-   
+    std::clock_t start = clock();
 
     //check if the map is already loaded
     for (int cityIdx = 0; cityIdx < cities.size() && !alreadyExist; cityIdx++){
@@ -96,28 +98,29 @@ bool loadMap(std::string map_streets_database_filename) {
             currentCityIdx = cityIdx;
         }      
     }
-    
-
-    bool load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded successfully
+    bool load_successful;
+    load_successful = loadStreetsDatabaseBIN(map_streets_database_filename); //Indicates whether the map has loaded successfully
 
     if(!load_successful){
         return load_successful;
     }
+    streetDataBaseIsLoaded = true;
     
-    std::clock_t loadMapEnd = clock();
-    
-   
-    //change to osm file name
-    std::string osm_filename = map_streets_database_filename.substr(0, map_streets_database_filename.length() - 12);
-    
-    load_successful = loadOSMDatabaseBIN(osm_filename + ".osm.bin");
-    
-    if(!load_successful)
-        return load_successful;
-    std::clock_t osmMapEnd = clock();
+    //std::clock_t loadMapEnd = clock();
+        
+    //std::clock_t osmMapEnd = clock();
     
     //create new global variable for new city
     if(!alreadyExist){
+        
+        //change to osm file name
+        std::string osm_filename = map_streets_database_filename.substr(0, map_streets_database_filename.length() - 12);
+    
+        load_successful = loadOSMDatabaseBIN(osm_filename + ".osm.bin");
+        
+        if(!load_successful)
+            return load_successful;
+        OSMIsLoaded = true;
         
         City* newCity = new City;
         newCity->mapPath = map_streets_database_filename;
@@ -129,8 +132,8 @@ bool loadMap(std::string map_streets_database_filename) {
         currentCityIdx = cities.size() - 1;     //reset the index to the newest city
 
     }else{
-        
-        double loadAlready = double(osmMapEnd - loadMapEnd) / CLOCKS_PER_SEC;
+        std::clock_t end = clock();
+        double loadAlready = double(end - start) / CLOCKS_PER_SEC;
         std::cout << "The loading process takes " << loadAlready << "s"<< std::endl;
         return true;
     }
@@ -144,6 +147,9 @@ bool loadMap(std::string map_streets_database_filename) {
     street_Info();              //pre-load information about street length; street travel time; street segment length
     initializeFeatureBounding();//pre-load the bounding boxes of features
     loadSubways();
+    std::clock_t end = clock();
+    double loadAlready = double(end - start) / CLOCKS_PER_SEC;
+    std::cout << "The loading process takes " << loadAlready << "s"<< std::endl;
     return load_successful;
     
     
@@ -538,8 +544,18 @@ void closeMap() {
 
 //close the database
 void closeDataBase(){
-    closeOSMDatabase();
-    closeStreetDatabase();
+    
+    if (streetDataBaseIsLoaded){
+        closeStreetDatabase();
+        streetDataBaseIsLoaded = false;
+    }
+        
+    if (OSMIsLoaded){
+        closeOSMDatabase();
+        OSMIsLoaded = false;
+    }
+        
+    
 }
 
 
