@@ -70,7 +70,10 @@ IntersectionIdx toPath;
 std::vector <StreetSegmentIdx> pathRoute;
 std::vector <StreetSegmentIdx> exploredPath;
 void searchPathBtnClicked(GtkWidget *, gpointer data);
-
+void setFromBtnClicked(GtkWidget *, gpointer data);
+void setToBtnClicked(GtkWidget *, gpointer data);
+void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id);
+void clearRouteBtnClicked(GtkWidget *, gpointer data);
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
@@ -257,18 +260,71 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *snightModeBox = application->get_object("nightModeBox");
     g_signal_connect(snightModeBox, "toggled", G_CALLBACK(toggleNightMode), application);
     
-    //check box for using night mode
+    //button to search path
     GObject *searchPathBtn = application->get_object("searchPathBtn");
     g_signal_connect(searchPathBtn, "clicked", G_CALLBACK(searchPathBtnClicked), application);
     
+    //button to set from intersection
+    GObject *setFromBtn = application->get_object("setFromBtn");
+    g_signal_connect(setFromBtn, "clicked", G_CALLBACK(setFromBtnClicked), application);
+    
+    //button to set to intersection
+    GObject *setToBtn = application->get_object("setToBtn");
+    g_signal_connect(setToBtn, "clicked", G_CALLBACK(setToBtnClicked), application);
+    
+    //button to clear route
+    GObject *clearRouteBtn = application->get_object("clearRouteBtn");
+    g_signal_connect(clearRouteBtn, "clicked", G_CALLBACK(clearRouteBtnClicked), application);
+}
+
+void setFromBtnClicked(GtkWidget *, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+
+    for (IntersectionIdx i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); i++) {
+        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
+            fromPath = i;
+            break;
+        }
+    }
+
+    // Display from to points
+    std::string fromName = "";
+    std::string toName = "";
+    
+    if (fromPath > 0 && fromPath < getNumIntersections()) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
+    if (toPath > 0 && toPath < getNumIntersections()) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
+
+    std::string output = "From: " + fromName + ",  To: " + toName;
+    application->update_message(output);
+}
+
+void setToBtnClicked(GtkWidget *, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+
+    for (IntersectionIdx i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); i++) {
+        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
+            toPath = i;
+            break;
+        }
+    }
+
+    // Display from to points
+    std::string fromName = "";
+    std::string toName = "";
+    
+    if (fromPath > 0 && fromPath < getNumIntersections()) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
+    if (toPath > 0 && toPath < getNumIntersections()) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
+
+    std::string output = "From: " + fromName + ",  To: " + toName;
+    application->update_message(output);
 }
 
 void searchPathBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-    GtkEntry* pathFromEntry = (GtkEntry *) application ->get_object("pathFromInput");
+    /*GtkEntry* pathFromEntry = (GtkEntry *) application ->get_object("pathFromInput");
     fromPath = std::stoi(gtk_entry_get_text(pathFromEntry));
     GtkEntry* pathToEntry = (GtkEntry *) application ->get_object("pathToInput");
-    toPath = std::stoi(gtk_entry_get_text(pathToEntry));
+    toPath = std::stoi(gtk_entry_get_text(pathToEntry));*/
     
     if (toPath >= 0 && fromPath >= 0) {
         std::clock_t start = clock();
@@ -280,6 +336,17 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
         std:: cout << "From: " << fromPath << "  to: " << toPath << " Travel Time: " << travelTime << "  cpu time: " << elapsedSecondsSearchPath << std::endl;
         application->refresh_drawing();
     }
+}
+
+void clearRouteBtnClicked(GtkWidget *, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+   
+    fromPath = -1;
+    toPath = -1;
+    pathRoute.clear();
+    
+    application->refresh_drawing();
+    
 }
 
 //input all the city name to the map bar
@@ -1768,14 +1835,26 @@ void loadSubway(ezgl::renderer *g){
 }
 
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route) {
-    for (int i = 0; i < route.size(); i ++) {
-        drawSegment(g, world, ezgl::RED, route[i]);
-    }
-    
     ezgl::surface *iconSurface;
 
     iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
     drawIcon(g, world, iconSurface, toPath);
+    displayIntersectionPopup(g, world, toPath);
+    displayIntersectionPopup(g, world, fromPath);
+
+    for (int i = 0; i < route.size(); i ++) {
+        drawSegment(g, world, ezgl::RED, route[i]);
+    }
+}
+
+void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id) {
+        
+    float x = xFromLon(cities[currentCityIdx] -> intersection -> intersectionInfo[id].position.longitude());
+    float y = yFromLat(cities[currentCityIdx] -> intersection -> intersectionInfo[id].position.latitude());
+        
+    g->set_color(ezgl::GREY_75);
+    //display pop up box
+    displayPopupBox(g, "Intersection: ", cities[currentCityIdx] -> intersection -> intersectionInfo[id].name, x, y, world);
 }
 
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, IntersectionIdx location) {
