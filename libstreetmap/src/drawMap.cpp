@@ -33,6 +33,9 @@ bool showSubways = false;
 //make sure the interested region has some distance with the windows margin
 double GAP = 500;
 
+//maximum intersections that can display on the screen
+int MAX_INTERSECTIONS_DISPLAY = 7;
+
 bool nightMode;             //Determines whether to show night mode
 
 //global variable storing color for background, text, feature and street
@@ -773,43 +776,46 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     
     ezgl::point2d sum(0, 0), center(0,0), largest(-1 * EARTH_CIRCUMFERENCE, -1 * EARTH_CIRCUMFERENCE), smallest(EARTH_CIRCUMFERENCE, EARTH_CIRCUMFERENCE);
 
-    
+    std::vector<IntersectionIdx> totalCommonIntersections;
     if ((partialResultFirst.size() > 0 && partialResultSecond.size() > 0)){
         
-        std::vector<IntersectionIdx> commonIntersection;
         
        
         for (auto firstStreetIdx = partialResultFirst.begin(); firstStreetIdx != partialResultFirst.end();) {
 
-            for (auto secondStreetIdx = partialResultSecond.begin(); secondStreetIdx != partialResultSecond.end();) {
+            for (auto secondStreetIdx = partialResultSecond.begin(); secondStreetIdx != partialResultSecond.end(); ) {
                 
-                commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(*firstStreetIdx, *secondStreetIdx));
+                auto  commonIntersection = findIntersectionsOfTwoStreets(std::make_pair(*firstStreetIdx, *secondStreetIdx));
                 if (commonIntersection.size() > 0) {
-
-                    output = getStreetName(*firstStreetIdx) + ", " + getStreetName(*secondStreetIdx);
+                    
+                    addVectorToVector(totalCommonIntersections, commonIntersection);
+                }
+                
+                if (totalCommonIntersections.size() > MAX_INTERSECTIONS_DISPLAY){
+                    
                     firstStreetIdx = partialResultFirst.end();
                     secondStreetIdx = partialResultSecond.end();
-                } else {
-
+                }
+                
+                if (secondStreetIdx != partialResultSecond.end()){
                     secondStreetIdx++;
                 }
             }
-
-            if (firstStreetIdx != partialResultFirst.end()) {
-
+            
+            if (firstStreetIdx != partialResultFirst.end()){
                 firstStreetIdx++;
             }
         }
         
         
         
-        if (commonIntersection.size() > 0){
+        if (totalCommonIntersections.size() > 0){
             
-            auto world = getZoomLevelToIntersections(commonIntersection);
-            for (int idx = 0; idx < commonIntersection.size(); idx++){
+            auto world = getZoomLevelToIntersections(totalCommonIntersections);
+            for (int idx = 0; idx < totalCommonIntersections.size(); idx++){
                 //highlight these cities[currentCityIdx] -> intersection -> intersectionInfo
-                cities[currentCityIdx] -> intersection -> intersectionInfo[commonIntersection[idx]].isHighlight = true;
-                previousHighlight.push_back(commonIntersection[idx]);
+                cities[currentCityIdx] -> intersection -> intersectionInfo[totalCommonIntersections[idx]].isHighlight = true;
+                previousHighlight.push_back(totalCommonIntersections[idx]);
             }
             canvas->get_camera().set_world(world);
             
@@ -818,13 +824,20 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
         }
         
     }else{
-        output = "Street can not be found";
+        output = "Street can not be found.";
     }
     
     
     application->update_message(output);
     application->refresh_drawing();
     return true;
+}
+
+//add all the element in a vector to another vector
+void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<IntersectionIdx>& from){
+    for (auto it = from.begin(); it != from.end(); it++){
+        to.push_back(*it);
+    }
 }
 
 ezgl::rectangle getZoomLevelToIntersections(std::vector<IntersectionIdx> commonIntersection){
@@ -936,6 +949,7 @@ void actOnMouseClick(ezgl::application* , GdkEventButton* event, double x, doubl
     
     //record the position of left mouse clicked
     if (event ->button == 1){
+           
         positionOfClicked = LatLon(latFromY(y), lonFromX(x));
     }    
 }

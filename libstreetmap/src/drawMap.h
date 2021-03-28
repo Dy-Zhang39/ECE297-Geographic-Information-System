@@ -85,5 +85,7 @@ ezgl::rectangle getZoomLevelToIntersections(std::vector<IntersectionIdx> commonI
 ezgl::rectangle getZoomLevelToIntersections(IntersectionIdx id);
 void drawMainCanvas (ezgl::renderer *g);
 
+//add all the element in a vector to another vector
+void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<IntersectionIdx>& from);
 #endif /* DRAWMAP_H */
 
