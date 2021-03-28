@@ -183,6 +183,8 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
             pathNode = allIntersections[pathNode.lastIntersection];
         }
         
+    }else{
+        std::cout<<"Path Not Found"<<std::endl<<" Please enter a new intersection"<<std::endl;
     }
     
     //std::clock_t end = clock();

@@ -1847,47 +1847,26 @@ void loadSubway(ezgl::renderer *g){
         }
     }    
 }
-void pathNotFoundError(GtkWidget *, gpointer data){
-    auto application = static_cast<ezgl::application *>(data);
 
-    for (IntersectionIdx i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); i++) {
-        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
-            toPath = i;
-            break;
-        }
-    }
-
-    // Display from to points
-    std::string fromName = "";
-    std::string toName = "";
-    
-    if (fromPath > 0 && fromPath < getNumIntersections()) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
-    if (toPath > 0 && toPath < getNumIntersections()) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
-
-    std::string output = "From: " + fromName + ",  To: " + toName;
-    application->update_message(output);
-}
 
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route) {
     ezgl::surface *iconSurface;
     
-   
-    if (route.size() == 0) {
+    if (route.size() <1) {
         //inform user no route found
-        
+        std::cout<<"Path Not Found"<<std::endl<<" Please enter a new intersection"<<std::endl;
     } else {
         //draw the found route
         for (int i = 0; i < route.size(); i++) {
             drawSegment(g, world, ezgl::RED, route[i]);
         }
     }
-    iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
-    drawIcon(g, world, iconSurface, toPath);
-    //displayIntersectionPopup(g, world, toPath);
-    //displayIntersectionPopup(g, world, fromPath);
-    //display from/ to icon
+
+    //display from/destination icon
     iconSurface = g->load_png("./libstreetmap/resources/images/start_pin.png");
     drawIcon(g, world, iconSurface, fromPath);
+    iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
+    drawIcon(g, world, iconSurface, toPath);
 }
 
 void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id) {
