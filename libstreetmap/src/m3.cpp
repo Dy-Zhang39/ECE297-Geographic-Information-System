@@ -184,6 +184,7 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
         }
         
     }else{
+        //Inform user that the path does not found
         std::cout<<"Path Not Found"<<std::endl<<" Please enter a new intersection"<<std::endl;
     }
     

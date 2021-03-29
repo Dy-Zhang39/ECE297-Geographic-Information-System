@@ -1175,9 +1175,9 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta) {
     double arrowThickness = 0.1;
 
     //points for the arrow
-    ezgl::point2d firstPoint(position.x + h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
-    ezgl::point2d secondPoint(firstPoint.x + h * cos((theta + delta) * kDegreeToRadian), firstPoint.y + h * sin((theta + delta) * kDegreeToRadian));
-    ezgl::point2d thirdPoint(firstPoint.x + h * cos((theta - delta) * kDegreeToRadian), firstPoint.y + h * sin((theta - delta) * kDegreeToRadian));
+    ezgl::point2d firstPoint(position.x +h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
+    ezgl::point2d secondPoint(firstPoint.x - h * cos((theta + delta) * kDegreeToRadian), firstPoint.y - h * sin((theta + delta) * kDegreeToRadian));
+    ezgl::point2d thirdPoint(firstPoint.x - h * cos((theta - delta) * kDegreeToRadian), firstPoint.y - h * sin((theta - delta) * kDegreeToRadian));
 
     //draw the arrow
     g->set_line_width(arrowThickness * streetSize(g->get_visible_world()));
@@ -1852,15 +1852,11 @@ void loadSubway(ezgl::renderer *g){
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route) {
     ezgl::surface *iconSurface;
     
-    if (route.size() <1) {
-        //inform user no route found
-        std::cout<<"Path Not Found"<<std::endl<<" Please enter a new intersection"<<std::endl;
-    } else {
-        //draw the found route
-        for (int i = 0; i < route.size(); i++) {
-            drawSegment(g, world, ezgl::RED, route[i]);
-        }
+    //draw the found route
+    for (int i = 0; i < route.size(); i++) {
+        drawSegment(g, world, ezgl::RED, route[i]);
     }
+    
 
     //display from/destination icon
     iconSurface = g->load_png("./libstreetmap/resources/images/start_pin.png");
