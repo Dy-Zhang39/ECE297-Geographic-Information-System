@@ -324,6 +324,9 @@ void setToBtnClicked(GtkWidget *, gpointer data){
 
 void searchPathBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
+    
+    std::string main_canvas_id = application->get_main_canvas_id();
+    auto canvas = application->get_canvas(main_canvas_id);
     /*GtkEntry* pathFromEntry = (GtkEntry *) application ->get_object("pathFromInput");
     fromPath = std::stoi(gtk_entry_get_text(pathFromEntry));
     GtkEntry* pathToEntry = (GtkEntry *) application ->get_object("pathToInput");
@@ -335,6 +338,24 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
         double travelTime = computePathTravelTime(pathRoute, 15);
     
         std::clock_t end = clock();
+        std::vector<IntersectionIdx> routeIntersections;
+   
+ 
+        //draw the found route
+        for (int i = 0; i < pathRoute.size(); i++) {
+            
+            //store all the intersections of the route
+            IntersectionIdx intIdx = getStreetSegmentInfo(pathRoute[i]).from;
+            routeIntersections.push_back(intIdx);
+
+        }
+
+        if (routeIntersections.size() != 0){
+            //zoom the screen to the path
+            ezgl::rectangle newWorld = getZoomLevelToIntersections(routeIntersections);
+            canvas->get_camera().set_world(newWorld);
+        }
+        
         double elapsedSecondsSearchPath = double(end-start) / CLOCKS_PER_SEC;
         std:: cout << "From: " << fromPath << "  to: " << toPath << " Travel Time: " << travelTime << "  cpu time: " << elapsedSecondsSearchPath << std::endl;
         application->refresh_drawing();
@@ -1870,7 +1891,7 @@ void pathNotFoundError(GtkWidget *, gpointer data){
 
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route) {
     ezgl::surface *iconSurface;
-    
+
    
     if (route.size() == 0) {
         //inform user no route found
@@ -1878,9 +1899,13 @@ void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegme
     } else {
         //draw the found route
         for (int i = 0; i < route.size(); i++) {
+            
+            
             drawSegment(g, world, ezgl::RED, route[i]);
         }
     }
+    //g->set_visible_world(newWorld);
+    
     iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
     drawIcon(g, world, iconSurface, toPath);
     //displayIntersectionPopup(g, world, toPath);
@@ -1888,6 +1913,7 @@ void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegme
     //display from/ to icon
     iconSurface = g->load_png("./libstreetmap/resources/images/start_pin.png");
     drawIcon(g, world, iconSurface, fromPath);
+    
 }
 
 void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id) {
