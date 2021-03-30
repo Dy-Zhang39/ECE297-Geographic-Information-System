@@ -74,6 +74,7 @@ struct streetInfo{
     std::string streetName;
     double distance;
     double travelTime;
+    double angle;
 };
 
 
@@ -91,6 +92,7 @@ void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor,
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
 void displayTravelInfo(std::vector<StreetSegmentIdx> route);
+double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to);
 
 void drawMap(){
 
@@ -1965,9 +1967,15 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
 
     streetInfo street;
 
+    IntersectionIdx from=0;
+    IntersectionIdx mid=0;
+    IntersectionIdx to=0;
+    double angle=0;
+    
     //check through the route found previously, and collect street name, street distance 
     //and travel time for a street
     for (int segIdIndex = 0; segIdIndex < route.size(); segIdIndex++) {
+        
         //find the start street name
         streetID = getStreetSegmentInfo(route[segIdIndex]).streetID;
         streetName = getStreetName(streetID);
@@ -1977,6 +1985,16 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
         travelTime += findStreetSegmentTravelTime(route[segIdIndex]);
         //if street change or reach the destination update the street
         if (streetName != previousStreetName || segIdIndex == (route.size() - 1)) {
+            //track the turn point, before and after turn point
+            if (segIdIndex > 0) {
+                from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
+                mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
+                to = getStreetSegmentInfo(route[segIdIndex]).to;
+            }
+
+            //calculate the turn angle
+            angle = turnAngle(from, mid, to);
+            street.angle = angle;
             //update the street info and store in the vector
             street.distance = distance;
             street.streetName = previousStreetName;
@@ -1996,12 +2014,33 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
     }
 
     //print the street travel instruction
-    for (int i = 0; i < numberOfStreets; i++) {
-        auto streetInformation = travelPathInfo[i];
+    for (int i = 0; i < numberOfStreets-1; i++) {
+        streetInfo streetInformation = travelPathInfo[i];
 
         std::cout << "Travel along " << streetInformation.streetName << "for " 
                 << streetInformation.distance << " m," << " around "
-                << streetInformation.travelTime << " s" << std::endl;
+                << streetInformation.travelTime << " s" <<" the turn angle is: "<<streetInformation.angle<< std::endl;
 
     }
+    //reach the destination
+    streetInfo streetInformation = travelPathInfo[numberOfStreets-1];
+    streetID = getStreetSegmentInfo(route.size()-1).streetID;
+        streetName = getStreetName(streetID);
+        std::cout << "Destination " << streetName<<" reached !"<<std::endl;
+                
+}
+
+double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
+    
+    LatLon A= getIntersectionPosition(from);
+    LatLon B=getIntersectionPosition(mid);
+    LatLon C=getIntersectionPosition(to);
+    
+    double a=findDistanceBetweenTwoPoints(std::make_pair(B,C));
+    double b=findDistanceBetweenTwoPoints(std::make_pair(C,A));
+    double c=findDistanceBetweenTwoPoints(std::make_pair(A,B));
+    
+    double angle = acos((c*c+a*a-b*b)/(2*c*a))/kDegreeToRadian;
+    
+    return angle;
 }
