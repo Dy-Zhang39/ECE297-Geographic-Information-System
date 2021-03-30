@@ -94,13 +94,13 @@ class WavePoint {
 public:
     //virtual ~WavePoint();
     IntersectionIdx idx;
-    double optDistance;
+    double heuristicTime;
 
     friend bool operator < (const WavePoint& lhs, const WavePoint& rhs);
     friend bool operator > (const WavePoint& lhs, const WavePoint& rhs);
     
     WavePoint();
-    WavePoint(IntersectionIdx idx, double optDistance);
+    WavePoint(IntersectionIdx idx, double time);
 
 };
 #endif /* GLOBAL_H */

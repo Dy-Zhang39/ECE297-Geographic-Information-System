@@ -35,19 +35,19 @@ struct PathNode {
 };
 
 bool operator < (const WavePoint& lhs, const WavePoint& rhs){
-    return lhs.optDistance < rhs.optDistance;
+    return lhs.heuristicTime < rhs.heuristicTime;
 }
 
 bool operator > (const WavePoint& lhs, const WavePoint& rhs){
-    return lhs.optDistance > rhs.optDistance;
+    return lhs.heuristicTime > rhs.heuristicTime;
 }
 
 
 
-WavePoint::WavePoint(IntersectionIdx index, double distance) {
+WavePoint::WavePoint(IntersectionIdx index, double time) {
         
      WavePoint::idx = index;
-     WavePoint::optDistance = distance;
+     WavePoint::heuristicTime = time;
 }
 
 std::vector<StreetSegmentIdx> findPathBetweenIntersections(
@@ -75,7 +75,7 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
         allIntersections[i].travelTime = -1;
     }
     
-    // Prepare the variables for the start intersection.
+    // Prepare the variables for the start optDistanceinterseoptDistancection.
     PathNode node;
     
     node.from = -1;
@@ -165,8 +165,8 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
                                || allIntersections[nextNode].travelTime > thisNode.travelTime
                            ) {
                             allIntersections[nextNode] = thisNode;
-                            wavePoints.push(WavePoint(nextNode, thisNode.distance 
-                                    + thisNode.travelTime * speedSortingWavefront ));
+                            wavePoints.push(WavePoint(nextNode, thisNode.distance / speedSortingWavefront 
+                                    + thisNode.travelTime));
                         }
                     }
                 }
