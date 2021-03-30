@@ -68,8 +68,8 @@ extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
 
-IntersectionIdx fromPath;
-IntersectionIdx toPath;
+IntersectionIdx fromPath = -1;
+IntersectionIdx toPath = -1;
 std::vector <StreetSegmentIdx> pathRoute;
 std::vector <StreetSegmentIdx> exploredPath;
 void searchPathBtnClicked(GtkWidget *, gpointer data);
@@ -186,12 +186,12 @@ void drawMainCanvas (ezgl::renderer *g){
     double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
     
-    if (pathRoute.size() > 0) {
-        for (int i = 0; i < exploredPath.size(); i ++) {
-            drawSegment(g, g->get_visible_world(), ezgl::BLUE, exploredPath[i]);
-        }
-        drawRoute(g, g->get_visible_world(), pathRoute);
+   
+    for (int i = 0; i < exploredPath.size(); i ++) {
+        drawSegment(g, g->get_visible_world(), ezgl::BLUE, exploredPath[i]);
     }
+    drawRoute(g, g->get_visible_world(), pathRoute);
+    
 }
 
 
@@ -299,6 +299,7 @@ void setFromBtnClicked(GtkWidget *, gpointer data){
 
     std::string output = "From: " + fromName + ",  To: " + toName;
     application->update_message(output);
+    application->refresh_drawing();
 }
 
 void setToBtnClicked(GtkWidget *, gpointer data){
@@ -320,14 +321,12 @@ void setToBtnClicked(GtkWidget *, gpointer data){
 
     std::string output = "From: " + fromName + ",  To: " + toName;
     application->update_message(output);
+    application->refresh_drawing();
 }
 
 void searchPathBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-    /*GtkEntry* pathFromEntry = (GtkEntry *) application ->get_object("pathFromInput");
-    fromPath = std::stoi(gtk_entry_get_text(pathFromEntry));
-    GtkEntry* pathToEntry = (GtkEntry *) application ->get_object("pathToInput");
-    toPath = std::stoi(gtk_entry_get_text(pathToEntry));*/
+
     clearHighlightIntersection();
     if (toPath >= 0 && fromPath >= 0) {
         std::clock_t start = clock();
@@ -1363,11 +1362,6 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     std::string featureName = getFeatureName(id); 
     FeatureType featureType = getFeatureType(id);
     
-    if(id==6){
-            std::cout<<x<<" "<<y<<std::endl;
-            
-     }
-    
     for (int pt = 1; pt < getNumFeaturePoints(id); pt++){
         double x1, y1;
         x1 = xFromLon(getFeaturePoint(id, pt).longitude());
@@ -1881,13 +1875,17 @@ void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegme
             drawSegment(g, world, ezgl::RED, route[i]);
         }
     }
+    
     iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
     drawIcon(g, world, iconSurface, toPath);
+    
     //displayIntersectionPopup(g, world, toPath);
     //displayIntersectionPopup(g, world, fromPath);
     //display from/ to icon
+
     iconSurface = g->load_png("./libstreetmap/resources/images/start_pin.png");
     drawIcon(g, world, iconSurface, fromPath);
+
 }
 
 void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id) {
@@ -1903,11 +1901,13 @@ void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, Intersec
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, IntersectionIdx location) {
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
-    
-    double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
-    double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
-    LatLon locationLatLon = getIntersectionPosition(location);
-    g->draw_surface(iconSurface, {xFromLon(locationLatLon.longitude()) - surfaceWidth / 2 , yFromLat(locationLatLon.latitude()) + surfaceHeight} );
+    if (location >= 0 && location < getNumIntersections()){
+        double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
+        double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
+        LatLon locationLatLon = getIntersectionPosition(location);
+        g->draw_surface(iconSurface, {xFromLon(locationLatLon.longitude()) - surfaceWidth / 2 , yFromLat(locationLatLon.latitude()) + surfaceHeight} );
+
+    }
 }
 
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID) {
