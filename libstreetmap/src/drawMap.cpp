@@ -31,7 +31,7 @@ double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 bool showSubways = false;
 
 //make sure the interested region has some distance with the windows margin
-double GAP = 500;
+double GAP = 1000;
 
 //maximum intersections that can display on the screen
 int MAX_INTERSECTIONS_DISPLAY = 7;
@@ -327,6 +327,13 @@ void setToBtnClicked(GtkWidget *, gpointer data){
 void searchPathBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
 
+    std::string main_canvas_id = application->get_main_canvas_id();
+    auto canvas = application->get_canvas(main_canvas_id);
+    /*GtkEntry* pathFromEntry = (GtkEntry *) application ->get_object("pathFromInput");
+    fromPath = std::stoi(gtk_entry_get_text(pathFromEntry));
+    GtkEntry* pathToEntry = (GtkEntry *) application ->get_object("pathToInput");
+    toPath = std::stoi(gtk_entry_get_text(pathToEntry));*/
+
     clearHighlightIntersection();
     if (toPath >= 0 && fromPath >= 0) {
         std::clock_t start = clock();
@@ -334,6 +341,25 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
         double travelTime = computePathTravelTime(pathRoute, 15);
     
         std::clock_t end = clock();
+        std::vector<IntersectionIdx> routeIntersections;
+   
+ 
+        //draw the found route
+        for (int i = 0; i < pathRoute.size(); i++) {
+            
+            //store all the intersections of the route
+            IntersectionIdx intIdx = getStreetSegmentInfo(pathRoute[i]).from;
+            routeIntersections.push_back(intIdx);
+
+        }
+        routeIntersections.push_back(fromPath);
+        routeIntersections.push_back(toPath);
+        if (routeIntersections.size() != 0){
+            //zoom the screen to the path
+            ezgl::rectangle newWorld = getZoomLevelToIntersections(routeIntersections);
+            canvas->get_camera().set_world(newWorld);
+        }
+        
         double elapsedSecondsSearchPath = double(end-start) / CLOCKS_PER_SEC;
         std:: cout << "From: " << fromPath << "  to: " << toPath << " Travel Time: " << travelTime << "  cpu time: " << elapsedSecondsSearchPath << std::endl;
         application->refresh_drawing();
@@ -1174,9 +1200,9 @@ void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta) {
     double arrowThickness = 0.1;
 
     //points for the arrow
-    ezgl::point2d firstPoint(position.x + h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
-    ezgl::point2d secondPoint(firstPoint.x + h * cos((theta + delta) * kDegreeToRadian), firstPoint.y + h * sin((theta + delta) * kDegreeToRadian));
-    ezgl::point2d thirdPoint(firstPoint.x + h * cos((theta - delta) * kDegreeToRadian), firstPoint.y + h * sin((theta - delta) * kDegreeToRadian));
+    ezgl::point2d firstPoint(position.x +h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
+    ezgl::point2d secondPoint(firstPoint.x - h * cos((theta + delta) * kDegreeToRadian), firstPoint.y - h * sin((theta + delta) * kDegreeToRadian));
+    ezgl::point2d thirdPoint(firstPoint.x - h * cos((theta - delta) * kDegreeToRadian), firstPoint.y - h * sin((theta - delta) * kDegreeToRadian));
 
     //draw the arrow
     g->set_line_width(arrowThickness * streetSize(g->get_visible_world()));
@@ -1841,41 +1867,16 @@ void loadSubway(ezgl::renderer *g){
         }
     }    
 }
-void pathNotFoundError(GtkWidget *, gpointer data){
-    auto application = static_cast<ezgl::application *>(data);
 
-    for (IntersectionIdx i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); i++) {
-        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
-            toPath = i;
-            break;
-        }
-    }
-
-    // Display from to points
-    std::string fromName = "";
-    std::string toName = "";
-    
-    if (fromPath > 0 && fromPath < getNumIntersections()) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
-    if (toPath > 0 && toPath < getNumIntersections()) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
-
-    std::string output = "From: " + fromName + ",  To: " + toName;
-    application->update_message(output);
-}
 
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route) {
     ezgl::surface *iconSurface;
     
-   
-    if (route.size() == 0) {
-        //inform user no route found
-        
-    } else {
-        //draw the found route
-        for (int i = 0; i < route.size(); i++) {
-            drawSegment(g, world, ezgl::RED, route[i]);
-        }
+    //draw the found route
+    for (int i = 0; i < route.size(); i++) {
+        drawSegment(g, world, ezgl::RED, route[i]);
     }
-    
+
     iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
     drawIcon(g, world, iconSurface, toPath);
     
@@ -1885,6 +1886,7 @@ void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegme
 
     iconSurface = g->load_png("./libstreetmap/resources/images/start_pin.png");
     drawIcon(g, world, iconSurface, fromPath);
+
 
 }
 
