@@ -29,8 +29,8 @@ std::vector <std::string> displayRoute(std::vector <StreetSegmentIdx> route);
 // Stores the information of each node that has been calculated
 struct PathNode {
     StreetSegmentIdx from;
-    double travelTime;
-    double distance;
+    double travelTime; //tavel time from las node?
+    double distance;  //distance from the last node?
     IntersectionIdx lastIntersection;
 };
 

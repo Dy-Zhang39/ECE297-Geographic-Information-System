@@ -68,6 +68,14 @@ extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
 
+//vector that store the street name and it travel time and distance
+struct streetInfo{
+    std::string streetName;
+    double distance;
+    double travelTime;
+};
+
+
 IntersectionIdx fromPath;
 IntersectionIdx toPath;
 std::vector <StreetSegmentIdx> pathRoute;
@@ -80,7 +88,7 @@ void clearRouteBtnClicked(GtkWidget *, gpointer data);
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
-
+void displayTravelInfo(std::vector<StreetSegmentIdx> route);
 
 void drawMap(){
 
@@ -152,21 +160,21 @@ void drawMainCanvas (ezgl::renderer *g){
     g->draw_rectangle(start, end);
     g->set_color(backgroundColor);
     g->fill_rectangle(start, end);
-
+/*
     //timing function
     std::clock_t begin = clock();
 
     drawFeature(g, world);
     std::clock_t featureEnd = clock();
-    
+*/
     drawStreet(g, world);
-    std::clock_t streetEnd = clock();
+/*    std::clock_t streetEnd = clock();
     
     displayPOI(g);
     std::clock_t poiEnd = clock();
-    
+ */   
     displayHighlightedIntersection(g);
-    std::clock_t highlighIntersectionEnd = clock();
+/*    std::clock_t highlighIntersectionEnd = clock();
     
     displayStreetName(g, world);
     std::clock_t streetNameEnd = clock();
@@ -185,13 +193,15 @@ void drawMainCanvas (ezgl::renderer *g){
     
     double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
-    
+  */  
     if (pathRoute.size() > 0) {
         for (int i = 0; i < exploredPath.size(); i ++) {
             drawSegment(g, g->get_visible_world(), ezgl::BLUE, exploredPath[i]);
         }
+        displayTravelInfo(pathRoute);
         drawRoute(g, g->get_visible_world(), pathRoute);
     }
+    
 }
 
 
@@ -1863,6 +1873,7 @@ void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegme
     drawIcon(g, world, iconSurface, fromPath);
     iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
     drawIcon(g, world, iconSurface, toPath);
+  
 }
 
 void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id) {
@@ -1903,4 +1914,59 @@ void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor,
     }
 }
 
+void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
+    //the vector that store the travel street information
+    std::vector<streetInfo> travelPathInfo;
 
+    travelPathInfo.clear();
+
+    double distance = 0;
+    double travelTime = 0;
+    int streetID = getStreetSegmentInfo(route[0]).streetID;
+    std::string streetName;
+    std::string previousStreetName = getStreetName(streetID);
+
+    int numberOfStreets = 0;
+
+    streetInfo street;
+
+    //check through the route found previously, and collect street name, street distance 
+    //and travel time for a street
+    for (int segIdIndex = 0; segIdIndex < route.size(); segIdIndex++) {
+        //find the start street name
+        streetID = getStreetSegmentInfo(route[segIdIndex]).streetID;
+        streetName = getStreetName(streetID);
+        //find the total distance on the same street
+        distance += findStreetSegmentLength(route[segIdIndex]);
+        //calculate the total distance travel in the same street
+        travelTime += findStreetSegmentTravelTime(route[segIdIndex]);
+        //if street change or reach the destination update the street
+        if (streetName != previousStreetName || segIdIndex == (route.size() - 1)) {
+            //update the street info and store in the vector
+            street.distance = distance;
+            street.streetName = previousStreetName;
+            street.travelTime = travelTime;
+
+            travelPathInfo.push_back(street);
+            //track the total number of street traveled
+            numberOfStreets++;
+            //reset for new street
+            distance = 0;
+            travelTime = 0;
+
+        }
+        //update the street change
+        previousStreetName = streetName;
+
+    }
+
+    //print the street travel instruction
+    for (int i = 0; i < numberOfStreets; i++) {
+        auto streetInformation = travelPathInfo[i];
+
+        std::cout << "Travel along " << streetInformation.streetName << "for " 
+                << streetInformation.distance << " m," << " around "
+                << streetInformation.travelTime << " s" << std::endl;
+
+    }
+}
