@@ -39,6 +39,10 @@ gboolean toggleSubway(GtkWidget *, gpointer data);
 //call back function for check box used to night mode
 gboolean toggleNightMode(GtkWidget *, gpointer data);
 
+//call back function when the switch change position
+gboolean toggleSwitch (GtkWidget *, gboolean state, gpointer data);
+
+
 void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 #endif /* CALLBACK_H */

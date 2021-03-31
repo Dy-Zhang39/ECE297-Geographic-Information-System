@@ -24,7 +24,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
+            <property name="top_attach">3</property>
             <property name="width">2</property>
           </packing>
         </child>
@@ -164,7 +164,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">16</property>
+                <property name="top_attach">22</property>
                 <property name="width">3</property>
               </packing>
             </child>
@@ -321,7 +321,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">17</property>
+                <property name="top_attach">16</property>
                 <property name="width">3</property>
               </packing>
             </child>
@@ -335,7 +335,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">18</property>
+                <property name="top_attach">17</property>
                 <property name="width">3</property>
               </packing>
             </child>
@@ -357,40 +357,14 @@
             </child>
             <child>
               <object class="GtkButton" id="searchPathBtn">
-                <property name="label" translatable="yes">Path</property>
+                <property name="label" translatable="yes">Find Path</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">23</property>
-                <property name="width">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="setFromBtn">
-                <property name="label" translatable="yes">Set From</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">19</property>
-                <property name="width">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="setToBtn">
-                <property name="label" translatable="yes">Set Destination</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">20</property>
+                <property name="top_attach">21</property>
                 <property name="width">3</property>
               </packing>
             </child>
@@ -403,7 +377,7 @@
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">21</property>
+                <property name="top_attach">20</property>
                 <property name="width">3</property>
               </packing>
             </child>
@@ -431,10 +405,16 @@
             <child>
               <placeholder/>
             </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
           </object>
           <packing>
             <property name="left_attach">2</property>
-            <property name="top_attach">2</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
         <child>
@@ -446,7 +426,7 @@
           </object>
           <packing>
             <property name="left_attach">2</property>
-            <property name="top_attach">0</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
         <child>
@@ -456,21 +436,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkComboBoxText" id="MapBar">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="active_id">start</property>
-            <items>
-              <item id="start" translatable="yes">Change Map</item>
-            </items>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
         <child>
@@ -484,8 +450,73 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="MapBar">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="active_id">start</property>
+            <items>
+              <item id="start" translatable="yes">Change Map</item>
+            </items>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="TextInput2">
+            <property name="name">TextInput2</property>
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can_focus">True</property>
+            <property name="text" translatable="yes">Toggle the switch to change to find path mode</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSwitch" id="SwitchBetweenSearchAndFindPath">
+            <property name="name">SwitchBetweenSearchAndFindRoute</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="setFromBtn">
+            <property name="label" translatable="yes">Set From</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="setToBtn">
+            <property name="label" translatable="yes">Set Destination</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
             <property name="top_attach">1</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <placeholder/>

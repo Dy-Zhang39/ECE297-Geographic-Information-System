@@ -213,6 +213,9 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *search = application->get_object("SearchButton");
     g_signal_connect(search, "clicked", G_CALLBACK(searchButtonIsClicked), application);
     
+    GObject *sw = application ->get_object("SwitchBetweenSearchAndFindPath");
+    g_signal_connect(sw, "state-set", G_CALLBACK(toggleSwitch), application);
+    
     GObject *textEntry = application->get_object("TextInput");
     g_signal_connect(textEntry, "activate", G_CALLBACK(textEntryPressedEnter), application);
     g_signal_connect(textEntry, "changed", G_CALLBACK(textEntryChanges), application);
@@ -361,6 +364,18 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
         application->refresh_drawing();
     }
 }
+
+gboolean toggleSwitch (GtkWidget * sw, gboolean state, gpointer data){
+    gtk_switch_set_state ((GtkSwitch *) sw, state);
+    if (state == TRUE){
+        std::cout << "In Find Path Mode"<< std::endl;
+        
+    }else{
+        std::cout << "In Search Mode" << std::endl;
+    }
+    return TRUE;
+}
+
 
 void clearRouteBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
