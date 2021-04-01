@@ -579,14 +579,17 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     
     std::string widgetName = gtk_widget_get_name (widget);
     GtkComboBoxText *possibleLocationBar = NULL;
+    GtkEntry *textEntry = NULL;
     
     if (widgetName == "PossibleLocation"){
         possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+        textEntry = (GtkEntry *) application ->get_object("TextInput");
     }else if(widgetName == "PossibleLocation2"){
         possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation2");
+        textEntry = (GtkEntry *) application ->get_object("TextInput2");
     }
     
-    if (possibleLocationBar == NULL){
+    if (possibleLocationBar == NULL || textEntry == NULL){
         std::cout << "The widget pointer is still NULL in possibleLocationIsChosen()" << std::endl;
         exit (EXIT_FAILURE);
     }
@@ -622,7 +625,21 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     cities[currentCityIdx] -> intersection -> intersectionInfo[locationIdx].isHighlight = true;
     previousHighlight.push_back(locationIdx);
     
+    
+    std::string nameByCommas;
+    
+    //change the location name to the name separated by commas
+    for (int idx = 0; idx < locationName.size(); idx++){
+        
+        if (idx != locationName.size() - 1 && locationName[idx] == ' ' && locationName[idx + 1] == '&'){
+            nameByCommas.push_back(',');
+        }else if (locationName[idx] != '&'){
+            nameByCommas.push_back(locationName[idx]);
+        }
+    }
+    
     canvas->get_camera().set_world(world);
+    gtk_entry_set_text(textEntry, nameByCommas.c_str());
     application->update_message(locationName);
     application->refresh_drawing();
     
