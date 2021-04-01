@@ -1984,14 +1984,17 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
         //calculate the total distance travel in the same street
         travelTime += findStreetSegmentTravelTime(route[segIdIndex]);
         //if street change or reach the destination update the street
-        if (streetName != previousStreetName || segIdIndex == (route.size() - 1)) {
+        if (streetName != previousStreetName) {
             //track the turn point, before and after turn point
             if (segIdIndex > 0) {
                 from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
                 mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
                 to = getStreetSegmentInfo(route[segIdIndex]).to;
             }
-
+            //subtract the newly street  distance and travel time
+            distance = distance - findStreetSegmentLength(route[segIdIndex]);
+            //calculate the total distance travel in the same street
+            travelTime = travelTime - findStreetSegmentTravelTime(route[segIdIndex]);
             //calculate the turn angle
             angle = turnAngle(from, mid, to);
             street.angle = angle;
@@ -2003,30 +2006,55 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             travelPathInfo.push_back(street);
             //track the total number of street traveled
             numberOfStreets++;
-            //reset for new street
-            distance = 0;
-            travelTime = 0;
+            //reset for new street distance and travel time
+            distance = findStreetSegmentLength(route[segIdIndex]);
+            travelTime = findStreetSegmentTravelTime(route[segIdIndex]);
 
+        }
+
+        if (segIdIndex == (route.size() - 1)) {// reach the last street segment
+            if (segIdIndex > 0) {
+                from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
+                mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
+                to = getStreetSegmentInfo(route[segIdIndex]).to;
+            }
+
+            street.angle = 0;
+            //update the street info and store in the vector
+            street.distance = distance;
+            street.streetName = streetName;
+            street.travelTime = travelTime;
+
+            travelPathInfo.push_back(street);
+            //track the total number of street traveled
+            numberOfStreets++;
         }
         //update the street change
         previousStreetName = streetName;
 
     }
-
+    streetInfo streetInformation;
     //print the street travel instruction
     for (int i = 0; i < numberOfStreets-1; i++) {
-        streetInfo streetInformation = travelPathInfo[i];
+        streetInformation = travelPathInfo[i];
 
-        std::cout << "Travel along " << streetInformation.streetName << "for " 
+        std::cout << "Travel along " << streetInformation.streetName << "for "
                 << streetInformation.distance << " m," << " around "
-                << streetInformation.travelTime << " s" <<" the turn angle is: "<<streetInformation.angle<< std::endl;
+                << streetInformation.travelTime << " s" << " the turn angle is: " << streetInformation.angle << std::endl;
 
     }
     //reach the destination
-    streetInfo streetInformation = travelPathInfo[numberOfStreets-1];
-    streetID = getStreetSegmentInfo(route.size()-1).streetID;
-        streetName = getStreetName(streetID);
-        std::cout << "Destination " << streetName<<" reached !"<<std::endl;
+    streetInfo lastStreetInformation = travelPathInfo[numberOfStreets-1];
+    streetID = getStreetSegmentInfo(route[route.size() - 1]).streetID;
+    streetName = getStreetName(streetID);
+    //print the last street
+    std::cout << "Travel along " << lastStreetInformation.streetName << "for "
+            << lastStreetInformation.distance << " m," << " around "
+            << lastStreetInformation.travelTime << " s" << std::endl << "Destination "
+            << streetName << " reached !" << std::endl;
+
+    
+    
                 
 }
 
@@ -2039,8 +2067,12 @@ double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
     double a=findDistanceBetweenTwoPoints(std::make_pair(B,C));
     double b=findDistanceBetweenTwoPoints(std::make_pair(C,A));
     double c=findDistanceBetweenTwoPoints(std::make_pair(A,B));
-    
-    double angle = acos((c*c+a*a-b*b)/(2*c*a))/kDegreeToRadian;
+    //check if it is a valid angle, avoid straight path without turn
+    if(a==0||b==0||c==0){
+        return 0;
+    }
+    //turn angle
+    double angle = acos((c*c+a*a-b*b)/(2*abs(c*a)))/kDegreeToRadian;
     
     return angle;
 }
