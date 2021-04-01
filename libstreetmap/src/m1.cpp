@@ -955,7 +955,8 @@ IntersectionIdx findClosestIntersection(LatLon my_position){
     IntersectionIdx closestIntersection_id = -1;
     double distance=2*M_PI*kEarthRadiusInMeters;
     
-    for(int i = 0; i < getNumIntersections(); i++) {
+    int numOfIntersections = cities[currentCityIdx]-> intersection -> intersectionInfo.size();
+    for(int i = 0; i < numOfIntersections; i++) {
         std::pair <LatLon, LatLon> points (my_position, getIntersectionPosition(i));
         
         if(findDistanceBetweenTwoPoints(points) < distance){

@@ -24,7 +24,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">4</property>
             <property name="width">2</property>
           </packing>
         </child>
@@ -37,7 +37,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">5</property>
             <property name="width">2</property>
           </packing>
         </child>
@@ -411,10 +411,13 @@
             <child>
               <placeholder/>
             </child>
+            <child>
+              <placeholder/>
+            </child>
           </object>
           <packing>
             <property name="left_attach">2</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">4</property>
           </packing>
         </child>
         <child>
@@ -426,21 +429,23 @@
           </object>
           <packing>
             <property name="left_attach">2</property>
-            <property name="top_attach">1</property>
+            <property name="top_attach">2</property>
           </packing>
         </child>
         <child>
           <object class="GtkEntry" id="TextInput">
+            <property name="name">TextInput</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">1</property>
+            <property name="top_attach">2</property>
           </packing>
         </child>
         <child>
           <object class="GtkComboBoxText" id="PossibleLocation">
+            <property name="name">PossibleLocation</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="active_id">start</property>
@@ -450,7 +455,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">2</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
         <child>
@@ -464,20 +469,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkEntry" id="TextInput2">
-            <property name="name">TextInput2</property>
-            <property name="visible">True</property>
-            <property name="sensitive">False</property>
-            <property name="can_focus">True</property>
-            <property name="text" translatable="yes">Toggle the switch to change to find path mode</property>
-          </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
         <child>
@@ -512,6 +504,35 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="TextInput2">
+            <property name="name">TextInput2</property>
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can_focus">True</property>
+            <property name="text" translatable="yes">Toggle the switch to change to find path mode</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="PossibleLocation2">
+            <property name="name">PossibleLocation2</property>
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can_focus">False</property>
+            <property name="active_id">start</property>
+            <items>
+              <item id="start" translatable="yes">Choose Desired Location</item>
+            </items>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
             <property name="top_attach">1</property>
           </packing>
         </child>

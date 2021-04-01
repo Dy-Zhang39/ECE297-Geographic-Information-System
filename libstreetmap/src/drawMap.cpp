@@ -217,15 +217,21 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     g_signal_connect(sw, "state-set", G_CALLBACK(toggleSwitch), application);
     
     GObject *textEntry = application->get_object("TextInput");
+    GObject *secondTextEntry = application->get_object("TextInput2");
     g_signal_connect(textEntry, "activate", G_CALLBACK(textEntryPressedEnter), application);
+    g_signal_connect(secondTextEntry, "activate", G_CALLBACK(textEntryPressedEnter), application);
+    
     g_signal_connect(textEntry, "changed", G_CALLBACK(textEntryChanges), application);
+    g_signal_connect(secondTextEntry, "changed", G_CALLBACK(textEntryChanges), application);
     
     GtkComboBoxText *mapBar = (GtkComboBoxText*) application->get_object("MapBar");
     importNameToTheBar(mapBar);
     g_signal_connect (mapBar, "changed", G_CALLBACK(changeMap), application);
 
     GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+    GtkComboBoxText *secondPossibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation2");
     g_signal_connect (possibleLocationBar, "changed", G_CALLBACK(possibleLocationIsChosen), application);
+    g_signal_connect (secondPossibleLocationBar, "changed", G_CALLBACK(possibleLocationIsChosen), application);
     
     //POI related buttons
     GObject *allPOI = application->get_object("allPOIBtn");
@@ -285,20 +291,22 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
 void setFromBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-
-    for (IntersectionIdx i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); i++) {
-        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
-            fromPath = i;
-            break;
-        }
+    
+    //set the highlight intersection for from
+    if (previousHighlight.size() == 1){
+        fromPath = previousHighlight[0];
+    }else{
+        application->update_message("Multiple intersections are selected, please choose one of them");
     }
 
     // Display from to points
     std::string fromName = "";
     std::string toName = "";
     
-    if (fromPath > 0 && fromPath < getNumIntersections()) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
-    if (toPath > 0 && toPath < getNumIntersections()) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
+    int numOfIntersections = cities[currentCityIdx] -> intersection -> intersectionInfo.size();
+    
+    if (fromPath > 0 && fromPath < numOfIntersections) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
+    if (toPath > 0 && toPath < numOfIntersections) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
 
     std::string output = "From: " + fromName + ",  To: " + toName;
     application->update_message(output);
@@ -307,19 +315,21 @@ void setFromBtnClicked(GtkWidget *, gpointer data){
 void setToBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
 
-    for (IntersectionIdx i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); i++) {
-        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
-            toPath = i;
-            break;
-        }
+    //set the highlight intersection for destination
+    if (previousHighlight.size() == 1){
+        toPath = previousHighlight[0];
+    }else{
+        application->update_message("Multiple intersections are selected, please choose one of them");
     }
 
     // Display from to points
     std::string fromName = "";
     std::string toName = "";
     
-    if (fromPath > 0 && fromPath < getNumIntersections()) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
-    if (toPath > 0 && toPath < getNumIntersections()) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
+    int numOfIntersections = cities[currentCityIdx] -> intersection -> intersectionInfo.size();
+    
+    if (fromPath > 0 && fromPath < numOfIntersections) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
+    if (toPath > 0 && toPath < numOfIntersections) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
 
     std::string output = "From: " + fromName + ",  To: " + toName;
     application->update_message(output);
@@ -366,12 +376,24 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
 }
 
 gboolean toggleSwitch (GtkWidget * sw, gboolean state, gpointer data){
+    
+    auto application = static_cast<ezgl::application *>(data);
+    GtkButton* search = (GtkButton* ) application->get_object("SearchButton");
+    GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput2");
+    GtkComboBox* dropDown = (GtkComboBox *) application ->get_object("PossibleLocation2");
     gtk_switch_set_state ((GtkSwitch *) sw, state);
+    
     if (state == TRUE){
-        std::cout << "In Find Path Mode"<< std::endl;
+        gtk_widget_set_sensitive((GtkWidget *) textEntry, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) dropDown, TRUE);
+        gtk_button_set_label (search, "Find Path");
+        application->update_message("Change to Path Finding Mode");
         
     }else{
-        std::cout << "In Search Mode" << std::endl;
+        gtk_widget_set_sensitive((GtkWidget *) textEntry, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) dropDown, FALSE);
+        gtk_button_set_label (search, "Search");
+        application->update_message("Change to Searching Mode");
     }
     return TRUE;
 }
@@ -549,13 +571,25 @@ gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
 }
 
 //zoom in to the intersection when user choose a location from the bar
-gboolean possibleLocationIsChosen(GtkWidget*, gpointer data){
+gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     
     auto application = static_cast<ezgl::application *>(data);
     std::string main_canvas_id = application->get_main_canvas_id();
     auto canvas = application->get_canvas(main_canvas_id);
-    GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
     
+    std::string widgetName = gtk_widget_get_name (widget);
+    GtkComboBoxText *possibleLocationBar = NULL;
+    
+    if (widgetName == "PossibleLocation"){
+        possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+    }else if(widgetName == "PossibleLocation2"){
+        possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation2");
+    }
+    
+    if (possibleLocationBar == NULL){
+        std::cout << "The widget pointer is still NULL in possibleLocationIsChosen()" << std::endl;
+        exit (EXIT_FAILURE);
+    }
     
     if (gtk_combo_box_text_get_active_text(possibleLocationBar) == NULL){
         return TRUE;
@@ -597,10 +631,25 @@ gboolean possibleLocationIsChosen(GtkWidget*, gpointer data){
 }
 
 //put the possible location in the drop down bar
-gboolean textEntryChanges(GtkWidget *, gpointer data){
+gboolean textEntryChanges(GtkWidget * widget, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-    GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
-    GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
+    std::string widgetName = gtk_widget_get_name (widget);
+    GtkComboBoxText *possibleLocationBar = NULL;
+    GtkEntry* textEntry = NULL;
+    
+    
+    if (widgetName == "TextInput"){
+        possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+        textEntry = (GtkEntry *) application ->get_object("TextInput");
+    }else if(widgetName == "TextInput2"){
+        possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation2");
+        textEntry = (GtkEntry *) application ->get_object("TextInput2");
+    }
+    
+    if (possibleLocationBar == NULL || textEntry == NULL){
+        std::cout << "The widget pointer is still NULL in textEntryChanges()" << std::endl;
+        exit (EXIT_FAILURE);
+    }
     
     possibleLocations.clear();
     gtk_combo_box_text_remove_all(possibleLocationBar);
@@ -693,7 +742,7 @@ std::vector<IntersectionIdx> findAllPossibleIntersections (std::vector<StreetIdx
     return possibleIntersections;
 }
 //change the map when the user switch to a different map
-gboolean changeMap(GtkWidget *, gpointer data){
+gboolean changeMap(GtkWidget * widget, gpointer data){
     
     auto application = static_cast<ezgl::application *>(data);
     GtkComboBoxText * mapBar = (GtkComboBoxText*) application->get_object("MapBar");
@@ -702,6 +751,7 @@ gboolean changeMap(GtkWidget *, gpointer data){
     
     std::string newMapPath = convertNameToPath(map);
     
+    clearRouteBtnClicked(widget, data);
     //does not change the map if the user is choose the current map
     if (newMapPath == cities[currentCityIdx] -> mapPath){
         return true;

@@ -21,6 +21,7 @@ gboolean changeMap(GtkWidget *, gpointer data);
 //zoom in to the intersection when user choose a location from the bar
 gboolean possibleLocationIsChosen(GtkWidget*, gpointer data);
 
+
 //callback function for POI selection buttons
 gboolean toggleAllPOI(GtkWidget *, gpointer data);
 gboolean toggleEducationPOI(GtkWidget *, gpointer data);
