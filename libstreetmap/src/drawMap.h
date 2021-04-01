@@ -87,5 +87,8 @@ void drawMainCanvas (ezgl::renderer *g);
 
 //add all the element in a vector to another vector
 void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<IntersectionIdx>& from);
+
+//helper function when search button is pressed during the searching mode
+void singleSearchMode(GtkEntry * entry, gpointer data);
 #endif /* DRAWMAP_H */
 

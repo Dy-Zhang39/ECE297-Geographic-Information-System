@@ -566,7 +566,8 @@ gboolean toggleHidePOI(GtkWidget *, gpointer data){
 //Search when user press the enter in the text field
 gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
     
-    return searchButtonIsClicked(widget, data);
+    singleSearchMode((GtkEntry *)widget, data);
+    return true;
     
 }
 
@@ -625,6 +626,9 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     cities[currentCityIdx] -> intersection -> intersectionInfo[locationIdx].isHighlight = true;
     previousHighlight.push_back(locationIdx);
     
+    if (widgetName = "PossibleLocation"){
+        toPath = locationIdx;
+    }
     
     std::string nameByCommas;
     
@@ -840,11 +844,28 @@ std::string convertNameToPath(std::string name){
 gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
     
+    
+    GtkSwitch* sw = (GtkSwitch *) application->get_object("SwitchBetweenSearchAndFindPath");
+    
+    bool mode =  gtk_switch_get_state (sw);
+    
+    if (mode == false){
+        GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
+        singleSearchMode(textEntry, data);
+    }else{
+        std::cout << "search button is pressed during path finding mode" <<std::endl;
+    }
+    return true;
+}
+
+void singleSearchMode(GtkEntry * textEntry, gpointer data){
+    
+    auto application = static_cast<ezgl::application *>(data);
+    
     std::string main_canvas_id = application->get_main_canvas_id();
     auto canvas = application->get_canvas(main_canvas_id);
     
-    GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
-    
+
     std::string text = gtk_entry_get_text(textEntry);
     clearHighlightIntersection();
     mostSimilarFirstName.clear();            //make sure number of element is not more than 2
@@ -860,7 +881,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     //make sure user enter two streets name
     if (firstStreet.size() == 0 || secondStreet.size() == 0){
         application ->update_message("You need to enter two streets separated by the commas");
-        return TRUE;
+        return;
     }
     
     std::vector<StreetIdx> partialResultFirst = findStreetIdsFromPartialStreetName(firstStreet);
@@ -933,9 +954,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     
     application->update_message(output);
     application->refresh_drawing();
-    return true;
 }
-
 //add all the element in a vector to another vector
 void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<IntersectionIdx>& from){
     for (auto it = from.begin(); it != from.end(); it++){
