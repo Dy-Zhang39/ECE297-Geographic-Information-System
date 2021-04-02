@@ -70,8 +70,19 @@ extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
 
-IntersectionIdx fromPath;
-IntersectionIdx toPath;
+
+//vector that store the street name and it travel time and distance
+struct streetInfo{
+    std::string streetName;
+    double distance;
+    double travelTime;
+    double angle;
+};
+
+
+IntersectionIdx fromPath = -1;
+IntersectionIdx toPath = -1;
+
 std::vector <StreetSegmentIdx> pathRoute;
 std::vector <StreetSegmentIdx> exploredPath;
 void searchPathBtnClicked(GtkWidget *, gpointer data);
@@ -81,7 +92,8 @@ void clearRouteBtnClicked(GtkWidget *, gpointer data);
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
-
+void displayTravelInfo(std::vector<StreetSegmentIdx> route);
+double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to);
 
 void drawMap(){
 
@@ -159,13 +171,13 @@ void drawMainCanvas (ezgl::renderer *g){
 
     drawFeature(g, world);
     std::clock_t featureEnd = clock();
-    
+
     drawStreet(g, world);
     std::clock_t streetEnd = clock();
     
     displayPOI(g);
     std::clock_t poiEnd = clock();
-    
+   
     displayHighlightedIntersection(g);
     std::clock_t highlighIntersectionEnd = clock();
     
@@ -186,13 +198,23 @@ void drawMainCanvas (ezgl::renderer *g){
     
     double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
     std::cout<<"total time" << totalTime << "\n";
-    
+
     if (pathRoute.size() > 0) {
         for (int i = 0; i < exploredPath.size(); i ++) {
             drawSegment(g, g->get_visible_world(), ezgl::BLUE, exploredPath[i]);
         }
+        displayTravelInfo(pathRoute);
         drawRoute(g, g->get_visible_world(), pathRoute);
     }
+//=======
+//    
+//   
+//    for (int i = 0; i < exploredPath.size(); i ++) {
+//        drawSegment(g, g->get_visible_world(), ezgl::BLUE, exploredPath[i]);
+//    }
+//    drawRoute(g, g->get_visible_world(), pathRoute);
+//>>>>>>> f86bcb57b2758051ea13ae8a66fb210b861c7af4
+    
 }
 
 
@@ -322,6 +344,7 @@ void displayStartAndDestination(ezgl::application * application){
 
     std::string output = "From: " + fromName + ",  To: " + toName;
     application->update_message(output);
+    application->refresh_drawing();
 }
 
 void setToBtnClicked(GtkWidget *, gpointer data){
@@ -342,13 +365,14 @@ void setToBtnClicked(GtkWidget *, gpointer data){
 
 void searchPathBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-    
+
     std::string main_canvas_id = application->get_main_canvas_id();
     auto canvas = application->get_canvas(main_canvas_id);
     /*GtkEntry* pathFromEntry = (GtkEntry *) application ->get_object("pathFromInput");
     fromPath = std::stoi(gtk_entry_get_text(pathFromEntry));
     GtkEntry* pathToEntry = (GtkEntry *) application ->get_object("pathToInput");
     toPath = std::stoi(gtk_entry_get_text(pathToEntry));*/
+
     clearHighlightIntersection();
     if (toPath >= 0 && fromPath >= 0) {
         std::clock_t start = clock();
@@ -367,7 +391,8 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
             routeIntersections.push_back(intIdx);
 
         }
-
+        routeIntersections.push_back(fromPath);
+        routeIntersections.push_back(toPath);
         if (routeIntersections.size() != 0){
             //zoom the screen to the path
             ezgl::rectangle newWorld = getZoomLevelToIntersections(routeIntersections);
@@ -1533,11 +1558,6 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     std::string featureName = getFeatureName(id); 
     FeatureType featureType = getFeatureType(id);
     
-    if(id==6){
-            std::cout<<x<<" "<<y<<std::endl;
-            
-     }
-    
     for (int pt = 1; pt < getNumFeaturePoints(id); pt++){
         double x1, y1;
         x1 = xFromLon(getFeaturePoint(id, pt).longitude());
@@ -2026,13 +2046,16 @@ void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegme
     for (int i = 0; i < route.size(); i++) {
         drawSegment(g, world, ezgl::RED, route[i]);
     }
-    
 
-    //display from/destination icon
-    iconSurface = g->load_png("./libstreetmap/resources/images/start_pin.png");
-    drawIcon(g, world, iconSurface, fromPath);
     iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
     drawIcon(g, world, iconSurface, toPath);
+    
+    //displayIntersectionPopup(g, world, toPath);
+    //displayIntersectionPopup(g, world, fromPath);
+    //display from/ to icon
+
+    iconSurface = g->load_png("./libstreetmap/resources/images/start_pin.png");
+    drawIcon(g, world, iconSurface, fromPath);
 
 }
 
@@ -2049,11 +2072,13 @@ void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, Intersec
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, IntersectionIdx location) {
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
-    
-    double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
-    double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
-    LatLon locationLatLon = getIntersectionPosition(location);
-    g->draw_surface(iconSurface, {xFromLon(locationLatLon.longitude()) - surfaceWidth / 2 , yFromLat(locationLatLon.latitude()) + surfaceHeight} );
+    if (location >= 0 && location < getNumIntersections()){
+        double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
+        double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
+        LatLon locationLatLon = getIntersectionPosition(location);
+        g->draw_surface(iconSurface, {xFromLon(locationLatLon.longitude()) - surfaceWidth / 2 , yFromLat(locationLatLon.latitude()) + surfaceHeight} );
+
+    }
 }
 
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID) {
@@ -2074,4 +2099,128 @@ void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor,
     }
 }
 
+void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
+    //the vector that store the travel street information
+    std::vector<streetInfo> travelPathInfo;
 
+    travelPathInfo.clear();
+
+    double distance = 0;
+    double travelTime = 0;
+    int streetID = getStreetSegmentInfo(route[0]).streetID;
+    std::string streetName;
+    std::string previousStreetName = getStreetName(streetID);
+
+    int numberOfStreets = 0;
+
+    streetInfo street;
+
+    IntersectionIdx from=0;
+    IntersectionIdx mid=0;
+    IntersectionIdx to=0;
+    double angle=0;
+    
+    //check through the route found previously, and collect street name, street distance 
+    //and travel time for a street
+    for (int segIdIndex = 0; segIdIndex < route.size(); segIdIndex++) {
+        
+        //find the start street name
+        streetID = getStreetSegmentInfo(route[segIdIndex]).streetID;
+        streetName = getStreetName(streetID);
+        //find the total distance on the same street
+        distance += findStreetSegmentLength(route[segIdIndex]);
+        //calculate the total distance travel in the same street
+        travelTime += findStreetSegmentTravelTime(route[segIdIndex]);
+        //if street change or reach the destination update the street
+        if (streetName != previousStreetName) {
+            //track the turn point, before and after turn point
+            if (segIdIndex > 0) {
+                from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
+                mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
+                to = getStreetSegmentInfo(route[segIdIndex]).to;
+            }
+            //subtract the newly street  distance and travel time
+            distance = distance - findStreetSegmentLength(route[segIdIndex]);
+            //calculate the total distance travel in the same street
+            travelTime = travelTime - findStreetSegmentTravelTime(route[segIdIndex]);
+            //calculate the turn angle
+            angle = turnAngle(from, mid, to);
+            street.angle = angle;
+            //update the street info and store in the vector
+            street.distance = distance;
+            street.streetName = previousStreetName;
+            street.travelTime = travelTime;
+
+            travelPathInfo.push_back(street);
+            //track the total number of street traveled
+            numberOfStreets++;
+            //reset for new street distance and travel time
+            distance = findStreetSegmentLength(route[segIdIndex]);
+            travelTime = findStreetSegmentTravelTime(route[segIdIndex]);
+
+        }
+
+        if (segIdIndex == (route.size() - 1)) {// reach the last street segment
+            if (segIdIndex > 0) {
+                from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
+                mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
+                to = getStreetSegmentInfo(route[segIdIndex]).to;
+            }
+
+            street.angle = 0;
+            //update the street info and store in the vector
+            street.distance = distance;
+            street.streetName = streetName;
+            street.travelTime = travelTime;
+
+            travelPathInfo.push_back(street);
+            //track the total number of street traveled
+            numberOfStreets++;
+        }
+        //update the street change
+        previousStreetName = streetName;
+
+    }
+    streetInfo streetInformation;
+    //print the street travel instruction
+    for (int i = 0; i < numberOfStreets-1; i++) {
+        streetInformation = travelPathInfo[i];
+
+        std::cout << "Travel along " << streetInformation.streetName << "for "
+                << streetInformation.distance << " m," << " around "
+                << streetInformation.travelTime << " s" << " the turn angle is: " << streetInformation.angle << std::endl;
+
+    }
+    //reach the destination
+    streetInfo lastStreetInformation = travelPathInfo[numberOfStreets-1];
+    streetID = getStreetSegmentInfo(route[route.size() - 1]).streetID;
+    streetName = getStreetName(streetID);
+    //print the last street
+    std::cout << "Travel along " << lastStreetInformation.streetName << "for "
+            << lastStreetInformation.distance << " m," << " around "
+            << lastStreetInformation.travelTime << " s" << std::endl << "Destination "
+            << streetName << " reached !" << std::endl;
+
+    
+    
+                
+}
+
+double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
+    
+    LatLon A= getIntersectionPosition(from);
+    LatLon B=getIntersectionPosition(mid);
+    LatLon C=getIntersectionPosition(to);
+    
+    double a=findDistanceBetweenTwoPoints(std::make_pair(B,C));
+    double b=findDistanceBetweenTwoPoints(std::make_pair(C,A));
+    double c=findDistanceBetweenTwoPoints(std::make_pair(A,B));
+    //check if it is a valid angle, avoid straight path without turn
+    if(a==0||b==0||c==0){
+        return 0;
+    }
+    //turn angle
+    double angle = acos((c*c+a*a-b*b)/(2*abs(c*a)))/kDegreeToRadian;
+    
+    return angle;
+}
