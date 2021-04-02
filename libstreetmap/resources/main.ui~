@@ -434,6 +434,7 @@
         </child>
         <child>
           <object class="GtkEntry" id="TextInput">
+            <property name="name">TextInput</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
           </object>
@@ -444,6 +445,7 @@
         </child>
         <child>
           <object class="GtkComboBoxText" id="PossibleLocation">
+            <property name="name">PossibleLocation</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="active_id">start</property>

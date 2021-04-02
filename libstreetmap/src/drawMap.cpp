@@ -431,21 +431,33 @@ gboolean toggleSwitch (GtkWidget * sw, gboolean state, gpointer data){
     
     auto application = static_cast<ezgl::application *>(data);
     GtkButton* search = (GtkButton* ) application->get_object("SearchButton");
+    GtkButton* setFrom = (GtkButton* ) application->get_object("setFromBtn");
+    GtkButton* setTo = (GtkButton* ) application->get_object("setToBtn");
+    GtkButton* clearRoute = (GtkButton* ) application->get_object("clearRouteBtn");
     GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput2");
     GtkComboBox* dropDown = (GtkComboBox *) application ->get_object("PossibleLocation2");
+    
     gtk_switch_set_state ((GtkSwitch *) sw, state);
     
     if (state == TRUE){
         gtk_widget_set_sensitive((GtkWidget *) textEntry, TRUE);
         gtk_widget_set_sensitive((GtkWidget *) dropDown, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) setFrom, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) setTo, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) clearRoute, TRUE);
         gtk_button_set_label (search, "Find Path");
         application->update_message("Change to Path Finding Mode");
         
     }else{
+        clearRouteBtnClicked(sw, data);
         gtk_widget_set_sensitive((GtkWidget *) textEntry, FALSE);
         gtk_widget_set_sensitive((GtkWidget *) dropDown, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) setFrom, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) setTo, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) clearRoute, FALSE);
         gtk_button_set_label (search, "Search");
         application->update_message("Change to Searching Mode");
+        
     }
     return TRUE;
 }
@@ -941,7 +953,7 @@ std::string convertNameToPath(std::string name){
 }
 
 //search the intersections of two streets
-gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
+gboolean searchButtonIsClicked(GtkWidget * widget, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
     
     
@@ -953,6 +965,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
         GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
         singleSearchMode(textEntry, data);
     }else{
+        searchPathBtnClicked(widget, data);
         std::cout << "search button is pressed during path finding mode" <<std::endl;
     }
     return true;
@@ -968,6 +981,9 @@ void singleSearchMode(GtkEntry * textEntry, gpointer data){
 
     std::string text = gtk_entry_get_text(textEntry);
     clearHighlightIntersection();
+    choosingStartingPoint = false;
+    choosingDestination = false;
+    
     mostSimilarFirstName.clear();            //make sure number of element is not more than 2
     mostSimilarSecondName.clear();            //make sure number of element is not more than 2
     checkingFirstName = true;
