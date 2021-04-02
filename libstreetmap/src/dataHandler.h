@@ -12,6 +12,7 @@
 #ifndef DATAHANDLER_H
 #define DATAHANDLER_H
 
+#include "StreetsDatabaseAPI.h"
 //initialize global variables about and intersection
 void street_Intersection();
 
@@ -44,5 +45,7 @@ LatLon findMaxMin(LatLon point, LatLon current, std::string method);
 // load suway info
 void loadSubways();
 
+//overload version of findClosestIntersection() that search the closest intersection in the given list of locations
+IntersectionIdx findClosestIntersection(LatLon my_position, std::vector<IntersectionIdx> lists);
 #endif /* DATAHANDLER_H */
 
