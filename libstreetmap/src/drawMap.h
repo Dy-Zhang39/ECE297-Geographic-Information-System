@@ -102,6 +102,6 @@ void singleSearchMode(GtkEntry * entry, gpointer data);
 void displayStartAndDestination(ezgl::application * application);
 
 //convert the name separated by & to the name separated by ,
-std::string seperateNamesByCommas(std::string locationName);
+std::string separateNamesByCommas(std::string locationName);
 #endif /* DRAWMAP_H */
 

@@ -98,6 +98,7 @@ gboolean release_mouse(GtkWidget *widget, GdkEventButton *event, gpointer data)
           
           clickToHighlightClosestIntersection(positionOfClicked);
           if (choosingStartingPoint){
+              
               setFromBtnClicked(widget, data);
               displayStartAndDestination(application);
               choosingStartingPoint = false;

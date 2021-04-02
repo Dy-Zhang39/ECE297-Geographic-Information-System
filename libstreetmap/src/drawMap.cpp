@@ -323,11 +323,20 @@ void setFromBtnClicked(GtkWidget *, gpointer data){
     
     //set the highlight intersection for from
     if (previousHighlight.size() == 1){
+                
         fromPath = previousHighlight[0];
+        
+        //set the name of the the starting in the from text entry
+        GtkEntry* textEntry = (GtkEntry *) application->get_object("TextInput2");
+        std::string fromName = separateNamesByCommas(getIntersectionName(fromPath));
+        gtk_entry_set_text(textEntry, fromName.c_str());
+        
         displayStartAndDestination(application);
+        
     }else if (previousHighlight.size() > 1){
         application->update_message("Multiple intersections are selected, please choose one of them");
         choosingStartingPoint =  true;
+        
     }else {
         application->update_message("No intersection is selected");
     }
@@ -358,10 +367,18 @@ void setToBtnClicked(GtkWidget *, gpointer data){
     //set the highlight intersection for destination
     if (previousHighlight.size() == 1){
         toPath = previousHighlight[0];
+        
+        //set the name of the the starting in the destination text entry
+        GtkEntry* textEntry = (GtkEntry *) application->get_object("TextInput");
+        std::string fromName = separateNamesByCommas(getIntersectionName(toPath));
+        gtk_entry_set_text(textEntry, fromName.c_str());
+        
         displayStartAndDestination(application);
+        
     }else if (previousHighlight.size() > 1){
         application->update_message("Multiple intersections are selected, please choose one of them");
         choosingDestination = true;
+        
     }else {
         application->update_message("No intersection is selected");
     }
@@ -702,7 +719,7 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     }
     
     
-    std::string nameByCommas = seperateNamesByCommas(locationName);
+    std::string nameByCommas = separateNamesByCommas(locationName);
     canvas->get_camera().set_world(world);
     gtk_entry_set_text(textEntry, nameByCommas.c_str());    
     application->refresh_drawing();
@@ -711,7 +728,7 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     return TRUE;
 }
 
-std::string seperateNamesByCommas(std::string locationName){
+std::string separateNamesByCommas(std::string locationName){
     
     std::string nameByCommas;
     for (int idx = 0; idx < locationName.size(); idx++){
