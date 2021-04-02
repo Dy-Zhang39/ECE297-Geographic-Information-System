@@ -36,7 +36,9 @@ double GAP = 1000;
 //maximum intersections that can display on the screen
 int MAX_INTERSECTIONS_DISPLAY = 7;
 
-bool nightMode;             //Determines whether to show night mode
+bool nightMode;                     //Determines whether to show night mode
+bool choosingStartingPoint = false; //the mode that ask user to choose a starting point
+bool choosingDestination = false;    //the mode that ask user to choose a destination
 
 //global variable storing color for background, text, feature and street
 ezgl::color backgroundColor;
@@ -73,8 +75,7 @@ IntersectionIdx toPath;
 std::vector <StreetSegmentIdx> pathRoute;
 std::vector <StreetSegmentIdx> exploredPath;
 void searchPathBtnClicked(GtkWidget *, gpointer data);
-void setFromBtnClicked(GtkWidget *, gpointer data);
-void setToBtnClicked(GtkWidget *, gpointer data);
+
 void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id);
 void clearRouteBtnClicked(GtkWidget *, gpointer data);
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
@@ -292,13 +293,24 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 void setFromBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
     
+    
     //set the highlight intersection for from
     if (previousHighlight.size() == 1){
         fromPath = previousHighlight[0];
-    }else{
+        displayStartAndDestination(application);
+    }else if (previousHighlight.size() > 1){
         application->update_message("Multiple intersections are selected, please choose one of them");
+        choosingStartingPoint =  true;
+    }else {
+        application->update_message("No intersection is selected");
     }
 
+    
+}
+
+
+void displayStartAndDestination(ezgl::application * application){
+    
     // Display from to points
     std::string fromName = "";
     std::string toName = "";
@@ -318,21 +330,14 @@ void setToBtnClicked(GtkWidget *, gpointer data){
     //set the highlight intersection for destination
     if (previousHighlight.size() == 1){
         toPath = previousHighlight[0];
-    }else{
+        displayStartAndDestination(application);
+    }else if (previousHighlight.size() > 1){
         application->update_message("Multiple intersections are selected, please choose one of them");
+        choosingDestination = true;
+    }else {
+        application->update_message("No intersection is selected");
     }
 
-    // Display from to points
-    std::string fromName = "";
-    std::string toName = "";
-    
-    int numOfIntersections = cities[currentCityIdx] -> intersection -> intersectionInfo.size();
-    
-    if (fromPath > 0 && fromPath < numOfIntersections) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
-    if (toPath > 0 && toPath < numOfIntersections) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
-
-    std::string output = "From: " + fromName + ",  To: " + toName;
-    application->update_message(output);
 }
 
 void searchPathBtnClicked(GtkWidget *, gpointer data){
@@ -566,7 +571,28 @@ gboolean toggleHidePOI(GtkWidget *, gpointer data){
 //Search when user press the enter in the text field
 gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
     
-    singleSearchMode((GtkEntry *)widget, data);
+    auto application = static_cast<ezgl::application *>(data);
+    GtkSwitch* sw = (GtkSwitch *) application ->get_object("SwitchBetweenSearchAndFindPath");
+    bool mode = gtk_switch_get_state(sw);
+    
+    if(mode == false){
+        singleSearchMode((GtkEntry *)widget, data);
+    }else{
+        
+        std::string widgetName = gtk_widget_get_name (widget);
+        singleSearchMode((GtkEntry *)widget, data);
+        
+        if (widgetName == "TextInput2"){
+            setFromBtnClicked(widget, data);
+        }else if (widgetName == "TextInput"){
+            setToBtnClicked(widget, data);
+        }else{
+            std::cout << "The widget name is not text entry in textEntryPressedEnter()" << std::endl;
+            exit (EXIT_FAILURE);
+        }
+        
+    }
+    
     return true;
     
 }
@@ -626,9 +652,25 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     cities[currentCityIdx] -> intersection -> intersectionInfo[locationIdx].isHighlight = true;
     previousHighlight.push_back(locationIdx);
     
-    if (widgetName = "PossibleLocation"){
-        toPath = locationIdx;
+    
+    GtkSwitch* sw = (GtkSwitch *) application ->get_object("SwitchBetweenSearchAndFindPath");
+    bool mode = gtk_switch_get_state(sw);
+    
+    if (mode == true){
+        if (widgetName == "PossibleLocation"){
+            toPath = locationIdx;        
+        }else if (widgetName == "PossibleLocation2"){
+            fromPath = locationIdx;
+        }else{
+            std::cout << "The widget name is not the name for the text entry in possibleLocationIsChosen()." << std::endl;
+            exit (EXIT_FAILURE);
+        }
+        
+        displayStartAndDestination(application);
+    }else{
+        application->update_message(locationName);
     }
+    
     
     std::string nameByCommas;
     
@@ -643,8 +685,7 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     }
     
     canvas->get_camera().set_world(world);
-    gtk_entry_set_text(textEntry, nameByCommas.c_str());
-    application->update_message(locationName);
+    gtk_entry_set_text(textEntry, nameByCommas.c_str());    
     application->refresh_drawing();
     
     
@@ -1073,12 +1114,19 @@ void actOnMouseClick(ezgl::application* , GdkEventButton* event, double x, doubl
     if (event ->button == 1){
            
         positionOfClicked = LatLon(latFromY(y), lonFromX(x));
-    }    
+        
+    }
+    
 }
 
 //mouse click to highlight the closest intersection
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
-    IntersectionIdx id = findClosestIntersection(pos);
+    IntersectionIdx id;
+    if (choosingStartingPoint || choosingDestination){
+        id = findClosestIntersection(pos, previousHighlight);
+    }else{
+        id = findClosestIntersection(pos);
+    }
     
     if (previousHighlight.size() == 1 && previousHighlight[0] == id){
         
@@ -1089,7 +1137,7 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
         
         clearHighlightIntersection();
         cities[currentCityIdx] -> intersection -> intersectionInfo[id].isHighlight = true;
-        previousHighlight.push_back(id);
+        previousHighlight.push_back(id);        
     }
     
     

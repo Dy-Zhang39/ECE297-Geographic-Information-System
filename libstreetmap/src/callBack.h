@@ -15,6 +15,7 @@ gboolean textEntryPressedEnter(GtkWidget *, gpointer data);
 //call back for text entry change
 gboolean textEntryChanges(GtkWidget *, gpointer data);
 
+
 //change the map when user switch to different Map
 gboolean changeMap(GtkWidget *, gpointer data);
 
@@ -46,5 +47,8 @@ gboolean toggleSwitch (GtkWidget *, gboolean state, gpointer data);
 
 void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
+
+void setFromBtnClicked(GtkWidget *, gpointer data);
+void setToBtnClicked(GtkWidget *, gpointer data);
 #endif /* CALLBACK_H */
 

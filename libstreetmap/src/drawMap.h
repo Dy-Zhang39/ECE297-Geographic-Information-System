@@ -90,5 +90,8 @@ void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<Inte
 
 //helper function when search button is pressed during the searching mode
 void singleSearchMode(GtkEntry * entry, gpointer data);
+
+//display starting point and destination point in the canvas
+void displayStartAndDestination(ezgl::application * application);
 #endif /* DRAWMAP_H */
 
