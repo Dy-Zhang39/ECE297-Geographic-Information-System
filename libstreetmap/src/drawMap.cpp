@@ -790,7 +790,7 @@ std::pair <std::string, std::string> getStreetNames(std::string text){
     
     
     //split the input into two street name
-    for (auto iterator = text.begin(); iterator != text.end(); iterator++){
+    for (auto iterator = text.begin(); iterator != text.end(); ){
         
         if (!firstFinished){
             
@@ -804,10 +804,17 @@ std::pair <std::string, std::string> getStreetNames(std::string text){
             
         }else{
             
-            if (*iterator != ' '){
+            if (*iterator != ' ' && *iterator != ','){
                 
                 secondStreet.push_back(tolower(*iterator));
+            }else if (*iterator == ','){
+                
+                iterator = text.end();
             }    
+        }
+        
+        if (iterator != text.end()){
+            iterator++;
         }
     }
     
