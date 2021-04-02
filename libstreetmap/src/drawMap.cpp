@@ -22,7 +22,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-
+#include <sstream>
 
 double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
@@ -72,10 +72,15 @@ extern bool checkingFirstName;
 //vector that store the street name and it travel time and distance
 struct streetInfo{
     std::string streetName;
+    std::string turn;
     double distance;
     double travelTime;
     double angle;
+    
 };
+
+    //the vector that store the travel street information
+    std::vector<streetInfo> travelPathInfo;
 
 
 IntersectionIdx fromPath = -1;
@@ -92,7 +97,7 @@ void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor,
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
 void displayTravelInfo(std::vector<StreetSegmentIdx> route);
-double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to);
+
 
 void drawMap(){
 
@@ -717,7 +722,9 @@ gboolean changeMap(GtkWidget *, gpointer data){
     if (newMapPath == cities[currentCityIdx] -> mapPath){
         return true;
     }
-
+    //the vector that store the travel street information
+    travelPathInfo.clear();
+    
     closeDataBase();
     bool loadSucessfully = loadMap(newMapPath);
     if(!loadSucessfully){
@@ -1500,7 +1507,8 @@ void displayHighlightedIntersection(ezgl::renderer *g) {
     
     for (size_t i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); ++i) {
         //get x,y position of the intersection
-        float x = xFromLon(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.longitude());
+        float x = xFromLon(cities[currentCityIdx] -> 
+        intersection -> intersectionInfo[i].position.longitude());
         float y = yFromLat(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.latitude());
         
         if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
@@ -1952,30 +1960,22 @@ void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor,
 }
 
 void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
-    //the vector that store the travel street information
-    std::vector<streetInfo> travelPathInfo;
-
     travelPathInfo.clear();
-
     double distance = 0;
     double travelTime = 0;
+    double angle = 0;
+    int numberOfStreets = 0;
     int streetID = getStreetSegmentInfo(route[0]).streetID;
     std::string streetName;
     std::string previousStreetName = getStreetName(streetID);
-
-    int numberOfStreets = 0;
-
     streetInfo street;
+    IntersectionIdx from = 0;
+    IntersectionIdx mid = 0;
+    IntersectionIdx to = 0;
 
-    IntersectionIdx from=0;
-    IntersectionIdx mid=0;
-    IntersectionIdx to=0;
-    double angle=0;
-    
     //check through the route found previously, and collect street name, street distance 
     //and travel time for a street
     for (int segIdIndex = 0; segIdIndex < route.size(); segIdIndex++) {
-        
         //find the start street name
         streetID = getStreetSegmentInfo(route[segIdIndex]).streetID;
         streetName = getStreetName(streetID);
@@ -1990,6 +1990,13 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
                 from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
                 mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
                 to = getStreetSegmentInfo(route[segIdIndex]).to;
+                //check if it is right or left turn
+                if (crossProduct(from, mid, to) > 0) {
+                    street.turn = "left";
+                } else {
+                    street.turn = "right";
+                }
+
             }
             //subtract the newly street  distance and travel time
             distance = distance - findStreetSegmentLength(route[segIdIndex]);
@@ -2024,7 +2031,6 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             street.distance = distance;
             street.streetName = streetName;
             street.travelTime = travelTime;
-
             travelPathInfo.push_back(street);
             //track the total number of street traveled
             numberOfStreets++;
@@ -2038,9 +2044,15 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
     for (int i = 0; i < numberOfStreets-1; i++) {
         streetInformation = travelPathInfo[i];
 
-        std::cout << "Travel along " << streetInformation.streetName << "for "
+//        std::cout << "Travel along " << streetInformation.streetName << " for "
+//                << streetInformation.distance << " m," << " around "
+//                << streetInformation.travelTime << " s" << " then turn "<<streetInformation.turn<<" the turn angle is: " 
+//                << streetInformation.angle << std::endl;
+        std::stringstream information;
+                information << "Travel along " << streetInformation.streetName << " for "
                 << streetInformation.distance << " m," << " around "
-                << streetInformation.travelTime << " s" << " the turn angle is: " << streetInformation.angle << std::endl;
+                << streetInformation.travelTime << " s" << " then turn "<<streetInformation.turn<<" the turn angle is: " 
+                << streetInformation.angle << std::endl;
 
     }
     //reach the destination
@@ -2052,14 +2064,10 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             << lastStreetInformation.distance << " m," << " around "
             << lastStreetInformation.travelTime << " s" << std::endl << "Destination "
             << streetName << " reached !" << std::endl;
-
-    
-    
-                
 }
 
 double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
-    
+    //triangle with points A,B,C
     LatLon A= getIntersectionPosition(from);
     LatLon B=getIntersectionPosition(mid);
     LatLon C=getIntersectionPosition(to);
@@ -2075,4 +2083,34 @@ double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
     double angle = acos((c*c+a*a-b*b)/(2*abs(c*a)))/kDegreeToRadian;
     
     return angle;
+}
+
+struct vector;
+
+double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
+    LatLon A= getIntersectionPosition(from);
+    LatLon B=getIntersectionPosition(mid);
+    LatLon C=getIntersectionPosition(to);
+    double x1,x2,x3,y1,y2,y3;
+    x1=xFromLon(A.longitude());
+    y1=yFromLat(A.latitude());
+    x2=xFromLon(B.longitude());
+    y2=yFromLat(B.latitude());
+    x3=xFromLon(C.longitude());
+    y3=yFromLat(C.latitude());
+    //vector BA, from point B to A;Vector BC from B to C
+    //vector BA<BAi,BAj,BAk>
+    double BAi,BAj;
+    BAi=x1-x2;
+    BAj=y1-y2;
+
+    
+    double BCi,BCj;
+    BCi=x3-x2;
+    BCj=y3-y2;
+
+    //BC cross BA result only in k direction
+    double k= BCi*BAj-BCj*BAi;
+    
+    return k;
 }

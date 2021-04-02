@@ -87,5 +87,11 @@ void drawMainCanvas (ezgl::renderer *g);
 
 //add all the element in a vector to another vector
 void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<IntersectionIdx>& from);
+
+//calculate the turn angle
+double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to);
+
+//find the turn direction using cross product
+double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to);
 #endif /* DRAWMAP_H */
 
