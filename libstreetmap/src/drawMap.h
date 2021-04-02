@@ -100,5 +100,8 @@ void singleSearchMode(GtkEntry * entry, gpointer data);
 
 //display starting point and destination point in the canvas
 void displayStartAndDestination(ezgl::application * application);
+
+//convert the name separated by & to the name separated by ,
+std::string seperateNamesByCommas(std::string locationName);
 #endif /* DRAWMAP_H */
 

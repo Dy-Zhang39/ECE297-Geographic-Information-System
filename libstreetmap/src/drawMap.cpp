@@ -702,9 +702,18 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     }
     
     
-    std::string nameByCommas;
+    std::string nameByCommas = seperateNamesByCommas(locationName);
+    canvas->get_camera().set_world(world);
+    gtk_entry_set_text(textEntry, nameByCommas.c_str());    
+    application->refresh_drawing();
     
-    //change the location name to the name separated by commas
+    
+    return TRUE;
+}
+
+std::string seperateNamesByCommas(std::string locationName){
+    
+    std::string nameByCommas;
     for (int idx = 0; idx < locationName.size(); idx++){
         
         if (idx != locationName.size() - 1 && locationName[idx] == ' ' && locationName[idx + 1] == '&'){
@@ -714,14 +723,8 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
         }
     }
     
-    canvas->get_camera().set_world(world);
-    gtk_entry_set_text(textEntry, nameByCommas.c_str());    
-    application->refresh_drawing();
-    
-    
-    return TRUE;
+    return nameByCommas;
 }
-
 //put the possible location in the drop down bar
 gboolean textEntryChanges(GtkWidget * widget, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
