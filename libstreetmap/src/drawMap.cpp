@@ -327,6 +327,7 @@ void setFromOrDestination(ezgl::application *  application, bool isDestination){
     //set the highlight intersection for from
     if (previousHighlight.size() == 1) {
         
+        pathRoute.clear();
         if (!isDestination){
             fromPath = previousHighlight[0];
             
@@ -344,6 +345,7 @@ void setFromOrDestination(ezgl::application *  application, bool isDestination){
     } else if (previousHighlight.size() > 1) {
         application->update_message("Multiple intersections are selected, please choose one of them");
         
+        pathRoute.clear();
         if (!isDestination){
             choosingStartingPoint = true;
         }else{
@@ -402,17 +404,24 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
     
         std::clock_t end = clock();
         std::vector<IntersectionIdx> routeIntersections;
- 
+        
+        //display no route is found
+        if (pathRoute.size() == 0){
+            application -> update_message("No path is found");
+            return;
+        }
+        
         //draw the found route
         for (int i = 0; i < pathRoute.size(); i++) {
             
             //store all the intersections of the route
-            IntersectionIdx intIdx = getStreetSegmentInfo(pathRoute[i]).from;
-            routeIntersections.push_back(intIdx);
+            IntersectionIdx fromIdx = getStreetSegmentInfo(pathRoute[i]).from;
+            IntersectionIdx toIdx = getStreetSegmentInfo(pathRoute[i]).to;
+            routeIntersections.push_back(fromIdx);
+            routeIntersections.push_back(toIdx);
         }
         
-        routeIntersections.push_back(fromPath);
-        routeIntersections.push_back(toPath);
+        
         if (routeIntersections.size() != 0){
             //zoom the screen to the path
             ezgl::rectangle newWorld = getZoomLevelToIntersections(routeIntersections);
