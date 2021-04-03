@@ -1153,8 +1153,6 @@ ezgl::rectangle getZoomLevelToIntersections(std::vector<IntersectionIdx> commonI
         previousHighlight.push_back(commonIntersection[idx]);
 
     }
-    center.x = sum.x / commonIntersection.size();
-    center.y = sum.y / commonIntersection.size();
 
     
 
@@ -1167,7 +1165,9 @@ ezgl::rectangle getZoomLevelToIntersections(std::vector<IntersectionIdx> commonI
 
     double width = right - left;
     double height = top - bottom;
-
+    
+    center.x = (left + right) / 2;
+    center.y = (top + bottom) / 2;
     //making sure the width and height of the screen is in the world ratio
     if (width * cities[currentCityIdx]->worldRatio > height) {
 
