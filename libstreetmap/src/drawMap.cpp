@@ -230,8 +230,11 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *search = application->get_object("SearchButton");
     g_signal_connect(search, "clicked", G_CALLBACK(searchButtonIsClicked), application);
     
-    GObject *sw = application ->get_object("SwitchBetweenSearchAndFindPath");
-    g_signal_connect(sw, "state-set", G_CALLBACK(toggleSwitch), application);
+    GObject *searching = application ->get_object("SwitchBetweenSearchAndFindPath");
+    g_signal_connect(searching, "state-set", G_CALLBACK(changeSearchingMode), application);
+    
+    GObject *selecting = application ->get_object("UsingPinLocationInstead");
+    g_signal_connect(selecting, "state-set", G_CALLBACK(changeSelectingMode), application);
     
     GObject *textEntry = application->get_object("TextInput");
     GObject *secondTextEntry = application->get_object("TextInput2");
@@ -289,10 +292,6 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *snightModeBox = application->get_object("nightModeBox");
     g_signal_connect(snightModeBox, "toggled", G_CALLBACK(toggleNightMode), application);
     
-    //button to search path
-    GObject *searchPathBtn = application->get_object("searchPathBtn");
-    g_signal_connect(searchPathBtn, "clicked", G_CALLBACK(searchPathBtnClicked), application);
-    
     //button to set from intersection
     GObject *setFromBtn = application->get_object("setFromBtn");
     g_signal_connect(setFromBtn, "clicked", G_CALLBACK(setFromBtnClicked), application);
@@ -308,22 +307,57 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
 void setFromBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
+    GtkSwitch* selectingMode = (GtkSwitch *)application->get_object("UsingPinLocationInstead");
+    GtkEntry* textEntry = (GtkEntry *) application->get_object("TextInput2");
     
+    bool isPinPoint  = gtk_switch_get_state (selectingMode);
     
-    //set the highlight intersection for from
-    if (previousHighlight.size() == 1){
-        fromPath = previousHighlight[0];
-        displayStartAndDestination(application);
-    }else if (previousHighlight.size() > 1){
-        application->update_message("Multiple intersections are selected, please choose one of them");
-        choosingStartingPoint =  true;
-    }else {
-        application->update_message("No intersection is selected");
+    if(!isPinPoint){        
+        singleSearchMode(textEntry, data);        
     }
+    
+    setFromOrDestination (application, false);
 
     
+    application->refresh_drawing();
 }
 
+void setFromOrDestination(ezgl::application *  application, bool isDestination){
+    
+    GtkEntry* start = (GtkEntry*) application->get_object("TextInput2");
+    GtkEntry* destination = (GtkEntry*) application->get_object("TextInput");
+    
+    //set the highlight intersection for from
+    if (previousHighlight.size() == 1) {
+        
+        if (!isDestination){
+            fromPath = previousHighlight[0];
+            
+            //set the name of the the starting in the from text entry
+            std::string fromName = separateNamesByCommas(getIntersectionName(fromPath));
+            gtk_entry_set_text(start, fromName.c_str());
+        }else{
+            toPath = previousHighlight[0];
+            std::string toName = separateNamesByCommas(getIntersectionName(toPath));
+            gtk_entry_set_text(destination, toName.c_str());
+        }
+
+        displayStartAndDestination(application);
+
+    } else if (previousHighlight.size() > 1) {
+        application->update_message("Multiple intersections are selected, please choose one of them");
+        
+        if (!isDestination){
+            choosingStartingPoint = true;
+        }else{
+            choosingDestination = true;
+        }
+        
+
+    } else {
+        application->update_message("No intersection is selected");
+    }
+}
 
 void displayStartAndDestination(ezgl::application * application){
     
@@ -343,18 +377,17 @@ void displayStartAndDestination(ezgl::application * application){
 
 void setToBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-
-    //set the highlight intersection for destination
-    if (previousHighlight.size() == 1){
-        toPath = previousHighlight[0];
-        displayStartAndDestination(application);
-    }else if (previousHighlight.size() > 1){
-        application->update_message("Multiple intersections are selected, please choose one of them");
-        choosingDestination = true;
-    }else {
-        application->update_message("No intersection is selected");
+    GtkSwitch* selectingMode = (GtkSwitch *)application->get_object("UsingPinLocationInstead");
+    GtkEntry* textEntry = (GtkEntry *) application->get_object("TextInput");
+    
+    bool isPinPoint  = gtk_switch_get_state (selectingMode);
+    if(!isPinPoint){
+        singleSearchMode(textEntry, data);
     }
-
+    
+    setFromOrDestination (application, true);
+    
+    application->refresh_drawing();
 }
 
 void searchPathBtnClicked(GtkWidget *, gpointer data){
@@ -399,29 +432,63 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
     }
 }
 
-gboolean toggleSwitch (GtkWidget * sw, gboolean state, gpointer data){
+gboolean changeSearchingMode (GtkWidget * sw, gboolean state, gpointer data){
     
     auto application = static_cast<ezgl::application *>(data);
     GtkButton* search = (GtkButton* ) application->get_object("SearchButton");
+    GtkButton* setFrom = (GtkButton* ) application->get_object("setFromBtn");
+    GtkButton* setTo = (GtkButton* ) application->get_object("setToBtn");
+    GtkButton* clearRoute = (GtkButton* ) application->get_object("clearRouteBtn");
     GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput2");
     GtkComboBox* dropDown = (GtkComboBox *) application ->get_object("PossibleLocation2");
+    GtkSwitch* selectingMode = (GtkSwitch *) application ->get_object("UsingPinLocationInstead");
+    GtkLabel* labelSelectingMode = (GtkLabel *) application ->get_object("LabelPinPoint");
+    
     gtk_switch_set_state ((GtkSwitch *) sw, state);
     
     if (state == TRUE){
         gtk_widget_set_sensitive((GtkWidget *) textEntry, TRUE);
         gtk_widget_set_sensitive((GtkWidget *) dropDown, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) setFrom, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) setTo, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) clearRoute, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) selectingMode, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) labelSelectingMode, TRUE);
+        
         gtk_button_set_label (search, "Find Path");
         application->update_message("Change to Path Finding Mode");
         
     }else{
+        clearRouteBtnClicked(sw, data);
         gtk_widget_set_sensitive((GtkWidget *) textEntry, FALSE);
         gtk_widget_set_sensitive((GtkWidget *) dropDown, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) setFrom, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) setTo, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) clearRoute, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) selectingMode, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) labelSelectingMode, FALSE);
+        
         gtk_button_set_label (search, "Search");
         application->update_message("Change to Searching Mode");
+        
     }
     return TRUE;
 }
 
+gboolean changeSelectingMode(GtkWidget * sw, gboolean state, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+    
+    gtk_switch_set_state ((GtkSwitch *) sw, state);
+    
+    if (state == FALSE){
+        application ->update_message("Change to search bar mode, you can set starting point and destination using search bar");
+    }else{
+        application ->update_message("Change to pin point mode, you can set starting point and destination using mouse clicking");
+    }
+    
+    return TRUE;
+    
+}
 
 void clearRouteBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
@@ -592,14 +659,20 @@ gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
     
     auto application = static_cast<ezgl::application *>(data);
     GtkSwitch* sw = (GtkSwitch *) application ->get_object("SwitchBetweenSearchAndFindPath");
+    GtkSwitch* selecting = (GtkSwitch *) application ->get_object("UsingPinLocationInstead");
     bool mode = gtk_switch_get_state(sw);
+    bool isPinPoint = gtk_switch_get_state(selecting);
     
     if(mode == false){
         singleSearchMode((GtkEntry *)widget, data);
     }else{
         
         std::string widgetName = gtk_widget_get_name (widget);
-        singleSearchMode((GtkEntry *)widget, data);
+        
+        if (isPinPoint){
+            application->update_message("You can not using searching bar in pin point mode, please swap to searching bar mode");
+            return TRUE;
+        }
         
         if (widgetName == "TextInput2"){
             setFromBtnClicked(widget, data);
@@ -691,9 +764,18 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     }
     
     
-    std::string nameByCommas;
+    std::string nameByCommas = separateNamesByCommas(locationName);
+    canvas->get_camera().set_world(world);
+    gtk_entry_set_text(textEntry, nameByCommas.c_str());    
+    application->refresh_drawing();
     
-    //change the location name to the name separated by commas
+    
+    return TRUE;
+}
+
+std::string separateNamesByCommas(std::string locationName){
+    
+    std::string nameByCommas;
     for (int idx = 0; idx < locationName.size(); idx++){
         
         if (idx != locationName.size() - 1 && locationName[idx] == ' ' && locationName[idx + 1] == '&'){
@@ -703,14 +785,8 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
         }
     }
     
-    canvas->get_camera().set_world(world);
-    gtk_entry_set_text(textEntry, nameByCommas.c_str());    
-    application->refresh_drawing();
-    
-    
-    return TRUE;
+    return nameByCommas;
 }
-
 //put the possible location in the drop down bar
 gboolean textEntryChanges(GtkWidget * widget, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
@@ -779,7 +855,7 @@ std::pair <std::string, std::string> getStreetNames(std::string text){
     
     
     //split the input into two street name
-    for (auto iterator = text.begin(); iterator != text.end(); iterator++){
+    for (auto iterator = text.begin(); iterator != text.end(); ){
         
         if (!firstFinished){
             
@@ -793,10 +869,17 @@ std::pair <std::string, std::string> getStreetNames(std::string text){
             
         }else{
             
-            if (*iterator != ' '){
+            if (*iterator != ' ' && *iterator != ','){
                 
                 secondStreet.push_back(tolower(*iterator));
+            }else if (*iterator == ','){
+                
+                iterator = text.end();
             }    
+        }
+        
+        if (iterator != text.end()){
+            iterator++;
         }
     }
     
@@ -903,7 +986,7 @@ std::string convertNameToPath(std::string name){
 }
 
 //search the intersections of two streets
-gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
+gboolean searchButtonIsClicked(GtkWidget * widget, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
     
     
@@ -915,6 +998,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
         GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
         singleSearchMode(textEntry, data);
     }else{
+        searchPathBtnClicked(widget, data);
         std::cout << "search button is pressed during path finding mode" <<std::endl;
     }
     return true;
@@ -930,6 +1014,9 @@ void singleSearchMode(GtkEntry * textEntry, gpointer data){
 
     std::string text = gtk_entry_get_text(textEntry);
     clearHighlightIntersection();
+    choosingStartingPoint = false;
+    choosingDestination = false;
+    
     mostSimilarFirstName.clear();            //make sure number of element is not more than 2
     mostSimilarSecondName.clear();            //make sure number of element is not more than 2
     checkingFirstName = true;
@@ -2109,7 +2196,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
     IntersectionIdx from = 0;
     IntersectionIdx mid = 0;
     IntersectionIdx to = 0;
-    minutes=60;
+    int minutes=60;
 
     //check through the route found previously, and collect street name, street distance 
     //and travel time for a street
@@ -2187,13 +2274,7 @@ void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<Str
     for (int i = 0; i < numberOfStreets-1; i++) {
         streetInformation = travelPathInfo[i];
         
-        //the turn angle is 175-185, travel straight
-        if(streetInformation.turn<185&&streetInformation.turn>175){
-            //check if travel time is under one minutes
-            if(streetInformation.travelTime<1){
-                if(streetInformation.distance<1000)
-            }
-        }
+       
 
         std::cout << "Travel along " << streetInformation.streetName << " for "
                 << streetInformation.distance << " m," << " around "
@@ -2216,6 +2297,14 @@ void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<Str
             << lastStreetInformation.travelTime << " s" << std::endl << "Destination "
             << streetName << " reached !" << std::endl;
 }
+
+ //the turn angle is 175-185, travel straight
+//        if(streetInformation.turn<185 && streetInformation.turn>175){
+//            //check if travel time is under one minutes
+//            if(streetInformation.travelTime<1){
+//                if(streetInformation.distance<1000)
+//            }
+//        }
 
 double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
     //triangle with points A,B,C

@@ -100,5 +100,11 @@ void singleSearchMode(GtkEntry * entry, gpointer data);
 
 //display starting point and destination point in the canvas
 void displayStartAndDestination(ezgl::application * application);
+
+//convert the name separated by & to the name separated by ,
+std::string separateNamesByCommas(std::string locationName);
+
+//set the global variable for starting point or destination depend on how many intersection are highlighted
+void setFromOrDestination(ezgl::application *  application, bool isDestination);
 #endif /* DRAWMAP_H */
 
