@@ -71,8 +71,16 @@ extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
 
+
 //the vector that store the travel street information
 std::vector<streetInfo> travelPathInfo;
+
+void help_button(GtkWidget *widget, ezgl::application *application);
+void on_dialog_response(GtkDialog *dialog, gint response_id);
+
+
+
+
 
 IntersectionIdx fromPath = -1;
 IntersectionIdx toPath = -1;
@@ -296,6 +304,9 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     //button to clear route
     GObject *clearRouteBtn = application->get_object("clearRouteBtn");
     g_signal_connect(clearRouteBtn, "clicked", G_CALLBACK(clearRouteBtnClicked), application);
+    
+    GObject *helpBtn = application->get_object("helpBtn");
+    g_signal_connect(helpBtn, "clicked", G_CALLBACK(help_button), application);
 }
 
 void setFromBtnClicked(GtkWidget *, gpointer data){
@@ -2448,9 +2459,11 @@ void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<Str
     streetID = getStreetSegmentInfo(route[route.size() - 1]).streetID;
     streetName = getStreetName(streetID);
     //print the last street
+
     instructionString += "Travel along " + lastStreetInformation.streetName + "for "
             + std::to_string(lastStreetInformation.distance) + " m," +" , destination reached ! \n";
     //instructionString += "Destination " + streetName + " reached!\n";
+
 
 }
 
@@ -2501,4 +2514,66 @@ double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx t
     double k= BCi*BAj-BCj*BAi;
     std::cout<<k<<std::endl;
     return k;
+}
+
+void help_button(GtkWidget *, ezgl::application *application){
+    GObject *window;            // the parent window over which to add the dialog
+    GtkWidget *content_area;    // the content area of the dialog (i.e. where to put stuffin the dialog)
+    GtkWidget *label;           // the label we will create to display a message in the content area
+    GtkWidget *dialog;          // the dialog box we will create
+  // Update the status bar message
+  application->update_message("Help Button Pressed");
+  
+  // Redraw the main canvas
+  application->refresh_drawing();
+
+    // BEGIN: CODE FOR SHOWING DIALOG
+    
+    // get a pointer to the main application window
+    window = application->get_object(application->get_main_window_id().c_str());
+    // Create the dialog window. Modal windows prevent interaction with other windows inthe same application
+    dialog = gtk_dialog_new_with_buttons("User Guide",(GtkWindow*) window,GTK_DIALOG_MODAL,("OK"),GTK_RESPONSE_ACCEPT, NULL);
+    // Create a label and attach it to the content area of the dialog
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    
+    std::string helpMessage = "Welcome to Googer Map! \n\n";
+    helpMessage = helpMessage + "When the switch on the right is on, the program is in path finding mode, the user can choose two intersections"
+            + "\neither using search bar or mouse clicking and press find path button to find the shortest path. \n\n" +
+            "When the switch is off on the right, the program is in single searching mode. Users can search desired locations. \n\n" +
+            "When the switch on the left is off, it is in searching bar mode. Users can set the starting point and destination by "
+            + "\ntyping in the search bar and press [set from] and [set destination]. \n\n" +
+            "Users can also press enter in the search bar to set starting point and destination and the user can choose the "
+            + "\nintersection in the drop down list to set two points. \n\n" +
+            "When the switch on the left is off, the program is in pin point mode. User can set a starting point and destination "
+            + "\nby mouse clicking an intersection on the map and press the [set from] or [set destination] button. \n\n" +
+            "Note: two modes searching bar mode and pin point mode can be in mixed usage meaning users can search the \nstarting point "
+            + "using searching bar mode and then set the destination using pin point mode.";
+    label = gtk_label_new(&helpMessage[0]);
+    gtk_container_add(GTK_CONTAINER(content_area), label);
+
+    // The main purpose of this is to show dialog??s child widget, label
+    gtk_widget_show_all(dialog);
+
+    // Connecting the "response" signal from the user to the associated callback function
+    g_signal_connect(GTK_DIALOG(dialog),"response",G_CALLBACK(on_dialog_response),NULL);
+    // END: CODE FOR SHOWING DIALOG
+}
+
+void on_dialog_response(GtkDialog *dialog, gint response_id){
+    // For demonstration purposes, this will show the int value of the response type
+    std::cout << "response is ";
+    switch(response_id) {
+        case GTK_RESPONSE_ACCEPT:
+            std::cout << "GTK_RESPONSE_ACCEPT ";
+        break;
+        case GTK_RESPONSE_DELETE_EVENT:
+            std::cout << "GTK_RESPONSE_DELETE_EVENT (i.e. ??X?? button) ";
+        break;
+        default:
+            std::cout << "UNKNOWN ";
+        break;
+    }
+    std::cout << "(" << response_id << ")\n";
+    /*This will cause the dialog to be destroyed*/
+    gtk_widget_destroy(GTK_WIDGET (dialog));
 }
