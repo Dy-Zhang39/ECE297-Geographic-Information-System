@@ -151,38 +151,13 @@ void drawMainCanvas (ezgl::renderer *g){
     g->set_color(backgroundColor);
     g->fill_rectangle(start, end);
 
-    //timing function
-    std::clock_t begin = clock();
-
     drawFeature(g, world);
-    std::clock_t featureEnd = clock();
-
     drawStreet(g, world);
-    std::clock_t streetEnd = clock();
-    
     displayPOI(g);
-    std::clock_t poiEnd = clock();
-   
     displayHighlightedIntersection(g);
-    std::clock_t highlighIntersectionEnd = clock();
-    
     displayStreetName(g, world);
-    std::clock_t streetNameEnd = clock();
-    
-    if (showSubways) loadSubway(g);
 
-    //time stamps for drawing each element on map
-    double elapsedSecondsFeature = double(featureEnd - begin) / CLOCKS_PER_SEC;
-    double elapsedSecondsStreet = double(streetEnd-featureEnd) / CLOCKS_PER_SEC;
-    double elapsedSecondsPoi = double(poiEnd-streetEnd) / CLOCKS_PER_SEC;
-    double elapsedSecondsHighlightIntersection = double(highlighIntersectionEnd-poiEnd) / CLOCKS_PER_SEC;
-    double elapsedSecondsStreetName = double(streetNameEnd-highlighIntersectionEnd) / CLOCKS_PER_SEC;
-    
-    std::cout << "Feature: "<<elapsedSecondsFeature << " Street: " << elapsedSecondsStreet << " POI:  " << elapsedSecondsPoi << 
-            " HighlightIntersection: " << elapsedSecondsHighlightIntersection << " StreetName: " << elapsedSecondsStreetName << "\n";
-    
-    double totalTime = double(streetNameEnd - begin)/CLOCKS_PER_SEC;
-    std::cout<<"total time" << totalTime << "\n";
+    if (showSubways) loadSubway(g);
 
     if (pathRoute.size() > 0) {
         for (int i = 0; i < exploredPath.size(); i ++) {
@@ -953,8 +928,6 @@ ezgl::rectangle getZoomLevelToIntersections(IntersectionIdx id){
 }
 
 void actOnMouseClick(ezgl::application* , GdkEventButton* event, double x, double y){
-    std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
-    std::cout << "Button " << event->button << " is clicked\n";
     
     //record the position of left mouse clicked
     if (event ->button == 1){
@@ -986,12 +959,8 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
         previousHighlight.push_back(id);        
     }
     
-    
-    std::cout << "Closest Intersection: " << cities[currentCityIdx] -> intersection -> intersectionInfo[id].name << "\n";
     return id;
 }
-
-
 
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
@@ -1054,9 +1023,6 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
     }
     return;
 }
-
-
-
 
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world) {
     //collect the street name that has been display in a vector
@@ -1226,11 +1192,6 @@ void drawFeature(ezgl:: renderer *g, ezgl::rectangle world){
     for (int i = 0; i < features.size(); i++) {
         drawFeatureByID(g, features[i]);
     }
-    
-    //draw the islands last, this prevents lakes from covering and islands
-    /*for (int islandIdx = 0; islandIdx < islands.size(); islandIdx++){
-        drawFeatureByID(g, islands[islandIdx]);
-    }*/
 
     //loop through all features, if the feature area is at the predefined ratio 
     //of the visible area and within the window, display its name
@@ -1763,7 +1724,6 @@ void loadSubway(ezgl::renderer *g){
         }
     }
         
-
     for (int stationIdx = 0; stationIdx < displayText.size(); stationIdx ++) {
         bool displayStation = true;
 
@@ -1787,9 +1747,6 @@ void loadSubway(ezgl::renderer *g){
     }    
 }
 
-
-
-
 // Callback for which the User Guide button is clicked
 void helpBtnClicked(GtkWidget *, ezgl::application *application){
 
@@ -1804,7 +1761,6 @@ void helpBtnClicked(GtkWidget *, ezgl::application *application){
     application->refresh_drawing();
 
     // BEGIN: CODE FOR SHOWING DIALOG
-
     // get a pointer to the main application window
     window = application->get_object(application->get_main_window_id().c_str());
     // Create the dialog window. Modal windows prevent interaction with other windows inthe same application

@@ -106,10 +106,6 @@ bool loadMap(std::string map_streets_database_filename) {
     }
     streetDataBaseIsLoaded = true;
     
-    //std::clock_t loadMapEnd = clock();
-        
-    //std::clock_t osmMapEnd = clock();
-    
     //create new global variable for new city
     if(!alreadyExist){
         
