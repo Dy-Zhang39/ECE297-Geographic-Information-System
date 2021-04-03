@@ -29,6 +29,7 @@ double streetToWorldRatio = 0.5;
 double streetToWorldRatio1 = 0.035;
 double EARTH_CIRCUMFERENCE = 2* M_PI * kEarthRadiusInMeters;
 bool showSubways = false;
+std::string instructionString;
 
 //make sure the interested region has some distance with the windows margin
 double GAP = 1000;
@@ -198,17 +199,9 @@ void drawMainCanvas (ezgl::renderer *g){
             drawSegment(g, g->get_visible_world(), ezgl::BLUE, exploredPath[i]);
         }
         displayTravelInfo(pathRoute);
-        drawRoute(g, g->get_visible_world(), pathRoute);
     }
-//=======
-//    
-//   
-//    for (int i = 0; i < exploredPath.size(); i ++) {
-//        drawSegment(g, g->get_visible_world(), ezgl::BLUE, exploredPath[i]);
-//    }
-//    drawRoute(g, g->get_visible_world(), pathRoute);
-//>>>>>>> f86bcb57b2758051ea13ae8a66fb210b861c7af4
     
+    drawRoute(g, g->get_visible_world(), pathRoute);
 }
 
 
@@ -395,11 +388,6 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
 
     std::string main_canvas_id = application->get_main_canvas_id();
     auto canvas = application->get_canvas(main_canvas_id);
-    /*GtkEntry* pathFromEntry = (GtkEntry *) application ->get_object("pathFromInput");
-    fromPath = std::stoi(gtk_entry_get_text(pathFromEntry));
-    GtkEntry* pathToEntry = (GtkEntry *) application ->get_object("pathToInput");
-    toPath = std::stoi(gtk_entry_get_text(pathToEntry));*/
-
     clearHighlightIntersection();
     if (toPath >= 0 && fromPath >= 0) {
         std::clock_t start = clock();
@@ -429,6 +417,8 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
         double elapsedSecondsSearchPath = double(end-start) / CLOCKS_PER_SEC;
         std:: cout << "From: " << fromPath << "  to: " << toPath << " Travel Time: " << travelTime << "  cpu time: " << elapsedSecondsSearchPath << std::endl;
         application->refresh_drawing();
+        GtkLabel *label = (GtkLabel *) application->get_object("instructionLabel");
+        gtk_label_set_text(label, &instructionString[0]);
     }
 }
 
@@ -496,6 +486,9 @@ void clearRouteBtnClicked(GtkWidget *, gpointer data){
     fromPath = -1;
     toPath = -1;
     pathRoute.clear();
+    instructionString = "";
+    GtkLabel *label = (GtkLabel *) application->get_object("instructionLabel");
+    gtk_label_set_text(label, &instructionString[0]);
     
     application->refresh_drawing();
     
@@ -2161,7 +2154,11 @@ void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurfa
         double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
         LatLon locationLatLon = getIntersectionPosition(location);
         g->draw_surface(iconSurface, {xFromLon(locationLatLon.longitude()) - surfaceWidth / 2 , yFromLat(locationLatLon.latitude()) + surfaceHeight} );
-
+        //draw the text of the title
+        g->set_text_rotation(0);
+        g->set_font_size(10);
+        g->set_color(textColor);
+        g->draw_text({xFromLon(locationLatLon.longitude()), yFromLat(locationLatLon.latitude()) + surfaceHeight * 1.2}, cities[currentCityIdx] -> intersection -> intersectionInfo[location].name);
     }
 }
 
@@ -2184,6 +2181,9 @@ void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor,
 }
 
 void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
+    
+    instructionString = "";
+    //the vector that store the travel street information
     travelPathInfo.clear();
     double distance = 0;
     double travelTime = 0;
@@ -2264,17 +2264,35 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
         previousStreetName = streetName;
 
     }
+
     displayTravelInstructions(numberOfStreets,streetID,route);
 }
 
 void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<StreetSegmentIdx> route){
     streetInfo streetInformation;
     std::string streetName;
+
+    //streetInfo streetInformation;
+
     //print the street travel instruction
     for (int i = 0; i < numberOfStreets-1; i++) {
+
+        streetInformation = travelPathInfo[i];
+        
+        
+        
+        
+        
+        
+        instructionString += "Travel along " + streetInformation.streetName 
+                + " for " + std::to_string(streetInformation.distance) + " m, around " 
+                + std::to_string(streetInformation.travelTime) + "s. the turn angle is: " 
+                + std::to_string(streetInformation.angle) + "\n";
+
         streetInformation = travelPathInfo[i];
         
        
+
 
         std::cout << "Travel along " << streetInformation.streetName << " for "
                 << streetInformation.distance << " m," << " around "
@@ -2288,6 +2306,15 @@ void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<Str
 
     }
     //reach the destination
+/*
+    streetInfo streetInformation = travelPathInfo[numberOfStreets-1];
+    streetID = getStreetSegmentInfo(route.size()-1).streetID;
+        streetName = getStreetName(streetID);
+        std::cout << "Destination " << streetName<<" reached !"<<std::endl;
+        
+    */
+                
+
     streetInfo lastStreetInformation = travelPathInfo[numberOfStreets-1];
     streetID = getStreetSegmentInfo(route[route.size() - 1]).streetID;
     streetName = getStreetName(streetID);
@@ -2296,6 +2323,8 @@ void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<Str
             << lastStreetInformation.distance << " m," << " around "
             << lastStreetInformation.travelTime << " s" << std::endl << "Destination "
             << streetName << " reached !" << std::endl;
+    instructionString += "Destination " + streetName + " reached!\n";
+
 }
 
  //the turn angle is 175-185, travel straight
