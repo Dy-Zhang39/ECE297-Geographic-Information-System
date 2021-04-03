@@ -955,7 +955,8 @@ IntersectionIdx findClosestIntersection(LatLon my_position){
     IntersectionIdx closestIntersection_id = -1;
     double distance=2*M_PI*kEarthRadiusInMeters;
     
-    for(int i = 0; i < getNumIntersections(); i++) {
+    int numOfIntersections = cities[currentCityIdx]-> intersection -> intersectionInfo.size();
+    for(int i = 0; i < numOfIntersections; i++) {
         std::pair <LatLon, LatLon> points (my_position, getIntersectionPosition(i));
         
         if(findDistanceBetweenTwoPoints(points) < distance){
@@ -966,6 +967,21 @@ IntersectionIdx findClosestIntersection(LatLon my_position){
     return closestIntersection_id;
 }
 
+IntersectionIdx findClosestIntersection(LatLon my_position, std::vector<IntersectionIdx> lists){
+    IntersectionIdx closestIntersection_id = -1;
+    double distance=2*M_PI*kEarthRadiusInMeters;
+    
+    
+    for(int i = 0; i < lists.size(); i++) {
+        std::pair <LatLon, LatLon> points (my_position, getIntersectionPosition(lists[i]));
+        
+        if(findDistanceBetweenTwoPoints(points) < distance){
+            distance = findDistanceBetweenTwoPoints(points);
+            closestIntersection_id = lists[i];
+        }
+    }
+    return closestIntersection_id;
+}
 // Returns the street segments that connect to the given intersection 
 // Speed Requirement --> high
 std::vector<StreetSegmentIdx> findStreetSegmentsOfIntersection(IntersectionIdx intersection_id){

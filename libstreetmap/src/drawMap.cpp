@@ -22,7 +22,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-
+#include <sstream>
 
 double textDisplayRatio = 0.01;
 double streetToWorldRatio = 0.5;
@@ -37,7 +37,9 @@ double GAP = 1000;
 //maximum intersections that can display on the screen
 int MAX_INTERSECTIONS_DISPLAY = 7;
 
-bool nightMode;             //Determines whether to show night mode
+bool nightMode;                     //Determines whether to show night mode
+bool choosingStartingPoint = false; //the mode that ask user to choose a starting point
+bool choosingDestination = false;    //the mode that ask user to choose a destination
 
 //global variable storing color for background, text, feature and street
 ezgl::color backgroundColor;
@@ -73,10 +75,15 @@ extern bool checkingFirstName;
 //vector that store the street name and it travel time and distance
 struct streetInfo{
     std::string streetName;
+    std::string turn;
     double distance;
     double travelTime;
     double angle;
+    
 };
+
+    //the vector that store the travel street information
+    std::vector<streetInfo> travelPathInfo;
 
 
 IntersectionIdx fromPath = -1;
@@ -85,15 +92,14 @@ IntersectionIdx toPath = -1;
 std::vector <StreetSegmentIdx> pathRoute;
 std::vector <StreetSegmentIdx> exploredPath;
 void searchPathBtnClicked(GtkWidget *, gpointer data);
-void setFromBtnClicked(GtkWidget *, gpointer data);
-void setToBtnClicked(GtkWidget *, gpointer data);
+
 void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id);
 void clearRouteBtnClicked(GtkWidget *, gpointer data);
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
 void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
 void displayTravelInfo(std::vector<StreetSegmentIdx> route);
-double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to);
+
 
 void drawMap(){
 
@@ -228,16 +234,28 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *search = application->get_object("SearchButton");
     g_signal_connect(search, "clicked", G_CALLBACK(searchButtonIsClicked), application);
     
+    GObject *searching = application ->get_object("SwitchBetweenSearchAndFindPath");
+    g_signal_connect(searching, "state-set", G_CALLBACK(changeSearchingMode), application);
+    
+    GObject *selecting = application ->get_object("UsingPinLocationInstead");
+    g_signal_connect(selecting, "state-set", G_CALLBACK(changeSelectingMode), application);
+    
     GObject *textEntry = application->get_object("TextInput");
+    GObject *secondTextEntry = application->get_object("TextInput2");
     g_signal_connect(textEntry, "activate", G_CALLBACK(textEntryPressedEnter), application);
+    g_signal_connect(secondTextEntry, "activate", G_CALLBACK(textEntryPressedEnter), application);
+    
     g_signal_connect(textEntry, "changed", G_CALLBACK(textEntryChanges), application);
+    g_signal_connect(secondTextEntry, "changed", G_CALLBACK(textEntryChanges), application);
     
     GtkComboBoxText *mapBar = (GtkComboBoxText*) application->get_object("MapBar");
     importNameToTheBar(mapBar);
     g_signal_connect (mapBar, "changed", G_CALLBACK(changeMap), application);
 
     GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+    GtkComboBoxText *secondPossibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation2");
     g_signal_connect (possibleLocationBar, "changed", G_CALLBACK(possibleLocationIsChosen), application);
+    g_signal_connect (secondPossibleLocationBar, "changed", G_CALLBACK(possibleLocationIsChosen), application);
     
     //POI related buttons
     GObject *allPOI = application->get_object("allPOIBtn");
@@ -278,10 +296,6 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     GObject *snightModeBox = application->get_object("nightModeBox");
     g_signal_connect(snightModeBox, "toggled", G_CALLBACK(toggleNightMode), application);
     
-    //button to search path
-    GObject *searchPathBtn = application->get_object("searchPathBtn");
-    g_signal_connect(searchPathBtn, "clicked", G_CALLBACK(searchPathBtnClicked), application);
-    
     //button to set from intersection
     GObject *setFromBtn = application->get_object("setFromBtn");
     g_signal_connect(setFromBtn, "clicked", G_CALLBACK(setFromBtnClicked), application);
@@ -297,20 +311,68 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
 
 void setFromBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-
-    for (IntersectionIdx i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); i++) {
-        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
-            fromPath = i;
-            break;
-        }
+    GtkSwitch* selectingMode = (GtkSwitch *)application->get_object("UsingPinLocationInstead");
+    GtkEntry* textEntry = (GtkEntry *) application->get_object("TextInput2");
+    
+    bool isPinPoint  = gtk_switch_get_state (selectingMode);
+    
+    if(!isPinPoint){        
+        singleSearchMode(textEntry, data);        
     }
+    
+    setFromOrDestination (application, false);
 
+    
+    application->refresh_drawing();
+}
+
+void setFromOrDestination(ezgl::application *  application, bool isDestination){
+    
+    GtkEntry* start = (GtkEntry*) application->get_object("TextInput2");
+    GtkEntry* destination = (GtkEntry*) application->get_object("TextInput");
+    
+    //set the highlight intersection for from
+    if (previousHighlight.size() == 1) {
+        
+        if (!isDestination){
+            fromPath = previousHighlight[0];
+            
+            //set the name of the the starting in the from text entry
+            std::string fromName = separateNamesByCommas(getIntersectionName(fromPath));
+            gtk_entry_set_text(start, fromName.c_str());
+        }else{
+            toPath = previousHighlight[0];
+            std::string toName = separateNamesByCommas(getIntersectionName(toPath));
+            gtk_entry_set_text(destination, toName.c_str());
+        }
+
+        displayStartAndDestination(application);
+
+    } else if (previousHighlight.size() > 1) {
+        application->update_message("Multiple intersections are selected, please choose one of them");
+        
+        if (!isDestination){
+            choosingStartingPoint = true;
+        }else{
+            choosingDestination = true;
+        }
+        
+
+    } else {
+        application->update_message("No intersection is selected");
+    }
+}
+
+void displayStartAndDestination(ezgl::application * application){
+    
     // Display from to points
     std::string fromName = "";
     std::string toName = "";
     
-    if (fromPath > 0 && fromPath < getNumIntersections()) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
-    if (toPath > 0 && toPath < getNumIntersections()) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
+    int numOfIntersections = cities[currentCityIdx] -> intersection -> intersectionInfo.size();
+    
+    if (fromPath > 0 && fromPath < numOfIntersections) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
+    if (toPath > 0 && toPath < numOfIntersections) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
 
     std::string output = "From: " + fromName + ",  To: " + toName;
     application->update_message(output);
@@ -319,23 +381,16 @@ void setFromBtnClicked(GtkWidget *, gpointer data){
 
 void setToBtnClicked(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-
-    for (IntersectionIdx i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); i++) {
-        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
-            toPath = i;
-            break;
-        }
-    }
-
-    // Display from to points
-    std::string fromName = "";
-    std::string toName = "";
+    GtkSwitch* selectingMode = (GtkSwitch *)application->get_object("UsingPinLocationInstead");
+    GtkEntry* textEntry = (GtkEntry *) application->get_object("TextInput");
     
-    if (fromPath > 0 && fromPath < getNumIntersections()) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
-    if (toPath > 0 && toPath < getNumIntersections()) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
-
-    std::string output = "From: " + fromName + ",  To: " + toName;
-    application->update_message(output);
+    bool isPinPoint  = gtk_switch_get_state (selectingMode);
+    if(!isPinPoint){
+        singleSearchMode(textEntry, data);
+    }
+    
+    setFromOrDestination (application, true);
+    
     application->refresh_drawing();
 }
 
@@ -376,6 +431,64 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
         GtkLabel *label = (GtkLabel *) application->get_object("instructionLabel");
         gtk_label_set_text(label, &instructionString[0]);
     }
+}
+
+gboolean changeSearchingMode (GtkWidget * sw, gboolean state, gpointer data){
+    
+    auto application = static_cast<ezgl::application *>(data);
+    GtkButton* search = (GtkButton* ) application->get_object("SearchButton");
+    GtkButton* setFrom = (GtkButton* ) application->get_object("setFromBtn");
+    GtkButton* setTo = (GtkButton* ) application->get_object("setToBtn");
+    GtkButton* clearRoute = (GtkButton* ) application->get_object("clearRouteBtn");
+    GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput2");
+    GtkComboBox* dropDown = (GtkComboBox *) application ->get_object("PossibleLocation2");
+    GtkSwitch* selectingMode = (GtkSwitch *) application ->get_object("UsingPinLocationInstead");
+    GtkLabel* labelSelectingMode = (GtkLabel *) application ->get_object("LabelPinPoint");
+    
+    gtk_switch_set_state ((GtkSwitch *) sw, state);
+    
+    if (state == TRUE){
+        gtk_widget_set_sensitive((GtkWidget *) textEntry, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) dropDown, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) setFrom, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) setTo, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) clearRoute, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) selectingMode, TRUE);
+        gtk_widget_set_sensitive((GtkWidget *) labelSelectingMode, TRUE);
+        
+        gtk_button_set_label (search, "Find Path");
+        application->update_message("Change to Path Finding Mode");
+        
+    }else{
+        clearRouteBtnClicked(sw, data);
+        gtk_widget_set_sensitive((GtkWidget *) textEntry, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) dropDown, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) setFrom, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) setTo, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) clearRoute, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) selectingMode, FALSE);
+        gtk_widget_set_sensitive((GtkWidget *) labelSelectingMode, FALSE);
+        
+        gtk_button_set_label (search, "Search");
+        application->update_message("Change to Searching Mode");
+        
+    }
+    return TRUE;
+}
+
+gboolean changeSelectingMode(GtkWidget * sw, gboolean state, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+    
+    gtk_switch_set_state ((GtkSwitch *) sw, state);
+    
+    if (state == FALSE){
+        application ->update_message("Change to search bar mode, you can set starting point and destination using search bar");
+    }else{
+        application ->update_message("Change to pin point mode, you can set starting point and destination using mouse clicking");
+    }
+    
+    return TRUE;
+    
 }
 
 void clearRouteBtnClicked(GtkWidget *, gpointer data){
@@ -548,18 +661,61 @@ gboolean toggleHidePOI(GtkWidget *, gpointer data){
 //Search when user press the enter in the text field
 gboolean textEntryPressedEnter(GtkWidget * widget, gpointer data){
     
-    return searchButtonIsClicked(widget, data);
+    auto application = static_cast<ezgl::application *>(data);
+    GtkSwitch* sw = (GtkSwitch *) application ->get_object("SwitchBetweenSearchAndFindPath");
+    GtkSwitch* selecting = (GtkSwitch *) application ->get_object("UsingPinLocationInstead");
+    bool mode = gtk_switch_get_state(sw);
+    bool isPinPoint = gtk_switch_get_state(selecting);
+    
+    if(mode == false){
+        singleSearchMode((GtkEntry *)widget, data);
+    }else{
+        
+        std::string widgetName = gtk_widget_get_name (widget);
+        
+        if (isPinPoint){
+            application->update_message("You can not using searching bar in pin point mode, please swap to searching bar mode");
+            return TRUE;
+        }
+        
+        if (widgetName == "TextInput2"){
+            setFromBtnClicked(widget, data);
+        }else if (widgetName == "TextInput"){
+            setToBtnClicked(widget, data);
+        }else{
+            std::cout << "The widget name is not text entry in textEntryPressedEnter()" << std::endl;
+            exit (EXIT_FAILURE);
+        }
+        
+    }
+    
+    return true;
     
 }
 
 //zoom in to the intersection when user choose a location from the bar
-gboolean possibleLocationIsChosen(GtkWidget*, gpointer data){
+gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     
     auto application = static_cast<ezgl::application *>(data);
     std::string main_canvas_id = application->get_main_canvas_id();
     auto canvas = application->get_canvas(main_canvas_id);
-    GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
     
+    std::string widgetName = gtk_widget_get_name (widget);
+    GtkComboBoxText *possibleLocationBar = NULL;
+    GtkEntry *textEntry = NULL;
+    
+    if (widgetName == "PossibleLocation"){
+        possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+        textEntry = (GtkEntry *) application ->get_object("TextInput");
+    }else if(widgetName == "PossibleLocation2"){
+        possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation2");
+        textEntry = (GtkEntry *) application ->get_object("TextInput2");
+    }
+    
+    if (possibleLocationBar == NULL || textEntry == NULL){
+        std::cout << "The widget pointer is still NULL in possibleLocationIsChosen()" << std::endl;
+        exit (EXIT_FAILURE);
+    }
     
     if (gtk_combo_box_text_get_active_text(possibleLocationBar) == NULL){
         return TRUE;
@@ -592,19 +748,69 @@ gboolean possibleLocationIsChosen(GtkWidget*, gpointer data){
     cities[currentCityIdx] -> intersection -> intersectionInfo[locationIdx].isHighlight = true;
     previousHighlight.push_back(locationIdx);
     
+    
+    GtkSwitch* sw = (GtkSwitch *) application ->get_object("SwitchBetweenSearchAndFindPath");
+    bool mode = gtk_switch_get_state(sw);
+    
+    if (mode == true){
+        if (widgetName == "PossibleLocation"){
+            toPath = locationIdx;        
+        }else if (widgetName == "PossibleLocation2"){
+            fromPath = locationIdx;
+        }else{
+            std::cout << "The widget name is not the name for the text entry in possibleLocationIsChosen()." << std::endl;
+            exit (EXIT_FAILURE);
+        }
+        
+        displayStartAndDestination(application);
+    }else{
+        application->update_message(locationName);
+    }
+    
+    
+    std::string nameByCommas = separateNamesByCommas(locationName);
     canvas->get_camera().set_world(world);
-    application->update_message(locationName);
+    gtk_entry_set_text(textEntry, nameByCommas.c_str());    
     application->refresh_drawing();
     
     
     return TRUE;
 }
 
+std::string separateNamesByCommas(std::string locationName){
+    
+    std::string nameByCommas;
+    for (int idx = 0; idx < locationName.size(); idx++){
+        
+        if (idx != locationName.size() - 1 && locationName[idx] == ' ' && locationName[idx + 1] == '&'){
+            nameByCommas.push_back(',');
+        }else if (locationName[idx] != '&'){
+            nameByCommas.push_back(locationName[idx]);
+        }
+    }
+    
+    return nameByCommas;
+}
 //put the possible location in the drop down bar
-gboolean textEntryChanges(GtkWidget *, gpointer data){
+gboolean textEntryChanges(GtkWidget * widget, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
-    GtkComboBoxText *possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
-    GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
+    std::string widgetName = gtk_widget_get_name (widget);
+    GtkComboBoxText *possibleLocationBar = NULL;
+    GtkEntry* textEntry = NULL;
+    
+    
+    if (widgetName == "TextInput"){
+        possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation");
+        textEntry = (GtkEntry *) application ->get_object("TextInput");
+    }else if(widgetName == "TextInput2"){
+        possibleLocationBar = (GtkComboBoxText*) application->get_object("PossibleLocation2");
+        textEntry = (GtkEntry *) application ->get_object("TextInput2");
+    }
+    
+    if (possibleLocationBar == NULL || textEntry == NULL){
+        std::cout << "The widget pointer is still NULL in textEntryChanges()" << std::endl;
+        exit (EXIT_FAILURE);
+    }
     
     possibleLocations.clear();
     gtk_combo_box_text_remove_all(possibleLocationBar);
@@ -653,7 +859,7 @@ std::pair <std::string, std::string> getStreetNames(std::string text){
     
     
     //split the input into two street name
-    for (auto iterator = text.begin(); iterator != text.end(); iterator++){
+    for (auto iterator = text.begin(); iterator != text.end(); ){
         
         if (!firstFinished){
             
@@ -667,10 +873,17 @@ std::pair <std::string, std::string> getStreetNames(std::string text){
             
         }else{
             
-            if (*iterator != ' '){
+            if (*iterator != ' ' && *iterator != ','){
                 
                 secondStreet.push_back(tolower(*iterator));
+            }else if (*iterator == ','){
+                
+                iterator = text.end();
             }    
+        }
+        
+        if (iterator != text.end()){
+            iterator++;
         }
     }
     
@@ -697,7 +910,7 @@ std::vector<IntersectionIdx> findAllPossibleIntersections (std::vector<StreetIdx
     return possibleIntersections;
 }
 //change the map when the user switch to a different map
-gboolean changeMap(GtkWidget *, gpointer data){
+gboolean changeMap(GtkWidget * widget, gpointer data){
     
     auto application = static_cast<ezgl::application *>(data);
     GtkComboBoxText * mapBar = (GtkComboBoxText*) application->get_object("MapBar");
@@ -706,11 +919,14 @@ gboolean changeMap(GtkWidget *, gpointer data){
     
     std::string newMapPath = convertNameToPath(map);
     
+    clearRouteBtnClicked(widget, data);
     //does not change the map if the user is choose the current map
     if (newMapPath == cities[currentCityIdx] -> mapPath){
         return true;
     }
-
+    //the vector that store the travel street information
+    travelPathInfo.clear();
+    
     closeDataBase();
     bool loadSucessfully = loadMap(newMapPath);
     if(!loadSucessfully){
@@ -774,16 +990,37 @@ std::string convertNameToPath(std::string name){
 }
 
 //search the intersections of two streets
-gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
+gboolean searchButtonIsClicked(GtkWidget * widget, gpointer data){
+    auto application = static_cast<ezgl::application *>(data);
+    
+    
+    GtkSwitch* sw = (GtkSwitch *) application->get_object("SwitchBetweenSearchAndFindPath");
+    
+    bool mode =  gtk_switch_get_state (sw);
+    
+    if (mode == false){
+        GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
+        singleSearchMode(textEntry, data);
+    }else{
+        searchPathBtnClicked(widget, data);
+        std::cout << "search button is pressed during path finding mode" <<std::endl;
+    }
+    return true;
+}
+
+void singleSearchMode(GtkEntry * textEntry, gpointer data){
+    
     auto application = static_cast<ezgl::application *>(data);
     
     std::string main_canvas_id = application->get_main_canvas_id();
     auto canvas = application->get_canvas(main_canvas_id);
     
-    GtkEntry* textEntry = (GtkEntry *) application ->get_object("TextInput");
-    
+
     std::string text = gtk_entry_get_text(textEntry);
     clearHighlightIntersection();
+    choosingStartingPoint = false;
+    choosingDestination = false;
+    
     mostSimilarFirstName.clear();            //make sure number of element is not more than 2
     mostSimilarSecondName.clear();            //make sure number of element is not more than 2
     checkingFirstName = true;
@@ -797,7 +1034,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     //make sure user enter two streets name
     if (firstStreet.size() == 0 || secondStreet.size() == 0){
         application ->update_message("You need to enter two streets separated by the commas");
-        return TRUE;
+        return;
     }
     
     std::vector<StreetIdx> partialResultFirst = findStreetIdsFromPartialStreetName(firstStreet);
@@ -870,9 +1107,7 @@ gboolean searchButtonIsClicked(GtkWidget *, gpointer data){
     
     application->update_message(output);
     application->refresh_drawing();
-    return true;
 }
-
 //add all the element in a vector to another vector
 void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<IntersectionIdx>& from){
     for (auto it = from.begin(); it != from.end(); it++){
@@ -991,12 +1226,19 @@ void actOnMouseClick(ezgl::application* , GdkEventButton* event, double x, doubl
     if (event ->button == 1){
            
         positionOfClicked = LatLon(latFromY(y), lonFromX(x));
-    }    
+        
+    }
+    
 }
 
 //mouse click to highlight the closest intersection
 IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
-    IntersectionIdx id = findClosestIntersection(pos);
+    IntersectionIdx id;
+    if (choosingStartingPoint || choosingDestination){
+        id = findClosestIntersection(pos, previousHighlight);
+    }else{
+        id = findClosestIntersection(pos);
+    }
     
     if (previousHighlight.size() == 1 && previousHighlight[0] == id){
         
@@ -1007,7 +1249,7 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
         
         clearHighlightIntersection();
         cities[currentCityIdx] -> intersection -> intersectionInfo[id].isHighlight = true;
-        previousHighlight.push_back(id);
+        previousHighlight.push_back(id);        
     }
     
     
@@ -1493,7 +1735,8 @@ void displayHighlightedIntersection(ezgl::renderer *g) {
     
     for (size_t i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); ++i) {
         //get x,y position of the intersection
-        float x = xFromLon(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.longitude());
+        float x = xFromLon(cities[currentCityIdx] -> 
+        intersection -> intersectionInfo[i].position.longitude());
         float y = yFromLat(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.latitude());
         
         if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
@@ -1949,31 +2192,26 @@ void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor,
 }
 
 void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
+    
     instructionString = "";
     //the vector that store the travel street information
     std::vector<streetInfo> travelPathInfo;
-
     travelPathInfo.clear();
-
     double distance = 0;
     double travelTime = 0;
+    double angle = 0;
+    int numberOfStreets = 0;
     int streetID = getStreetSegmentInfo(route[0]).streetID;
     std::string streetName;
     std::string previousStreetName = getStreetName(streetID);
-
-    int numberOfStreets = 0;
-
     streetInfo street;
+    IntersectionIdx from = 0;
+    IntersectionIdx mid = 0;
+    IntersectionIdx to = 0;
 
-    IntersectionIdx from=0;
-    IntersectionIdx mid=0;
-    IntersectionIdx to=0;
-    double angle=0;
-    
     //check through the route found previously, and collect street name, street distance 
     //and travel time for a street
     for (int segIdIndex = 0; segIdIndex < route.size(); segIdIndex++) {
-        
         //find the start street name
         streetID = getStreetSegmentInfo(route[segIdIndex]).streetID;
         streetName = getStreetName(streetID);
@@ -1982,14 +2220,24 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
         //calculate the total distance travel in the same street
         travelTime += findStreetSegmentTravelTime(route[segIdIndex]);
         //if street change or reach the destination update the street
-        if (streetName != previousStreetName || segIdIndex == (route.size() - 1)) {
+        if (streetName != previousStreetName) {
             //track the turn point, before and after turn point
             if (segIdIndex > 0) {
                 from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
                 mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
                 to = getStreetSegmentInfo(route[segIdIndex]).to;
-            }
+                //check if it is right or left turn
+                if (crossProduct(from, mid, to) > 0) {
+                    street.turn = "left";
+                } else {
+                    street.turn = "right";
+                }
 
+            }
+            //subtract the newly street  distance and travel time
+            distance = distance - findStreetSegmentLength(route[segIdIndex]);
+            //calculate the total distance travel in the same street
+            travelTime = travelTime - findStreetSegmentTravelTime(route[segIdIndex]);
             //calculate the turn angle
             angle = turnAngle(from, mid, to);
             street.angle = angle;
@@ -2001,41 +2249,80 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             travelPathInfo.push_back(street);
             //track the total number of street traveled
             numberOfStreets++;
-            //reset for new street
-            distance = 0;
-            travelTime = 0;
+            //reset for new street distance and travel time
+            distance = findStreetSegmentLength(route[segIdIndex]);
+            travelTime = findStreetSegmentTravelTime(route[segIdIndex]);
 
+        }
+
+        if (segIdIndex == (route.size() - 1)) {// reach the last street segment
+            if (segIdIndex > 0) {
+                from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
+                mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
+                to = getStreetSegmentInfo(route[segIdIndex]).to;
+            }
+
+            street.angle = 0;
+            //update the street info and store in the vector
+            street.distance = distance;
+            street.streetName = streetName;
+            street.travelTime = travelTime;
+            travelPathInfo.push_back(street);
+            //track the total number of street traveled
+            numberOfStreets++;
         }
         //update the street change
         previousStreetName = streetName;
 
     }
-
+    //streetInfo streetInformation;
     //print the street travel instruction
     for (int i = 0; i < numberOfStreets-1; i++) {
+
         streetInfo streetInformation = travelPathInfo[i];
         instructionString += "Travel along " + streetInformation.streetName 
                 + " for " + std::to_string(streetInformation.distance) + " m, around " 
                 + std::to_string(streetInformation.travelTime) + "s. the turn angle is: " 
                 + std::to_string(streetInformation.angle) + "\n";
 
-        std::cout << "Travel along " << streetInformation.streetName << "for " 
+        streetInformation = travelPathInfo[i];
+
+
+        std::cout << "Travel along " << streetInformation.streetName << " for "
                 << streetInformation.distance << " m," << " around "
-                << streetInformation.travelTime << " s" <<" the turn angle is: "<<streetInformation.angle<< std::endl;
+                << streetInformation.travelTime << " s" << " then turn "<<streetInformation.turn<<" the turn angle is: " 
+                << streetInformation.angle << std::endl;
+//        std::stringstream information;
+//                information << "Travel along " << streetInformation.streetName << " for "
+//                << streetInformation.distance << " m," << " around "
+//                << streetInformation.travelTime << " s" << " then turn "<<streetInformation.turn<<" the turn angle is: " 
+//                << streetInformation.angle << std::endl;
 
     }
     //reach the destination
+/*
     streetInfo streetInformation = travelPathInfo[numberOfStreets-1];
     streetID = getStreetSegmentInfo(route.size()-1).streetID;
         streetName = getStreetName(streetID);
         std::cout << "Destination " << streetName<<" reached !"<<std::endl;
         
-    instructionString += instructionString + "Destination " + streetName + " reached!\n";
+    */
                 
+
+    streetInfo lastStreetInformation = travelPathInfo[numberOfStreets-1];
+    streetID = getStreetSegmentInfo(route[route.size() - 1]).streetID;
+    streetName = getStreetName(streetID);
+    //print the last street
+    std::cout << "Travel along " << lastStreetInformation.streetName << "for "
+            << lastStreetInformation.distance << " m," << " around "
+            << lastStreetInformation.travelTime << " s" << std::endl << "Destination "
+            << streetName << " reached !" << std::endl;
+    instructionString += instructionString + "Destination " + streetName + " reached!\n";
+
 }
 
 double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
-    
+    //triangle with points A,B,C
     LatLon A= getIntersectionPosition(from);
     LatLon B=getIntersectionPosition(mid);
     LatLon C=getIntersectionPosition(to);
@@ -2043,8 +2330,42 @@ double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
     double a=findDistanceBetweenTwoPoints(std::make_pair(B,C));
     double b=findDistanceBetweenTwoPoints(std::make_pair(C,A));
     double c=findDistanceBetweenTwoPoints(std::make_pair(A,B));
-    
-    double angle = acos((c*c+a*a-b*b)/(2*c*a))/kDegreeToRadian;
+    //check if it is a valid angle, avoid straight path without turn
+    if(a==0||b==0||c==0){
+        return 0;
+    }
+    //turn angle
+    double angle = acos((c*c+a*a-b*b)/(2*abs(c*a)))/kDegreeToRadian;
     
     return angle;
+}
+
+struct vector;
+
+double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
+    LatLon A= getIntersectionPosition(from);
+    LatLon B=getIntersectionPosition(mid);
+    LatLon C=getIntersectionPosition(to);
+    double x1,x2,x3,y1,y2,y3;
+    x1=xFromLon(A.longitude());
+    y1=yFromLat(A.latitude());
+    x2=xFromLon(B.longitude());
+    y2=yFromLat(B.latitude());
+    x3=xFromLon(C.longitude());
+    y3=yFromLat(C.latitude());
+    //vector BA, from point B to A;Vector BC from B to C
+    //vector BA<BAi,BAj,BAk>
+    double BAi,BAj;
+    BAi=x1-x2;
+    BAj=y1-y2;
+
+    
+    double BCi,BCj;
+    BCi=x3-x2;
+    BCj=y3-y2;
+
+    //BC cross BA result only in k direction
+    double k= BCi*BAj-BCj*BAi;
+    
+    return k;
 }

@@ -19,9 +19,13 @@
 #include "ezgl/callback.hpp"
 #include "../drawMap.h"
 #include "../dataHandler.h"
+#include "../callBack.h"
 #include "StreetsDatabaseAPI.h"
 
 extern LatLon positionOfClicked;
+extern bool choosingStartingPoint;
+extern bool choosingDestination;
+
 namespace ezgl {
 
 // File wide static variables to track whether the middle mouse
@@ -91,8 +95,19 @@ gboolean release_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
       left_mouse_button_pressed = false;
       
       if (leftMouseIsPressedAndNotMoving){
-   
+          
           clickToHighlightClosestIntersection(positionOfClicked);
+          if (choosingStartingPoint){
+              
+              setFromOrDestination(application, false);
+              displayStartAndDestination(application);
+              choosingStartingPoint = false;
+          }else if (choosingDestination){
+              setFromOrDestination(application, true);
+              displayStartAndDestination(application);
+              choosingDestination = false;
+          }
+          
           leftMouseIsPressedAndNotMoving = false;
           application ->refresh_drawing();
       }

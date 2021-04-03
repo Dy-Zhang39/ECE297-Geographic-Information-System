@@ -87,5 +87,24 @@ void drawMainCanvas (ezgl::renderer *g);
 
 //add all the element in a vector to another vector
 void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<IntersectionIdx>& from);
+
+
+//calculate the turn angle
+double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to);
+
+//find the turn direction using cross product
+double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to);
+
+//helper function when search button is pressed during the searching mode
+void singleSearchMode(GtkEntry * entry, gpointer data);
+
+//display starting point and destination point in the canvas
+void displayStartAndDestination(ezgl::application * application);
+
+//convert the name separated by & to the name separated by ,
+std::string separateNamesByCommas(std::string locationName);
+
+//set the global variable for starting point or destination depend on how many intersection are highlighted
+void setFromOrDestination(ezgl::application *  application, bool isDestination);
 #endif /* DRAWMAP_H */
 
