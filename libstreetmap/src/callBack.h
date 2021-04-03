@@ -50,7 +50,12 @@ gboolean changeSelectingMode(GtkWidget *, gboolean state, gpointer data);
 void initialSetUp(ezgl::application *application, bool new_window);
 void actOnMouseClick(ezgl::application* app, GdkEventButton* event, double x, double y);
 
+//call back functions for setting path
 void setFromBtnClicked(GtkWidget *, gpointer data);
 void setToBtnClicked(GtkWidget *, gpointer data);
+
+//call back functions for user guide
+void helpBtnClicked(GtkWidget *widget, ezgl::application *application);
+void onDialogResponse(GtkDialog *dialog, gint response_id);
 #endif /* CALLBACK_H */
 

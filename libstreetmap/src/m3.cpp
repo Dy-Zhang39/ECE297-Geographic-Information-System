@@ -223,25 +223,4 @@ double findDistanceBetweenIntersections(IntersectionIdx from, IntersectionIdx to
     return findDistanceBetweenTwoPoints(points);;
 }
 
-//TO BE ELABORATED
-std::vector <std::string> displayRoute(std::vector <StreetSegmentIdx> route) {
-    std::vector <std::string> instructions;
-    StreetIdx lastStreetIdx = -1;
-    for (int i = 0; i < route.size(); i++) {
-        StreetSegmentInfo segmentInfo = getStreetSegmentInfo(route[i]);
-        StreetIdx streetIdx = segmentInfo.streetID;
-        std::string streetName = getStreetName(streetIdx);
-        
-        if (lastStreetIdx == -1) {
-            std::cout << "take " + streetName << "\n";
-        } else if (lastStreetIdx != streetIdx) {
-            std::cout << "turn to " + streetName << "\n";
-        }
-        
-        lastStreetIdx = streetIdx;
-    }
-    
-    return instructions;
-}
-
 
