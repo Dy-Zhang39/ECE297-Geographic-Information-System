@@ -2173,23 +2173,23 @@ void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurfa
 void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID) {
     double x1, y1, x2, y2;
     double routeWidth = 3;
-    
-    for(int pointsID=1; pointsID < cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID].size(); pointsID++){
+
+    for (int pointsID = 1; pointsID < cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID].size(); pointsID++) {
         x1 = xFromLon(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
-        y1 = yFromLat(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID- 1].latitude());
+        y1 = yFromLat(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].latitude());
 
         x2 = xFromLon(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].longitude());
         y2 = yFromLat(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].latitude());
-        if(world.contains(x1, y1) || world.contains(x2, y2)){
+        if (world.contains(x1, y1) || world.contains(x2, y2)) {
             g->set_color(segColor);
             g->set_line_width(routeWidth);
-            g->draw_line({x1,y1}, {x2, y2});
+            g->draw_line({x1, y1},{x2, y2});
         }
     }
 }
 
 void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
-    
+
     instructionString = "";
     //the vector that store the travel street information
     travelPathInfo.clear();
@@ -2204,8 +2204,8 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
     IntersectionIdx from = 0;
     IntersectionIdx mid = 0;
     IntersectionIdx to = 0;
-    int minutes=60;
-    IntersectionIdx from1,from2,from3,from4;
+    int minutes = 60;
+    IntersectionIdx from1, from2, from3, from4;
 
     //check through the route found previously, and collect street name, street distance 
     //and travel time for a street
@@ -2223,24 +2223,25 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             if (segIdIndex > 0) {
                 from1 = getStreetSegmentInfo(route[segIdIndex - 1]).from;
                 from2 = getStreetSegmentInfo(route[segIdIndex - 1]).to;
-                from3=getStreetSegmentInfo(route[segIdIndex]).from;
-                from4=getStreetSegmentInfo(route[segIdIndex]).to;
-                if(from1==from3){
-                    mid=from1;
-                    from=from2;
-                    to=from4;
-                }else if(from1==from4){
-                    mid=from1;
-                    from=from2;
-                    mid=from3;
-                }else if(from2==from3){
-                    mid=from2;
-                    from=from1;
-                    to=from4;
-                }else if(from2==from4){
-                    mid=from2;
-                    from=from1;
-                    to=from3;
+                from3 = getStreetSegmentInfo(route[segIdIndex]).from;
+                from4 = getStreetSegmentInfo(route[segIdIndex]).to;
+                //make sure the from mid and to points are in correct order
+                if (from1 == from3) {
+                    mid = from1;
+                    from = from2;
+                    to = from4;
+                } else if (from1 == from4) {
+                    mid = from1;
+                    from = from2;
+                    mid = from3;
+                } else if (from2 == from3) {
+                    mid = from2;
+                    from = from1;
+                    to = from4;
+                } else if (from2 == from4) {
+                    mid = from2;
+                    from = from1;
+                    to = from3;
                 }
                 //check if it is right or left turn
                 if (crossProduct(from, mid, to) > 0) {
@@ -2260,7 +2261,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             //update the street info and store in the vector
             street.distance = distance;
             street.streetName = previousStreetName;
-            street.travelTime = travelTime/minutes;
+            street.travelTime = travelTime / minutes;
 
             travelPathInfo.push_back(street);
             //track the total number of street traveled
@@ -2282,7 +2283,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             //update the street info and store in the vector
             street.distance = distance;
             street.streetName = streetName;
-            street.travelTime = travelTime/minutes;
+            street.travelTime = travelTime / minutes;
             travelPathInfo.push_back(street);
             //track the total number of street traveled
             numberOfStreets++;
@@ -2292,175 +2293,138 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
 
     }
 
-    displayTravelInstructions(numberOfStreets,streetID,route);
+    displayTravelInstructions(numberOfStreets, streetID, route);
 }
 
-void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<StreetSegmentIdx> route){
+void displayTravelInstructions(int numberOfStreets, int streetID, std::vector<StreetSegmentIdx> route) {
     streetInfo streetInformation;
     std::string streetName;
 
-    //streetInfo streetInformation;
-
     //print the street travel instruction
-    for (int i = 0; i < numberOfStreets-1; i++) {
-
+    for (int i = 0; i < numberOfStreets - 1; i++) {
         streetInformation = travelPathInfo[i];
-        
-
 
         //the turn angle is 175-185, travel straight
-        if (streetInformation.angle < 185 && streetInformation.angle >=175) {
+        if (streetInformation.angle < 185 && streetInformation.angle >= 175) {
             //check if travel time is under one minutes
             if (streetInformation.travelTime < 1) {
                 //distance less than 1km
                 if (streetInformation.distance < 1000) {
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) 
+                            + " for " + std::to_string(streetInformation.distance)
                             + " m, under 1 minute. Then continue straight \n";
-                }else{//distance grater than 1km
+                } else {//distance grater than 1km
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance/1000) 
+                            + " for " + std::to_string(streetInformation.distance / 1000)
                             + " km, under 1 minute. Then continue straight \n";
                 }
-            }else{//travel time greater than 1 minutes
+            } else {//travel time greater than 1 minutes
                 //travel time greater than 1 minutes
                 if (streetInformation.distance < 1000) {
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) + " m, " 
+                            + " for " + std::to_string(streetInformation.distance) + " m, "
                             + "for " + std::to_string(streetInformation.travelTime)
                             + " minute. Then continue straight \n";
-                }else{//distance grater than 1km
+                } else {//distance grater than 1km
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance/1000) +" km, "
+                            + " for " + std::to_string(streetInformation.distance / 1000) + " km, "
                             + "for " + std::to_string(streetInformation.travelTime)
                             + " minute. Then continue straight \n";
                 }
             }
-        }else if(streetInformation.angle < 175 && streetInformation.angle >=120){//slight turn
+        } else if (streetInformation.angle < 175 && streetInformation.angle >= 120) {//slight turn
             //check if travel time is under one minutes
             if (streetInformation.travelTime < 1) {
                 //distance less than 1km
                 if (streetInformation.distance < 1000) {
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) 
-                            + " m, under 1 minute. Then turn slightly " + streetInformation.turn+"\n";
-                }else{//distance grater than 1km
+                            + " for " + std::to_string(streetInformation.distance)
+                            + " m, under 1 minute. Then turn slightly " + streetInformation.turn + "\n";
+                } else {//distance grater than 1km
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance/1000) 
-                            + " km, under 1 minute. Then turn slightly " + streetInformation.turn+"\n";
+                            + " for " + std::to_string(streetInformation.distance / 1000)
+                            + " km, under 1 minute. Then turn slightly " + streetInformation.turn + "\n";
                 }
-            }else{//travel time greater than 1 minutes
+            } else {//travel time greater than 1 minutes
                 //travel time greater than 1 minutes
                 if (streetInformation.distance < 1000) {
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) + " m, " 
+                            + " for " + std::to_string(streetInformation.distance) + " m, "
                             + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn slightly " + streetInformation.turn+"\n";
-                }else{//distance grater than 1km
+                            + " minute. Then turn slightly " + streetInformation.turn + "\n";
+                } else {//distance grater than 1km
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance/1000) +" km, "
+                            + " for " + std::to_string(streetInformation.distance / 1000) + " km, "
                             + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn slightly " + streetInformation.turn+"\n";
+                            + " minute. Then turn slightly " + streetInformation.turn + "\n";
                 }
             }
-        }else if(streetInformation.angle < 120 && streetInformation.angle >=60){//normal around 90 degree turn
+        } else if (streetInformation.angle < 120 && streetInformation.angle >= 60) {//normal around 90 degree turn
             //check if travel time is under one minutes
             if (streetInformation.travelTime < 1) {
                 //distance less than 1km
                 if (streetInformation.distance < 1000) {
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) 
-                            + " m, under 1 minute. Then turn  " + streetInformation.turn+"\n";
-                }else{//distance grater than 1km
+                            + " for " + std::to_string(streetInformation.distance)
+                            + " m, under 1 minute. Then turn  " + streetInformation.turn + "\n";
+                } else {//distance grater than 1km
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance/1000) 
-                            + " km, under 1 minute. Then turn " + streetInformation.turn+"\n";
+                            + " for " + std::to_string(streetInformation.distance / 1000)
+                            + " km, under 1 minute. Then turn " + streetInformation.turn + "\n";
                 }
-            }else{//travel time greater than 1 minutes
+            } else {//travel time greater than 1 minutes
                 //travel time greater than 1 minutes
                 if (streetInformation.distance < 1000) {
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) + " m, " 
+                            + " for " + std::to_string(streetInformation.distance) + " m, "
                             + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn  " + streetInformation.turn+"\n";
-                }else{//distance grater than 1km
+                            + " minute. Then turn  " + streetInformation.turn + "\n";
+                } else {//distance grater than 1km
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance/1000) +" km, "
+                            + " for " + std::to_string(streetInformation.distance / 1000) + " km, "
                             + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn " + streetInformation.turn+"\n";
+                            + " minute. Then turn " + streetInformation.turn + "\n";
                 }
             }
-        }else if(streetInformation.angle < 60 && streetInformation.angle >=0){//sharp turn
+        } else if (streetInformation.angle < 60 && streetInformation.angle >= 0) {//sharp turn
             //check if travel time is under one minutes
             if (streetInformation.travelTime < 1) {
                 //distance less than 1km
                 if (streetInformation.distance < 1000) {
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) 
-                            + " m, under 1 minute. Then turn sharply " + streetInformation.turn+"\n";
-                }else{//distance grater than 1km
+                            + " for " + std::to_string(streetInformation.distance)
+                            + " m, under 1 minute. Then turn sharply " + streetInformation.turn + "\n";
+                } else {//distance grater than 1km
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance/1000) 
-                            + " km, under 1 minute. Then turn sharply " + streetInformation.turn+"\n";
+                            + " for " + std::to_string(streetInformation.distance / 1000)
+                            + " km, under 1 minute. Then turn sharply " + streetInformation.turn + "\n";
                 }
-            }else{//travel time greater than 1 minutes
+            } else {//travel time greater than 1 minutes
                 //travel time greater than 1 minutes
                 if (streetInformation.distance < 1000) {
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) + " m, " 
+                            + " for " + std::to_string(streetInformation.distance) + " m, "
                             + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn sharply " + streetInformation.turn+"\n";
-                }else{//distance grater than 1km
+                            + " minute. Then turn sharply " + streetInformation.turn + "\n";
+                } else {//distance grater than 1km
                     instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance/1000) +" km, "
+                            + " for " + std::to_string(streetInformation.distance / 1000) + " km, "
                             + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn sharply " + streetInformation.turn+"\n";
+                            + " minute. Then turn sharply " + streetInformation.turn + "\n";
                 }
             }
         }
 
-        
-//        
-//        instructionString += "Travel along " + streetInformation.streetName 
-//                + " for " + std::to_string(streetInformation.distance) + " m, around " 
-//                + std::to_string(streetInformation.travelTime) + "s. the turn angle is: " 
-//                + std::to_string(streetInformation.angle) + "\n";
-//
-//        streetInformation = travelPathInfo[i];
-//        
-//       
-//
-//
-//        std::cout << "Travel along " << streetInformation.streetName << " for "
-//                << streetInformation.distance << " m," << " around "
-//                << streetInformation.travelTime << " s" << " then turn "<<streetInformation.turn<<" the turn angle is: " 
-//                << streetInformation.angle << std::endl;
-//        std::stringstream information;
-//                information << "Travel along " << streetInformation.streetName << " for "
-//                << streetInformation.distance << " m," << " around "
-//                << streetInformation.travelTime << " s" << " then turn "<<streetInformation.turn<<" the turn angle is: " 
-//                << streetInformation.angle << std::endl;
-
     }
     //reach the destination
-/*
-    streetInfo streetInformation = travelPathInfo[numberOfStreets-1];
-    streetID = getStreetSegmentInfo(route.size()-1).streetID;
-        streetName = getStreetName(streetID);
-        std::cout << "Destination " << streetName<<" reached !"<<std::endl;
-        
-    */
-                
-
     streetInfo lastStreetInformation = travelPathInfo[numberOfStreets-1];
     streetID = getStreetSegmentInfo(route[route.size() - 1]).streetID;
     streetName = getStreetName(streetID);
     //print the last street
 
     instructionString += "Travel along " + lastStreetInformation.streetName + "for "
-            + std::to_string(lastStreetInformation.distance) + " m," +" , destination reached ! \n";
+            + std::to_string(lastStreetInformation.distance) + " m," +" destination reached ! \n";
     //instructionString += "Destination " + streetName + " reached!\n";
-
 
 }
 
@@ -2502,7 +2466,6 @@ double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx t
     BAi=Ax-Bx;
     BAj=Ay-By;
 
-    
     double BCi,BCj;
     BCi=Cx-Bx;
     BCj=Cy-By;
