@@ -74,7 +74,7 @@ void setFromOrDestination(ezgl::application *  application, bool isDestination){
         displayStartAndDestination(application);
 
     } else if (previousHighlight.size() > 1) {
-        application->update_message("Multiple intersections are selected, please choose one of them");
+        application->update_message("Multiple intersections are selected, please choose(mouse clicking) one of them");
         
         pathRoute.clear();
         if (!isDestination){
@@ -85,7 +85,7 @@ void setFromOrDestination(ezgl::application *  application, bool isDestination){
         
 
     } else {
-        application->update_message("No intersection is selected");
+        application->update_message("No intersection is selected, please make sure you are in the right mode");
     }
 }
 
