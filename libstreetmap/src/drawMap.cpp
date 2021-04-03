@@ -41,6 +41,15 @@ bool nightMode;                     //Determines whether to show night mode
 bool choosingStartingPoint = false; //the mode that ask user to choose a starting point
 bool choosingDestination = false;    //the mode that ask user to choose a destination
 
+//the vector that store the travel street information
+std::vector<streetInfo> travelPathInfo;
+
+IntersectionIdx fromPath = -1;
+IntersectionIdx toPath = -1;
+
+std::vector <StreetSegmentIdx> pathRoute;
+std::vector <StreetSegmentIdx> exploredPath;
+
 //global variable storing color for background, text, feature and street
 ezgl::color backgroundColor;
 ezgl::color textColor;
@@ -70,26 +79,6 @@ extern std::string mapPathPrefix;
 extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
-
-
-//the vector that store the travel street information
-std::vector<streetInfo> travelPathInfo;
-
-IntersectionIdx fromPath = -1;
-IntersectionIdx toPath = -1;
-
-std::vector <StreetSegmentIdx> pathRoute;
-std::vector <StreetSegmentIdx> exploredPath;
-void searchPathBtnClicked(GtkWidget *, gpointer data);
-
-void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id);
-void clearRouteBtnClicked(GtkWidget *, gpointer data);
-void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
-void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
-void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
-void displayTravelInfo(std::vector<StreetSegmentIdx> route);
-
-void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<StreetSegmentIdx> route);
 
 void drawMap(){
 
@@ -206,15 +195,7 @@ void drawMainCanvas (ezgl::renderer *g){
 }
 
 
-//set the height to width ratio of a current city
-void initializeCurrentWorldRatio(){
-    
-    double maxLat = cities[currentCityIdx] -> maxLat;
-    double minLat = cities[currentCityIdx] -> minLat;
-    double maxLon = cities[currentCityIdx] -> maxLon;
-    double minLon = cities[currentCityIdx] -> minLon;
-    cities[currentCityIdx]->worldRatio = (yFromLat(maxLat) - yFromLat(minLat))/(xFromLon(maxLon) - xFromLon(minLon));
-}
+
 
 //connect the signal to call back function
 void initialSetUp(ezgl::application *application, bool /*new_window*/){
@@ -302,139 +283,7 @@ void initialSetUp(ezgl::application *application, bool /*new_window*/){
     g_signal_connect(helpBtn, "clicked", G_CALLBACK(helpBtnClicked), application);
 }
 
-void setFromBtnClicked(GtkWidget *, gpointer data){
-    auto application = static_cast<ezgl::application *>(data);
-    GtkSwitch* selectingMode = (GtkSwitch *)application->get_object("UsingPinLocationInstead");
-    GtkEntry* textEntry = (GtkEntry *) application->get_object("TextInput2");
-    
-    bool isPinPoint  = gtk_switch_get_state (selectingMode);
-    
-    if(!isPinPoint){        
-        singleSearchMode(textEntry, data);        
-    }
-    
-    setFromOrDestination (application, false);
 
-    
-    application->refresh_drawing();
-}
-
-void setFromOrDestination(ezgl::application *  application, bool isDestination){
-    
-    GtkEntry* start = (GtkEntry*) application->get_object("TextInput2");
-    GtkEntry* destination = (GtkEntry*) application->get_object("TextInput");
-    
-    //set the highlight intersection for from
-    if (previousHighlight.size() == 1) {
-        
-        pathRoute.clear();
-        if (!isDestination){
-            fromPath = previousHighlight[0];
-            
-            //set the name of the the starting in the from text entry
-            std::string fromName = separateNamesByCommas(getIntersectionName(fromPath));
-            gtk_entry_set_text(start, fromName.c_str());
-        }else{
-            toPath = previousHighlight[0];
-            std::string toName = separateNamesByCommas(getIntersectionName(toPath));
-            gtk_entry_set_text(destination, toName.c_str());
-        }
-
-        displayStartAndDestination(application);
-
-    } else if (previousHighlight.size() > 1) {
-        application->update_message("Multiple intersections are selected, please choose one of them");
-        
-        pathRoute.clear();
-        if (!isDestination){
-            choosingStartingPoint = true;
-        }else{
-            choosingDestination = true;
-        }
-        
-
-    } else {
-        application->update_message("No intersection is selected");
-    }
-}
-
-void displayStartAndDestination(ezgl::application * application){
-    
-    // Display from to points
-    std::string fromName = "";
-    std::string toName = "";
-    
-    int numOfIntersections = cities[currentCityIdx] -> intersection -> intersectionInfo.size();
-    
-    if (fromPath > 0 && fromPath < numOfIntersections) fromName = cities[currentCityIdx] -> intersection -> intersectionInfo[fromPath].name;
-    if (toPath > 0 && toPath < numOfIntersections) toName = cities[currentCityIdx] -> intersection -> intersectionInfo[toPath].name;
-
-    std::string output = "From: " + fromName + ",  To: " + toName;
-    application->update_message(output);
-    application->refresh_drawing();
-}
-
-void setToBtnClicked(GtkWidget *, gpointer data){
-    auto application = static_cast<ezgl::application *>(data);
-    GtkSwitch* selectingMode = (GtkSwitch *)application->get_object("UsingPinLocationInstead");
-    GtkEntry* textEntry = (GtkEntry *) application->get_object("TextInput");
-    
-    bool isPinPoint  = gtk_switch_get_state (selectingMode);
-    if(!isPinPoint){
-        singleSearchMode(textEntry, data);
-    }
-    
-    setFromOrDestination (application, true);
-    
-    application->refresh_drawing();
-}
-
-void searchPathBtnClicked(GtkWidget *, gpointer data){
-    auto application = static_cast<ezgl::application *>(data);
-    std::string main_canvas_id = application->get_main_canvas_id();
-    
-    auto canvas = application->get_canvas(main_canvas_id);
-    clearHighlightIntersection();
-    
-    //find the route and travel time
-    if (toPath >= 0 && fromPath >= 0) {
-        std::clock_t start = clock();
-        pathRoute = findPathBetweenIntersections(fromPath,toPath,15);
-        double travelTime = computePathTravelTime(pathRoute, 15);
-    
-        std::clock_t end = clock();
-        std::vector<IntersectionIdx> routeIntersections;
-        
-        //display no route is found
-        if (pathRoute.size() == 0){
-            application -> update_message("No path is found");
-            return;
-        }
-        
-        //draw the found route
-        for (int i = 0; i < pathRoute.size(); i++) {
-            
-            //store all the intersections of the route
-            IntersectionIdx fromIdx = getStreetSegmentInfo(pathRoute[i]).from;
-            IntersectionIdx toIdx = getStreetSegmentInfo(pathRoute[i]).to;
-            routeIntersections.push_back(fromIdx);
-            routeIntersections.push_back(toIdx);
-        }
-        
-        
-        if (routeIntersections.size() != 0){
-            //zoom the screen to the path
-            ezgl::rectangle newWorld = getZoomLevelToIntersections(routeIntersections);
-            canvas->get_camera().set_world(newWorld);
-        }
-        
-        double elapsedSecondsSearchPath = double(end-start) / CLOCKS_PER_SEC;
-        std:: cout << "From: " << fromPath << "  to: " << toPath << " Travel Time: " << travelTime << "  cpu time: " << elapsedSecondsSearchPath << std::endl;
-        application->refresh_drawing();
-        GtkLabel *label = (GtkLabel *) application->get_object("instructionLabel");
-        gtk_label_set_text(label, &instructionString[0]);
-    }
-}
 
 gboolean changeSearchingMode (GtkWidget * sw, gboolean state, gpointer data){
     
@@ -494,32 +343,9 @@ gboolean changeSelectingMode(GtkWidget * sw, gboolean state, gpointer data){
     
 }
 
-//clear the route on screen when Clear Route button is clicked
-void clearRouteBtnClicked(GtkWidget *, gpointer data){
-    auto application = static_cast<ezgl::application *>(data);
-   
-    fromPath = -1;
-    toPath = -1;
-    pathRoute.clear();
-    
-    //clear the route instructions
-    instructionString = "";
-    GtkLabel *label = (GtkLabel *) application->get_object("instructionLabel");
-    gtk_label_set_text(label, &instructionString[0]);
-    
-    application->refresh_drawing();
-    
-}
 
-//input all the city name to the map bar
-void importNameToTheBar(GtkComboBoxText* bar){
-    
-    for(int idx = 0; idx < cityNames.size(); idx++){
-        
-        std::string name = cityNames[idx];
-        gtk_combo_box_text_append_text(bar, name.c_str());
-    }
-}
+
+
 
 
 //triggered night mode check box changed
@@ -783,20 +609,7 @@ gboolean possibleLocationIsChosen(GtkWidget* widget, gpointer data){
     return TRUE;
 }
 
-std::string separateNamesByCommas(std::string locationName){
-    
-    std::string nameByCommas;
-    for (int idx = 0; idx < locationName.size(); idx++){
-        
-        if (idx != locationName.size() - 1 && locationName[idx] == ' ' && locationName[idx + 1] == '&'){
-            nameByCommas.push_back(',');
-        }else if (locationName[idx] != '&'){
-            nameByCommas.push_back(locationName[idx]);
-        }
-    }
-    
-    return nameByCommas;
-}
+
 //put the possible location in the drop down bar
 gboolean textEntryChanges(GtkWidget * widget, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
@@ -857,64 +670,10 @@ gboolean textEntryChanges(GtkWidget * widget, gpointer data){
 }
 
 
-std::pair <std::string, std::string> getStreetNames(std::string text){
-    
-    std::string firstStreet, secondStreet;        
-    
-    bool firstFinished = false;         //finished reading the first street  
-    
-    
-    //split the input into two street name
-    for (auto iterator = text.begin(); iterator != text.end(); ){
-        
-        if (!firstFinished){
-            
-            if (*iterator != ',' && *iterator != ' '){
-                
-                firstStreet.push_back(tolower(*iterator));
-            }else if (*iterator == ','){
-                
-                firstFinished = true;
-            }
-            
-        }else{
-            
-            if (*iterator != ' ' && *iterator != ','){
-                
-                secondStreet.push_back(tolower(*iterator));
-            }else if (*iterator == ','){
-                
-                iterator = text.end();
-            }    
-        }
-        
-        if (iterator != text.end()){
-            iterator++;
-        }
-    }
-    
-    return std::make_pair(firstStreet, secondStreet);
-}
 
 
-std::vector<IntersectionIdx> findAllPossibleIntersections (std::vector<StreetIdx> first, std::vector<StreetIdx> second){
-    
-    std::vector<IntersectionIdx> possibleIntersections;
-    
-    for (auto firstStreetIdx = first.begin(); firstStreetIdx != first.end(); firstStreetIdx++) {
 
-            for (auto secondStreetIdx = second.begin(); secondStreetIdx != second.end(); secondStreetIdx++) {
 
-            auto commonIntersections = findIntersectionsOfTwoStreets(std::make_pair(*firstStreetIdx, *secondStreetIdx));
-
-            for (auto commonStreetIdx = commonIntersections.begin(); commonStreetIdx != commonIntersections.end(); commonStreetIdx++) {
-                possibleIntersections.push_back(*commonStreetIdx);
-            }
-        }
-    }
-    
-    return possibleIntersections;
-}
 //change the map when the user switch to a different map
 gboolean changeMap(GtkWidget * widget, gpointer data){
     
@@ -965,35 +724,7 @@ gboolean changeMap(GtkWidget * widget, gpointer data){
     
 }
 
-//covert a city name to a mapPath
-std::string convertNameToPath(std::string name){
-    
-    std::string nameInLower;
-    char previous = '1';
-    
-    //covert the name into file format
-    for (int c = 0; c < name.size(); c++){
-        
-        if (name[c] == ' ' && previous != ','){
-            
-            nameInLower.push_back('-');
-            
-        }else if (name[c] == ','){
-            
-            nameInLower.push_back('_');
-            
-        }else if (previous != ','){
-            
-            nameInLower.push_back(tolower(name[c]));
-            
-        }
-        
-        previous = name[c];
-    }
-    
-    std::string path = mapPathPrefix + nameInLower + ".streets.bin";
-    return path;
-}
+
 
 //search the intersections of two streets
 gboolean searchButtonIsClicked(GtkWidget * widget, gpointer data){
@@ -1114,12 +845,8 @@ void singleSearchMode(GtkEntry * textEntry, gpointer data){
     application->update_message(output);
     application->refresh_drawing();
 }
-//add all the element in a vector to another vector
-void addVectorToVector (std::vector<IntersectionIdx>& to, const std::vector<IntersectionIdx>& from){
-    for (auto it = from.begin(); it != from.end(); it++){
-        to.push_back(*it);
-    }
-}
+
+
 
 ezgl::rectangle getZoomLevelToIntersections(std::vector<IntersectionIdx> commonIntersection){
     
@@ -1224,6 +951,7 @@ ezgl::rectangle getZoomLevelToIntersections(IntersectionIdx id){
 
     return (ezgl::rectangle ({left, bottom}, {right, top}));
 }
+
 void actOnMouseClick(ezgl::application* , GdkEventButton* event, double x, double y){
     std::cout << "Mouse clicked at (" << x << "," << y << ")\n";
     std::cout << "Button " << event->button << " is clicked\n";
@@ -1263,24 +991,6 @@ IntersectionIdx clickToHighlightClosestIntersection(LatLon pos){
     return id;
 }
 
-//clear all the highlight intersection
-void clearHighlightIntersection(){
-    
-    for (auto iterator = previousHighlight.begin(); iterator != previousHighlight.end(); iterator++){
-        cities[currentCityIdx] -> intersection -> intersectionInfo[*iterator].isHighlight = false;
-    }
-    previousHighlight.clear();
-}
-
-bool isAve(std::string streetName){
-    bool isAve =false;
-    std::string s1 ("Avenue\0");
-    
-    if (streetName.find(s1) != std::string::npos){
-        isAve = true;
-    }
-    return isAve;
-}
 
 
 void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
@@ -1346,20 +1056,7 @@ void drawStreet(ezgl::renderer *g, ezgl::rectangle world){
 }
 
 
-double streetSize(ezgl::rectangle world){
-    //this function make the streetSize change as the  map area changes, 
-    //it is bounded by ln(), size between around 0.5 - 10
-    double mapArea = world.area();
-    //function parameter
-    double par1=6;
-    double par2=1000;
-    double par3=1.5;
-    double par4=5;
-    //adjust street size
-    double streetSize = par1*log(log(par2/sqrt(mapArea)+par3))+par4;
- 
-    return streetSize;
-}
+
 
 void displayStreetName(ezgl::renderer *g, ezgl::rectangle world) {
     //collect the street name that has been display in a vector
@@ -1457,23 +1154,6 @@ void storeStreetSeg(std::string streetName, std::vector<ezgl::point2d> &inViewSe
     }
 }
 
-void drawArrow(ezgl::renderer *g, ezgl::point2d position, double theta) {
-    double delta = 15;
-    double h = 10;
-    double arrowThickness = 0.1;
-
-    //points for the arrow
-    ezgl::point2d firstPoint(position.x +h * cos(theta * kDegreeToRadian), position.y + h * sin(theta * kDegreeToRadian));
-    ezgl::point2d secondPoint(firstPoint.x - h * cos((theta + delta) * kDegreeToRadian), firstPoint.y - h * sin((theta + delta) * kDegreeToRadian));
-    ezgl::point2d thirdPoint(firstPoint.x - h * cos((theta - delta) * kDegreeToRadian), firstPoint.y - h * sin((theta - delta) * kDegreeToRadian));
-
-    //draw the arrow
-    g->set_line_width(arrowThickness * streetSize(g->get_visible_world()));
-    g->draw_line(firstPoint, secondPoint);
-    g->draw_line(firstPoint, thirdPoint);
-
-    return;
-}
 
 
 void drawOneWayStreet(ezgl::renderer *g, double diagLength) {
@@ -1733,32 +1413,7 @@ void displayFeatureNameByID(ezgl:: renderer *g, FeatureIdx id, double featureAre
     }
 }
 
-//highlight intersection by showing a red square and display the pop-up box
-void displayHighlightedIntersection(ezgl::renderer *g) {
-    ezgl::rectangle world = g->get_visible_world();
-    double width = 6 * world.width() / g->get_visible_screen().width();
-    double height = width;
-    
-    for (size_t i = 0; i < cities[currentCityIdx] -> intersection -> intersectionInfo.size(); ++i) {
-        //get x,y position of the intersection
-        float x = xFromLon(cities[currentCityIdx] -> 
-        intersection -> intersectionInfo[i].position.longitude());
-        float y = yFromLat(cities[currentCityIdx] -> intersection -> intersectionInfo[i].position.latitude());
-        
-        if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].isHighlight) {
-            g->set_color(ezgl::GREY_75);
-            //display pop up box
-            if (cities[currentCityIdx] -> intersection -> intersectionInfo[i].name.compare("<unknown>") != 0){
-                displayPopupBox(g, "Intersection: ", cities[currentCityIdx] -> intersection -> intersectionInfo[i].name, x, y, world);
-            }
 
-            g->set_color(ezgl::RED);
-            g->fill_rectangle({x - width/2, y - height/2},
-                              {x + width/2, y + height/2});
-        }
-    }
-    return;
-}
 
 //display a pop-up box at given location with given title and content
 void displayPopupBox(ezgl::renderer *g, std::string title, std::string content, double x, double y, ezgl::rectangle world) {
@@ -2133,357 +1788,7 @@ void loadSubway(ezgl::renderer *g){
 }
 
 
-void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route) {
-    ezgl::surface *iconSurface;
-    
-    //draw the found route
-    for (int i = 0; i < route.size(); i++) {
-        drawSegment(g, world, ezgl::RED, route[i]);
-    }
 
-    iconSurface = g->load_png("./libstreetmap/resources/images/tracking.png");
-    drawIcon(g, world, iconSurface, toPath);
-    
-    //displayIntersectionPopup(g, world, toPath);
-    //displayIntersectionPopup(g, world, fromPath);
-    //display from/ to icon
-
-    iconSurface = g->load_png("./libstreetmap/resources/images/start_pin.png");
-    drawIcon(g, world, iconSurface, fromPath);
-
-}
-
-void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id) {
-        
-    float x = xFromLon(cities[currentCityIdx] -> intersection -> intersectionInfo[id].position.longitude());
-    float y = yFromLat(cities[currentCityIdx] -> intersection -> intersectionInfo[id].position.latitude());
-        
-    g->set_color(ezgl::GREY_75);
-    //display pop up box
-    displayPopupBox(g, "Intersection: ", cities[currentCityIdx] -> intersection -> intersectionInfo[id].name, x, y, world);
-}
-
-void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, IntersectionIdx location) {
-    double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
-    double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
-    if (location >= 0 && location < getNumIntersections()){
-        double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
-        double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
-        LatLon locationLatLon = getIntersectionPosition(location);
-        g->draw_surface(iconSurface, {xFromLon(locationLatLon.longitude()) - surfaceWidth / 2 , yFromLat(locationLatLon.latitude()) + surfaceHeight} );
-        //draw the text of the title
-        g->set_text_rotation(0);
-        g->set_font_size(10);
-        g->set_color(textColor);
-        g->draw_text({xFromLon(locationLatLon.longitude()), yFromLat(locationLatLon.latitude()) + surfaceHeight * 1.2}, cities[currentCityIdx] -> intersection -> intersectionInfo[location].name);
-    }
-}
-
-void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID) {
-    double x1, y1, x2, y2;
-    double routeWidth = 3;
-
-    for (int pointsID = 1; pointsID < cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID].size(); pointsID++) {
-        x1 = xFromLon(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].longitude());
-        y1 = yFromLat(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID - 1].latitude());
-
-        x2 = xFromLon(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].longitude());
-        y2 = yFromLat(cities[currentCityIdx]->streetSegment->streetSegPoint[streetSegmentsID][pointsID].latitude());
-        if (world.contains(x1, y1) || world.contains(x2, y2)) {
-            g->set_color(segColor);
-            g->set_line_width(routeWidth);
-            g->draw_line({x1, y1},{x2, y2});
-        }
-    }
-}
-
-void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
-
-    instructionString = "";
-    //the vector that store the travel street information
-    travelPathInfo.clear();
-    double distance = 0;
-    double travelTime = 0;
-    double angle = 0;
-    int numberOfStreets = 0;
-    int streetID = getStreetSegmentInfo(route[0]).streetID;
-    std::string streetName;
-    std::string previousStreetName = getStreetName(streetID);
-    streetInfo street;
-    IntersectionIdx from = 0;
-    IntersectionIdx mid = 0;
-    IntersectionIdx to = 0;
-    int minutes = 60;
-    IntersectionIdx from1, from2, from3, from4;
-
-    //check through the route found previously, and collect street name, street distance 
-    //and travel time for a street
-    for (int segIdIndex = 0; segIdIndex < route.size(); segIdIndex++) {
-        //find the start street name
-        streetID = getStreetSegmentInfo(route[segIdIndex]).streetID;
-        streetName = getStreetName(streetID);
-        //find the total distance on the same street
-        distance += findStreetSegmentLength(route[segIdIndex]);
-        //calculate the total distance travel in the same street
-        travelTime += findStreetSegmentTravelTime(route[segIdIndex]);
-        //if street change or reach the destination update the street
-        if (streetName != previousStreetName) {
-            //track the turn point, before and after turn point
-            if (segIdIndex > 0) {
-                from1 = getStreetSegmentInfo(route[segIdIndex - 1]).from;
-                from2 = getStreetSegmentInfo(route[segIdIndex - 1]).to;
-                from3 = getStreetSegmentInfo(route[segIdIndex]).from;
-                from4 = getStreetSegmentInfo(route[segIdIndex]).to;
-                //make sure the from mid and to points are in correct order
-                if (from1 == from3) {
-                    mid = from1;
-                    from = from2;
-                    to = from4;
-                } else if (from1 == from4) {
-                    mid = from1;
-                    from = from2;
-                    mid = from3;
-                } else if (from2 == from3) {
-                    mid = from2;
-                    from = from1;
-                    to = from4;
-                } else if (from2 == from4) {
-                    mid = from2;
-                    from = from1;
-                    to = from3;
-                }
-                //check if it is right or left turn
-                if (crossProduct(from, mid, to) > 0) {
-                    street.turn = "left";
-                } else {
-                    street.turn = "right";
-                }
-
-            }
-            //subtract the newly street  distance and travel time
-            distance = distance - findStreetSegmentLength(route[segIdIndex]);
-            //calculate the total distance travel in the same street
-            travelTime = travelTime - findStreetSegmentTravelTime(route[segIdIndex]);
-            //calculate the turn angle
-            angle = turnAngle(from, mid, to);
-            street.angle = angle;
-            //update the street info and store in the vector
-            street.distance = distance;
-            street.streetName = previousStreetName;
-            street.travelTime = travelTime / minutes;
-
-            travelPathInfo.push_back(street);
-            //track the total number of street traveled
-            numberOfStreets++;
-            //reset for new street distance and travel time
-            distance = findStreetSegmentLength(route[segIdIndex]);
-            travelTime = findStreetSegmentTravelTime(route[segIdIndex]);
-
-        }
-
-        if (segIdIndex == (route.size() - 1)) {// reach the last street segment
-            if (segIdIndex > 0) {
-                from = getStreetSegmentInfo(route[segIdIndex - 1]).from;
-                mid = getStreetSegmentInfo(route[segIdIndex - 1]).to;
-                to = getStreetSegmentInfo(route[segIdIndex]).to;
-            }
-
-            street.angle = 0;
-            //update the street info and store in the vector
-            street.distance = distance;
-            street.streetName = streetName;
-            street.travelTime = travelTime / minutes;
-            travelPathInfo.push_back(street);
-            //track the total number of street traveled
-            numberOfStreets++;
-        }
-        //update the street change
-        previousStreetName = streetName;
-
-    }
-
-    displayTravelInstructions(numberOfStreets, streetID, route);
-}
-
-void displayTravelInstructions(int numberOfStreets, int streetID, std::vector<StreetSegmentIdx> route) {
-    streetInfo streetInformation;
-    std::string streetName;
-
-    //print the street travel instruction
-    for (int i = 0; i < numberOfStreets - 1; i++) {
-        streetInformation = travelPathInfo[i];
-
-        //the turn angle is 175-185, travel straight
-        if (streetInformation.angle < 185 && streetInformation.angle >= 175) {
-            //check if travel time is under one minutes
-            if (streetInformation.travelTime < 1) {
-                //distance less than 1km
-                if (streetInformation.distance < 1000) {
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance)
-                            + " m, under 1 minute. Then continue straight \n";
-                } else {//distance grater than 1km
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance / 1000)
-                            + " km, under 1 minute. Then continue straight \n";
-                }
-            } else {//travel time greater than 1 minutes
-                //travel time greater than 1 minutes
-                if (streetInformation.distance < 1000) {
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) + " m, "
-                            + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then continue straight \n";
-                } else {//distance grater than 1km
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance / 1000) + " km, "
-                            + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then continue straight \n";
-                }
-            }
-        } else if (streetInformation.angle < 175 && streetInformation.angle >= 120) {//slight turn
-            //check if travel time is under one minutes
-            if (streetInformation.travelTime < 1) {
-                //distance less than 1km
-                if (streetInformation.distance < 1000) {
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance)
-                            + " m, under 1 minute. Then turn slightly " + streetInformation.turn + "\n";
-                } else {//distance grater than 1km
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance / 1000)
-                            + " km, under 1 minute. Then turn slightly " + streetInformation.turn + "\n";
-                }
-            } else {//travel time greater than 1 minutes
-                //travel time greater than 1 minutes
-                if (streetInformation.distance < 1000) {
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) + " m, "
-                            + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn slightly " + streetInformation.turn + "\n";
-                } else {//distance grater than 1km
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance / 1000) + " km, "
-                            + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn slightly " + streetInformation.turn + "\n";
-                }
-            }
-        } else if (streetInformation.angle < 120 && streetInformation.angle >= 60) {//normal around 90 degree turn
-            //check if travel time is under one minutes
-            if (streetInformation.travelTime < 1) {
-                //distance less than 1km
-                if (streetInformation.distance < 1000) {
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance)
-                            + " m, under 1 minute. Then turn  " + streetInformation.turn + "\n";
-                } else {//distance grater than 1km
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance / 1000)
-                            + " km, under 1 minute. Then turn " + streetInformation.turn + "\n";
-                }
-            } else {//travel time greater than 1 minutes
-                //travel time greater than 1 minutes
-                if (streetInformation.distance < 1000) {
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) + " m, "
-                            + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn  " + streetInformation.turn + "\n";
-                } else {//distance grater than 1km
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance / 1000) + " km, "
-                            + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn " + streetInformation.turn + "\n";
-                }
-            }
-        } else if (streetInformation.angle < 60 && streetInformation.angle >= 0) {//sharp turn
-            //check if travel time is under one minutes
-            if (streetInformation.travelTime < 1) {
-                //distance less than 1km
-                if (streetInformation.distance < 1000) {
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance)
-                            + " m, under 1 minute. Then turn sharply " + streetInformation.turn + "\n";
-                } else {//distance grater than 1km
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance / 1000)
-                            + " km, under 1 minute. Then turn sharply " + streetInformation.turn + "\n";
-                }
-            } else {//travel time greater than 1 minutes
-                //travel time greater than 1 minutes
-                if (streetInformation.distance < 1000) {
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance) + " m, "
-                            + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn sharply " + streetInformation.turn + "\n";
-                } else {//distance grater than 1km
-                    instructionString += "Travel along " + streetInformation.streetName
-                            + " for " + std::to_string(streetInformation.distance / 1000) + " km, "
-                            + "for " + std::to_string(streetInformation.travelTime)
-                            + " minute. Then turn sharply " + streetInformation.turn + "\n";
-                }
-            }
-        }
-
-    }
-    //reach the destination
-    streetInfo lastStreetInformation = travelPathInfo[numberOfStreets-1];
-    streetID = getStreetSegmentInfo(route[route.size() - 1]).streetID;
-    streetName = getStreetName(streetID);
-    //print the last street
-
-    instructionString += "Travel along " + lastStreetInformation.streetName + "for "
-            + std::to_string(lastStreetInformation.distance) + " m," +" destination reached ! \n";
-    //instructionString += "Destination " + streetName + " reached!\n";
-
-}
-
-
-double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
-    //triangle with points A,B,C
-    LatLon A= getIntersectionPosition(from);
-    LatLon B=getIntersectionPosition(mid);
-    LatLon C=getIntersectionPosition(to);
-    
-    double a=findDistanceBetweenTwoPoints(std::make_pair(B,C));
-    double b=findDistanceBetweenTwoPoints(std::make_pair(C,A));
-    double c=findDistanceBetweenTwoPoints(std::make_pair(A,B));
-    //check if it is a valid angle, avoid straight path without turn
-    if(a==0||b==0||c==0){
-        return 0;
-    }
-    //turn angle
-    double angle = acos((c*c+a*a-b*b)/(2*abs(c*a)))/kDegreeToRadian;
-    
-    return angle;
-}
-
-
-double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
-    LatLon A= getIntersectionPosition(from);
-    LatLon B=getIntersectionPosition(mid);
-    LatLon C=getIntersectionPosition(to);
-    double Ax,Bx,Cx,Ay,By,Cy;
-    Ax=xFromLon(A.longitude());
-    Ay=yFromLat(A.latitude());
-    Bx=xFromLon(B.longitude());
-    By=yFromLat(B.latitude());
-    Cx=xFromLon(C.longitude());
-    Cy=yFromLat(C.latitude());
-    //vector BA, from point B to A;Vector BC from B to C
-    //vector BA<BAi,BAj,BAk>
-    double BAi,BAj;
-    BAi=Ax-Bx;
-    BAj=Ay-By;
-
-    double BCi,BCj;
-    BCi=Cx-Bx;
-    BCj=Cy-By;
-
-    //BC cross BA result only in k direction
-    double k= BCi*BAj-BCj*BAi;
-    std::cout<<k<<std::endl;
-    return k;
-}
 
 // Callback for which the User Guide button is clicked
 void helpBtnClicked(GtkWidget *, ezgl::application *application){

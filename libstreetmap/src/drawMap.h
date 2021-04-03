@@ -106,5 +106,20 @@ std::string separateNamesByCommas(std::string locationName);
 
 //set the global variable for starting point or destination depend on how many intersection are highlighted
 void setFromOrDestination(ezgl::application *  application, bool isDestination);
+
+//find the path between two intersections
+void searchPathBtnClicked(GtkWidget *, gpointer data);
+
+void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, IntersectionIdx id);
+
+void drawSegment(ezgl::renderer *g, ezgl::rectangle world, ezgl::color segColor, StreetSegmentIdx streetSegmentsID);
+
+void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegmentIdx> route);
+
+void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
+
+void displayTravelInfo(std::vector<StreetSegmentIdx> route);
+
+void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<StreetSegmentIdx> route);
 #endif /* DRAWMAP_H */
 
