@@ -86,7 +86,7 @@ gboolean press_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
   return TRUE; // consume the event
 }
 
-gboolean release_mouse(GtkWidget *widget, GdkEventButton *event, gpointer data)
+gboolean release_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
 {   
   auto application = static_cast<ezgl::application *>(data);
   if(event->type == GDK_BUTTON_RELEASE) {
@@ -99,11 +99,11 @@ gboolean release_mouse(GtkWidget *widget, GdkEventButton *event, gpointer data)
           clickToHighlightClosestIntersection(positionOfClicked);
           if (choosingStartingPoint){
               
-              setFromBtnClicked(widget, data);
+              setFromOrDestination(application, false);
               displayStartAndDestination(application);
               choosingStartingPoint = false;
           }else if (choosingDestination){
-              setToBtnClicked(widget, data);
+              setFromOrDestination(application, true);
               displayStartAndDestination(application);
               choosingDestination = false;
           }
