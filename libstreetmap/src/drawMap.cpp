@@ -72,7 +72,7 @@ extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
 
 void help_button(GtkWidget *widget, ezgl::application *application);
-void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data);
+void on_dialog_response(GtkDialog *dialog, gint response_id);
 
 //vector that store the street name and it travel time and distance
 struct streetInfo{
@@ -2375,8 +2375,7 @@ double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx t
     return k;
 }
 
-void help_button(GtkWidget *, ezgl::application *application)
-{
+void help_button(GtkWidget *, ezgl::application *application){
     GObject *window;            // the parent window over which to add the dialog
     GtkWidget *content_area;    // the content area of the dialog (i.e. where to put stuffin the dialog)
     GtkWidget *label;           // the label we will create to display a message in the content area
@@ -2419,8 +2418,7 @@ void help_button(GtkWidget *, ezgl::application *application)
     // END: CODE FOR SHOWING DIALOG
 }
 
-void on_dialog_response(GtkDialog *dialog, gint response_id, gpointer user_data)
-{
+void on_dialog_response(GtkDialog *dialog, gint response_id){
     // For demonstration purposes, this will show the int value of the response type
     std::cout << "response is ";
     switch(response_id) {
