@@ -19,6 +19,17 @@ struct oneWaySegInfo {
     int distance;
 };
 
+
+//vector that store the street name and it travel time and distance
+struct streetInfo{
+    std::string streetName;
+    std::string turn;
+    int distance;
+    int travelTime;
+    double angle;
+    
+};
+
 class Street {
 public:
     std::vector<std::vector<IntersectionIdx>> streetIntersections; //store all intersection in one specific street for every street

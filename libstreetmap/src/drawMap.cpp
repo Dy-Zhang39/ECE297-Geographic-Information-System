@@ -70,20 +70,8 @@ extern std::vector<StreetIdx> mostSimilarFirstName;
 extern std::vector<StreetIdx> mostSimilarSecondName;
 extern bool checkingFirstName;
 
-
-//vector that store the street name and it travel time and distance
-struct streetInfo{
-    std::string streetName;
-    std::string turn;
-    double distance;
-    double travelTime;
-    double angle;
-    
-};
-
-    //the vector that store the travel street information
-    std::vector<streetInfo> travelPathInfo;
-
+//the vector that store the travel street information
+std::vector<streetInfo> travelPathInfo;
 
 IntersectionIdx fromPath = -1;
 IntersectionIdx toPath = -1;
@@ -99,6 +87,7 @@ void drawRoute(ezgl::renderer *g, ezgl::rectangle world, std::vector<StreetSegme
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, StreetSegmentIdx location);
 void displayTravelInfo(std::vector<StreetSegmentIdx> route);
 
+void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<StreetSegmentIdx> route);
 
 void drawMap(){
 
@@ -2120,6 +2109,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
     IntersectionIdx from = 0;
     IntersectionIdx mid = 0;
     IntersectionIdx to = 0;
+    minutes=60;
 
     //check through the route found previously, and collect street name, street distance 
     //and travel time for a street
@@ -2156,7 +2146,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             //update the street info and store in the vector
             street.distance = distance;
             street.streetName = previousStreetName;
-            street.travelTime = travelTime;
+            street.travelTime = travelTime/minutes;
 
             travelPathInfo.push_back(street);
             //track the total number of street traveled
@@ -2178,7 +2168,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             //update the street info and store in the vector
             street.distance = distance;
             street.streetName = streetName;
-            street.travelTime = travelTime;
+            street.travelTime = travelTime/minutes;
             travelPathInfo.push_back(street);
             //track the total number of street traveled
             numberOfStreets++;
@@ -2187,10 +2177,23 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
         previousStreetName = streetName;
 
     }
+    displayTravelInstructions(numberOfStreets,streetID,route);
+}
+
+void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<StreetSegmentIdx> route){
     streetInfo streetInformation;
+    std::string streetName;
     //print the street travel instruction
     for (int i = 0; i < numberOfStreets-1; i++) {
         streetInformation = travelPathInfo[i];
+        
+        //the turn angle is 175-185, travel straight
+        if(streetInformation.turn<185&&streetInformation.turn>175){
+            //check if travel time is under one minutes
+            if(streetInformation.travelTime<1){
+                if(streetInformation.distance<1000)
+            }
+        }
 
         std::cout << "Travel along " << streetInformation.streetName << " for "
                 << streetInformation.distance << " m," << " around "
@@ -2233,7 +2236,6 @@ double turnAngle(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
     return angle;
 }
 
-struct vector;
 
 double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx to){
     LatLon A= getIntersectionPosition(from);
