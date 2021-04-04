@@ -55,6 +55,7 @@ std::string separateNamesByCommas(std::string locationName){
     std::string nameByCommas;
     for (int idx = 0; idx < locationName.size(); idx++){
         
+        //change " &" to ","
         if (idx != locationName.size() - 1 && locationName[idx] == ' ' && locationName[idx + 1] == '&'){
             nameByCommas.push_back(',');
         }else if (locationName[idx] != '&'){
@@ -184,11 +185,13 @@ double streetSize(ezgl::rectangle world){
     //this function make the streetSize change as the  map area changes, 
     //it is bounded by ln(), size between around 0.5 - 10
     double mapArea = world.area();
+    
     //function parameter
     double par1=6;
     double par2=1000;
     double par3=1.5;
     double par4=5;
+    
     //adjust street size
     double streetSize = par1*log(log(par2/sqrt(mapArea)+par3))+par4;
  
@@ -253,11 +256,14 @@ void displayIntersectionPopup(ezgl::renderer *g, ezgl::rectangle world, Intersec
 void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurface, IntersectionIdx location) {
     double widthToPixelRatio =  world.width() / g->get_visible_screen().width();
     double heightToPixelRatio =  world.height() / g->get_visible_screen().height();
+    
     if (location >= 0 && location < getNumIntersections()){
+        
         double surfaceWidth = (double)cairo_image_surface_get_width(iconSurface) * widthToPixelRatio;
         double surfaceHeight = (double)cairo_image_surface_get_height(iconSurface) * heightToPixelRatio;
         LatLon locationLatLon = getIntersectionPosition(location);
         g->draw_surface(iconSurface, {xFromLon(locationLatLon.longitude()) - surfaceWidth / 2 , yFromLat(locationLatLon.latitude()) + surfaceHeight} );
+        
         //draw the text of the title
         g->set_text_rotation(0);
         g->set_font_size(10);
@@ -288,13 +294,16 @@ double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx t
     LatLon A= getIntersectionPosition(from);
     LatLon B=getIntersectionPosition(mid);
     LatLon C=getIntersectionPosition(to);
+    
     double Ax,Bx,Cx,Ay,By,Cy;
+    
     Ax=xFromLon(A.longitude());
     Ay=yFromLat(A.latitude());
     Bx=xFromLon(B.longitude());
     By=yFromLat(B.latitude());
     Cx=xFromLon(C.longitude());
     Cy=yFromLat(C.latitude());
+    
     //vector BA, from point B to A;Vector BC from B to C
     //vector BA<BAi,BAj,BAk>
     double BAi,BAj;
