@@ -120,6 +120,6 @@ void drawIcon(ezgl::renderer *g, ezgl::rectangle world, ezgl::surface *iconSurfa
 
 void displayTravelInfo(std::vector<StreetSegmentIdx> route);
 
-void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<StreetSegmentIdx> route);
+void displayTravelInstructions(int numberOfStreets, int streetID,std::vector<StreetSegmentIdx> route,int totalTravelTime);
 #endif /* DRAWMAP_H */
 

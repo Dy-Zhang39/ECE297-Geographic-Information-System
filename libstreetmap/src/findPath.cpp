@@ -224,6 +224,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
     IntersectionIdx to = 0;
     int minutes = 60;
     IntersectionIdx from1, from2, from3, from4;
+    int totalTravelTime=0;
 
     //check through the route found previously, and collect street name, street distance 
     //and travel time for a street
@@ -280,6 +281,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             street.distance = distance;
             street.streetName = previousStreetName;
             street.travelTime = travelTime / minutes;
+            totalTravelTime+=travelTime;
 
             travelPathInfo.push_back(street);
             //track the total number of street traveled
@@ -302,6 +304,7 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             street.distance = distance;
             street.streetName = streetName;
             street.travelTime = travelTime / minutes;
+            totalTravelTime+=travelTime;
             travelPathInfo.push_back(street);
             //track the total number of street traveled
             numberOfStreets++;
@@ -379,10 +382,10 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
         }
     }
 
-    displayTravelInstructions(numberOfStreets, streetID, route);
+    displayTravelInstructions(numberOfStreets, streetID, route, totalTravelTime);
 }
 
-void displayTravelInstructions(int numberOfStreets, int streetID, std::vector<StreetSegmentIdx> route) {
+void displayTravelInstructions(int numberOfStreets, int streetID, std::vector<StreetSegmentIdx> route, int totalTravelTime) {
     streetInfo streetInformation;
     std::string streetName;
 
@@ -529,7 +532,7 @@ void displayTravelInstructions(int numberOfStreets, int streetID, std::vector<St
     //print the last street
 
     instructionString += "Travel along " + lastStreetInformation.streetName + "for "
-            + std::to_string(lastStreetInformation.distance) + " m," +" destination reached ! \n";
+            + std::to_string(lastStreetInformation.distance) + " m," +" destination reached ! \n ETA: "+std::to_string(totalTravelTime/60)+" minutes \n";
     //instructionString += "Destination " + streetName + " reached!\n";
 
 }
