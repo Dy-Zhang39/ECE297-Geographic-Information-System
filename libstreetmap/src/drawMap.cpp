@@ -642,11 +642,6 @@ gboolean textEntryChanges(GtkWidget * widget, gpointer data){
     return TRUE;
 }
 
-
-
-
-
-
 //change the map when the user switch to a different map
 gboolean changeMap(GtkWidget * widget, gpointer data){
     

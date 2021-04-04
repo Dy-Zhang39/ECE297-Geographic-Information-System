@@ -135,7 +135,9 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
         
         //display no route is found
         if (pathRoute.size() == 0){
-            application -> update_message("No path is found");
+            instructionString = "No path can be found!";
+            GtkLabel *label = (GtkLabel *) application->get_object("instructionLabel");
+            gtk_label_set_text(label, &instructionString[0]);
             return;
         }
         
@@ -298,9 +300,77 @@ void displayTravelInfo(std::vector<StreetSegmentIdx> route) {
             //track the total number of street traveled
             numberOfStreets++;
         }
+
         //update the street change
         previousStreetName = streetName;
 
+    }
+    
+    //First instruction, need to include the direction
+    if (route.size() > 0) {
+
+        //Get the from and to intersection position for the first segment
+        LatLon fromLatLon= getIntersectionPosition(fromPath);
+        LatLon toLatLon;
+        StreetSegmentInfo temp = getStreetSegmentInfo(route[0]);
+        if (temp.from == fromPath) {
+            toLatLon = getIntersectionPosition(temp.to);
+        } else {
+            toLatLon = getIntersectionPosition(temp.from);
+        }
+
+        double distanceInit =  pow(pow(yFromLat(toLatLon.latitude()) - yFromLat(fromLatLon.latitude()), 2) + 
+            pow(xFromLon(toLatLon.longitude()) - xFromLon(fromLatLon.longitude()), 2), 0.5);
+
+        std::string instructionInit = "";
+        
+        //Get initial angle
+        if(distanceInit){
+            double angleInit = asin(
+                (yFromLat(toLatLon.latitude()) - yFromLat(fromLatLon.latitude()) ) /
+                    distanceInit) / kDegreeToRadian;
+
+            double angleInit0 = acos(
+                (xFromLon(toLatLon.longitude()) - xFromLon(fromLatLon.longitude())) /
+                    distanceInit) / kDegreeToRadian;
+
+            //Identify the direction based on angle
+            if (abs(angleInit - angleInit0) < 0.001 && angleInit > 0) {
+                if (angleInit < 30) {
+                    instructionInit = "Head east \n";
+                } else if (angleInit < 60) {
+                    instructionInit = "Head northeast \n";
+                } else {
+                    instructionInit = "Head north \n";
+                }
+            } else if (abs(angleInit + angleInit0 - 180) < 0.001 && angleInit > 0 && angleInit0 > 0) {
+                if (angleInit < 30) {
+                    instructionInit = "Head west. ";
+                } else if (angleInit < 60) {
+                    instructionInit = "Head northwest. ";
+                } else {
+                    instructionInit = "Head north. ";
+                }
+            } else if (abs(angleInit + angleInit0) < 0.001 && angleInit < 0) {
+                if (angleInit0 < 30) {
+                    instructionInit = "Head east. ";
+                } else if (angleInit0 < 60) {
+                    instructionInit = "Head southeast. ";
+                } else {
+                    instructionInit = "Head south. ";
+                }
+            } else if (abs( 180 + angleInit - angleInit0) < 0.001 && angleInit < 0) {
+                if (- angleInit < 30) {
+                    instructionInit = "Head west. ";
+                } else if (- angleInit < 60) {
+                    instructionInit = "Head southwest. ";
+                } else {
+                    instructionInit = "Head south. ";
+                }
+            }
+
+            instructionString += instructionInit;
+        }
     }
 
     displayTravelInstructions(numberOfStreets, streetID, route);
