@@ -307,6 +307,5 @@ double crossProduct(IntersectionIdx from, IntersectionIdx mid, IntersectionIdx t
 
     //BC cross BA result only in k direction
     double k= BCi*BAj-BCj*BAi;
-    std::cout<<k<<std::endl;
     return k;
 }

@@ -129,11 +129,8 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
     
     //find the route and travel time
     if (toPath >= 0 && fromPath >= 0) {
-        std::clock_t start = clock();
         pathRoute = findPathBetweenIntersections(fromPath,toPath,15);
-        double travelTime = computePathTravelTime(pathRoute, 15);
     
-        std::clock_t end = clock();
         std::vector<IntersectionIdx> routeIntersections;
         
         //display no route is found
@@ -158,9 +155,6 @@ void searchPathBtnClicked(GtkWidget *, gpointer data){
             ezgl::rectangle newWorld = getZoomLevelToIntersections(routeIntersections);
             canvas->get_camera().set_world(newWorld);
         }
-        
-        double elapsedSecondsSearchPath = double(end-start) / CLOCKS_PER_SEC;
-        std:: cout << "From: " << fromPath << "  to: " << toPath << " Travel Time: " << travelTime << "  cpu time: " << elapsedSecondsSearchPath << std::endl;
         application->refresh_drawing();
         GtkLabel *label = (GtkLabel *) application->get_object("instructionLabel");
         gtk_label_set_text(label, &instructionString[0]);

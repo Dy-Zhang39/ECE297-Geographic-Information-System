@@ -181,19 +181,9 @@ std::vector<StreetSegmentIdx> findPathBetweenIntersections(
         while (pathNode.from != -1 ) {
             route.insert(route.begin(), pathNode.from);
             pathNode = allIntersections[pathNode.lastIntersection];
-        }
-        
-    }else{
-        //Inform user that the path does not found
-        std::cout<<"Path Not Found"<<std::endl<<" Please enter a new intersection"<<std::endl;
+        }      
     }
-    
-    //std::clock_t end = clock();
-    //double elapsedSecondsSearchPath = double(end-start) / CLOCKS_PER_SEC;
-    //std:: cout << "From: " << intersect_id_start << "  to: " << intersect_id_destination << "  cpu time: " << elapsedSecondsSearchPath << std::endl;
-
     return route;
-
 }
 
 double computePathTravelTime(const std::vector<StreetSegmentIdx>& path,const double turn_penalty) {

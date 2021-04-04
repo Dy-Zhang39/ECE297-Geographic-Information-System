@@ -56,7 +56,7 @@ void setToBtnClicked(GtkWidget *, gpointer data);
 
 //call back functions for user guide
 void helpBtnClicked(GtkWidget *widget, ezgl::application *application);
-void onDialogResponse(GtkDialog *dialog, gint response_id);
+void onDialogResponse(GtkDialog *dialog);
 
 void clearRouteBtnClicked(GtkWidget *, gpointer data);
 #endif /* CALLBACK_H */

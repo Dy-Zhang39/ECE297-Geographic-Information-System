@@ -446,7 +446,6 @@ gboolean toggleOtherPOI(GtkWidget *, gpointer data) {
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("other") != 0) {
         selectedPOI = "other";
-        std::cout << selectedPOI << "\n";
         application->refresh_drawing();
     }
     
@@ -458,7 +457,6 @@ gboolean toggleHidePOI(GtkWidget *, gpointer data){
     auto application = static_cast<ezgl::application *>(data);
     if (selectedPOI.compare("hide") != 0) {
         selectedPOI = "hide";
-        std::cout << selectedPOI << "\n";
         application->refresh_drawing();
     }
     
@@ -715,7 +713,6 @@ gboolean searchButtonIsClicked(GtkWidget * widget, gpointer data){
         singleSearchMode(textEntry, data);
     }else{
         searchPathBtnClicked(widget, data);
-        std::cout << "search button is pressed during path finding mode" <<std::endl;
     }
     return true;
 }
@@ -1794,22 +1791,8 @@ void helpBtnClicked(GtkWidget *, ezgl::application *application){
 }
 
 // Dialog response (OK button on popup or close icon) is clicked
-void onDialogResponse(GtkDialog *dialog, gint response_id){
-    
-    // For demonstration purposes, this will show the int value of the response type
-    std::cout << "response is ";
-    switch(response_id) {
-        case GTK_RESPONSE_ACCEPT:
-            std::cout << "GTK_RESPONSE_ACCEPT ";
-        break;
-        case GTK_RESPONSE_DELETE_EVENT:
-            std::cout << "GTK_RESPONSE_DELETE_EVENT (i.e. ??X?? button) ";
-        break;
-        default:
-            std::cout << "UNKNOWN ";
-        break;
-    }
-    std::cout << "(" << response_id << ")\n";
+void onDialogResponse(GtkDialog *dialog){
+
     /*This will cause the dialog to be destroyed*/
     gtk_widget_destroy(GTK_WIDGET (dialog));
 }
