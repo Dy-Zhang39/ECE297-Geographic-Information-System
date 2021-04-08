@@ -12,25 +12,18 @@
 #include "global.h"
 #include "dataHandler.h"
 
+#define ILLEAGAL 0
+#define LEAGAL 1
+#define VISTED 2
 
-struct PathNode {
-    StreetSegmentIdx from;
-    double travelTime; //tavel time from las node?
-    double distance;  //distance from the last node?
-    IntersectionIdx lastIntersection;
-};
-
-struct CalculateResult {
-    double bestTime;
-    std::vector <IntersectionIdx> result;
-    double cpuTime;
-};
 
 CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result, 
         std::vector <DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, 
         std::vector <IntersectionIdx> ids, double turn_penalty, int depotId, double randomLimit);
+
 CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> result, 
         std::vector<DeliveryInf> deliveries, std::vector <IntersectionIdx>, double turn_penalty, int intervals);
+
 std::vector <double> multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty);
 std::vector <WavePoint> multidestDijkstraOpt(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty, int numToFind);
 std::vector <int> initializeLegalIds(int deliverSize, int depotSize);
@@ -39,6 +32,8 @@ std::vector<CourierSubPath> travelingCourier0(
     const std::vector<DeliveryInf>& deliveries,
     const std::vector<IntersectionIdx>& depots,
     const float turn_penalty) ;
+
+
 
 std::vector<CourierSubPath> travelingCourier(
     const std::vector<DeliveryInf>& deliveries,
@@ -49,15 +44,17 @@ std::vector<CourierSubPath> travelingCourier(
     std::vector <IntersectionIdx> result;
 //    double firstCalculationBudget = 20;
     
-    int loopDepotsNum = 2;
-    if (depots.size() < loopDepotsNum) {
-        loopDepotsNum = depots.size();
-    }
+    //int loopDepotsNum = 2;
+    //if (depots.size() < loopDepotsNum) {
+    //    loopDepotsNum = depots.size();
+    //}
     
 
     // Initialize variables
     std::vector <IntersectionIdx> ids;
     std::vector <int> legalIds;
+    
+    
     for (int i = 0; i < deliveries.size(); i++) {
         ids.push_back(deliveries[i].pickUp);
         ids.push_back(deliveries[i].dropOff);
@@ -398,7 +395,7 @@ bool isAllDelivered(std::vector <int> legalIds, int deliverySize) {
                             
     bool allDelivered = true;
     for (int k = 0; k < deliverySize; k++) {
-        if (legalIds[k * 2] < 2 || legalIds[k*2 + 1] < 2) {
+        if (legalIds[k * 2] != VISTED || legalIds[k*2 + 1] != VISTED) {
             allDelivered = false;
             break;
         }
@@ -414,12 +411,12 @@ std::vector <int> initializeLegalIds(int deliverSize, int depotSize) {
     legalIds.clear();
     
     for (int i = 0; i < deliverSize; i++) {
-        legalIds.push_back(1);
-        legalIds.push_back(0);
+        legalIds.push_back(LEGAL);
+        legalIds.push_back(ILLEGAL);
     }
     
     for (int i = 0; i < depotSize; i++) {
-        legalIds.push_back(0);
+        legalIds.push_back(ILLEGAL);
     }
     
     return legalIds;
@@ -577,6 +574,9 @@ std::vector <WavePoint> multidestDijkstraOpt(IntersectionIdx intersect_id_start,
     
     return results;
 }
+
+
+
 
 /*
  * 

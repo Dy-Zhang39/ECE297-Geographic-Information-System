@@ -5,6 +5,20 @@
 #include "StreetsDatabaseAPI.h"
 #include "ezgl/point.hpp"
 
+// Stores the information of each node that has been calculated
+struct PathNode {
+    StreetSegmentIdx from;  //the street segment that connect this node from the last node
+    double travelTime;      //travel time between starting point to the current point
+    double distance;        //distance between this cureent point and the destination
+    IntersectionIdx lastIntersection;
+};
+
+struct CalculateResult {
+    double bestTime;                        //the time that need to travel according to the result vector
+    std::vector <IntersectionIdx> result;
+    double cpuTime;                         //the time that to complete this calculate or perturbation function
+};
+
 struct intersectionData {
   LatLon position;
   std::string name;

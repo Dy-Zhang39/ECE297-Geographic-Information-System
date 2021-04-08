@@ -25,13 +25,7 @@ extern std::vector <StreetSegmentIdx> exploredPath;
 
 std::vector <std::string> displayRoute(std::vector <StreetSegmentIdx> route);
 
-// Stores the information of each node that has been calculated
-struct PathNode {
-    StreetSegmentIdx from;
-    double travelTime; //tavel time from las node?
-    double distance;  //distance from the last node?
-    IntersectionIdx lastIntersection;
-};
+
 
 bool operator < (const WavePoint& lhs, const WavePoint& rhs){
     return lhs.heuristicTime < rhs.heuristicTime;
