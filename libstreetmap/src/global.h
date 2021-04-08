@@ -120,7 +120,6 @@ public:
     //virtual ~WavePoint();
     IntersectionIdx idx;
     double heuristicTime;
-    int optionalIndex;
     
     friend bool operator < (const WavePoint& lhs, const WavePoint& rhs);
     friend bool operator > (const WavePoint& lhs, const WavePoint& rhs);
