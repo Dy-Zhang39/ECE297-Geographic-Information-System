@@ -1769,7 +1769,7 @@ void helpBtnClicked(GtkWidget *, ezgl::application *application){
             + "\ntyping in the search bar and press [set from] and [set destination]. \n\n" +
             "Users can also press enter in the search bar to set starting point and destination and the user can choose the "
             + "\nintersection in the drop down list to set two points. \n\n" +
-            "When the switch on the left is off, the program is in pin point mode. User can set a starting point and destination "
+            "When the switch on the left is on, the program is in pin point mode. User can set a starting point and destination "
             + "\nby mouse clicking an intersection on the map and press the [set from] or [set destination] button. \n\n" +
             "Note: two modes searching bar mode and pin point mode can be in mixed usage meaning users can search the \nstarting point "
             + "using searching bar mode and then set the destination using pin point mode.";
