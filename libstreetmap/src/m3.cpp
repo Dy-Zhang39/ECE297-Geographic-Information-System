@@ -22,7 +22,6 @@
 extern std::vector<City*> cities;
 extern int currentCityIdx;
 extern std::vector <StreetSegmentIdx> exploredPath;
-double findDistanceBetweenIntersections(IntersectionIdx from, IntersectionIdx to);
 
 std::vector <std::string> displayRoute(std::vector <StreetSegmentIdx> route);
 
