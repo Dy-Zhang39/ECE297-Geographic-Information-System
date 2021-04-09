@@ -16,6 +16,7 @@ struct PathNode {
 struct CalculateResult {
     double bestTime;                        //the time that need to travel according to the result vector
     std::vector <IntersectionIdx> result;
+    std::vector <int> resultIdxIndex;
     double cpuTime;                         //the time that to complete this calculate or perturbation function
 };
 
