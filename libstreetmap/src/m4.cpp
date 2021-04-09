@@ -35,7 +35,7 @@ struct PreCalResult {
  */
 CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result, 
         std::vector <DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, 
-        std::vector <IntersectionIdx> ids, double turn_penalty, int depotId, double randomLimit);
+        std::vector <IntersectionIdx> ids, double turn_penalty, int depotIdx, double randomLimit);
 
 /*
  * Perturbation to improve the current solution
@@ -352,6 +352,8 @@ CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> resul
 CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result, 
         std::vector <DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, 
         std::vector <IntersectionIdx> ids, double turn_penalty, int depotId, double randomLimit) {
+    
+    
     std::clock_t begin = clock();
     std::vector <IntersectionIdx> targetsPickup;        //vector for all available pickUp intersections
     int nextIdx = -1;
@@ -360,7 +362,9 @@ CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result,
         targetsPickup.push_back(deliveries[j].pickUp);
     }
 
+
     int currentNode = deliveries.size() * 2 + depotId;  //convert the first depot into the index of ids
+
     std::vector <int> legalIds = initializeLegalIds(deliveries.size(), depots.size());
     bool allDelivered = isAllDelivered(legalIds, deliveries.size());
     double travelTimeTotal = 0;
