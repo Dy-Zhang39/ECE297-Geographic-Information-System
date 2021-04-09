@@ -83,11 +83,11 @@ std::vector<CourierSubPath> travelingCourier(
     std::vector <int> legalIds;                 //the vector that is used to determine whether an intersection is legal for travel
     
     //Initialize the ids vector
+    //store all delivery intersecton in ids
     for (int i = 0; i < deliveries.size(); i++) {
         ids.push_back(deliveries[i].pickUp);
         ids.push_back(deliveries[i].dropOff);
     }
-    
     for (int i = 0; i < depots.size(); i++) {
         ids.push_back(depots[i]);
     }
@@ -208,6 +208,7 @@ CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> resul
     if (deliveries.size() * 2 > intervals + 3) {
         for (int i = 2; i < result.size() - 1 - intervals; i++) {
             bool valid = true;
+            
             for (int j = 0; j < deliveries.size(); j++) {
                 for (int k0 = i -1 ; k0 < i + intervals; k0++) {
                     if (deliveries[j].pickUp == result[k0] ) {
@@ -381,8 +382,8 @@ CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result,
 bool isAllDelivered(std::vector <int> legalIds, int deliverySize) {
                             
     bool allDelivered = true;
-    for (int k = 0; k < deliverySize; k++) {
-        if (legalIds[k * 2] != VISTED || legalIds[k*2 + 1] != VISTED) {
+    for (int k = 0; k < 2*deliverySize; k++) {
+        if (legalIds[k] != VISTED) {
             allDelivered = false;
             break;
         }
