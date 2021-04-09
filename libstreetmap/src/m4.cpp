@@ -146,8 +146,8 @@ std::vector<CourierSubPath> travelingCourier(
     std::cout << "Current best time: " << currentBestTime << "\n";
 
 
-    for (int k = 0; k < 40; k++) {    
-        cResult = //calculate(currentBestTime, result, deliveries, depots, ids, turn_penalty, firstNode, 0.9 - 0.1 * k);
+    for (int k = 0; k < 100; k++) {    
+        cResult = //calculate(currentBestTime, result, deliveries, depots, ids, turn_penalty, first  Running    M4_PubNode, 0.9 - 0.1 * k);
             calculatePreload(currentBestTime, result, resultIndex, deliveries, depots, ids, firstNode, preCalculate, 0.9);
 
         
@@ -156,10 +156,47 @@ std::vector<CourierSubPath> travelingCourier(
             result = cResult.result;
             resultIndex = cResult.resultIdxIndex;
         }
+        
+        std::clock_t current = clock();
+
+        if (double(current - begin) / CLOCKS_PER_SEC + cResult.cpuTime * 2 > 30) {
+            break;
+        }
     }
     
     std::clock_t currentFin = clock();
     std::cout << "Next best time: " << currentBestTime << "    Time elapsed: " << double(currentFin - begin) / CLOCKS_PER_SEC <<  "\n";
+    //perturbation (1-opt)
+    bool continueOpt = true;
+    for (int i = 0; i < deliveries.size() *2; i ++) {
+        if (continueOpt) {
+            for (int k = 0; k < 3; k ++) {
+                if (continueOpt) {
+                    cResult = 
+                        perturbationPrecalculated(currentBestTime, result, deliveries, resultIndex, i, preCalculateOrigOrder, ids);
+                    //std::cout << "Current pertubation + "<<i<<" iteration: " << k << "  Current cpu time: " << cResult.cpuTime << " CurrentBestTime: " << cResult.bestTime << "\n";
+                    std::clock_t current = clock();
+
+                    if (double(current - begin) / CLOCKS_PER_SEC < 45) {
+                        continueOpt = true;
+                    } else {
+                        continueOpt = false;
+                    }
+
+                    if (currentBestTime > cResult.bestTime) {
+                        currentBestTime = cResult.bestTime;
+                        result = cResult.result;
+                        resultIndex = cResult.resultIdxIndex;
+                    } else {
+                        break;
+                    }
+
+                } else { 
+                    break;
+                }
+            }
+        }
+    }
     
     //-------------------------------------------   end of precalc -----------------------------------------------------
     //----------------------------------------BELOW IS WITHOUT PRECALCULATION--------------------------------------------
@@ -663,7 +700,7 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
             if (valid) {
                 double originalTime = 0;
                 double newTime = 0;
-                double oTime = 0, nTime = 0;
+//                double oTime = 0, nTime = 0;
 
                 for (int j = i - 2; j < i + intervals + 1; j ++) {
                     int k = j;
@@ -678,7 +715,7 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                     }
 
                     originalTime += preCalculate[resultIndex[j]][resultIndex[ j+ 1]].heuristicTime;
-                    oTime += computePathTravelTime(findPathBetweenIntersections(result[j], result[j + 1], 15), 15);
+                    //oTime += computePathTravelTime(findPathBetweenIntersections(result[j], result[j + 1], 15), 15);
                     
                     if (preCalculate[resultIndex[k]].size() > resultIndex[k0] +1) {
                         newTime += preCalculate[resultIndex[k]][resultIndex[k0]].heuristicTime;
@@ -686,7 +723,7 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                         newTime = 9999999;
                     }
                     
-                    nTime += computePathTravelTime(findPathBetweenIntersections(ids[resultIndex[k]], ids[resultIndex[k0]], 15), 15);
+                    //nTime += computePathTravelTime(findPathBetweenIntersections(ids[resultIndex[k]], ids[resultIndex[k0]], 15), 15);
                 }
 
                 //Update the result and bestTime if the newTime is shorter
