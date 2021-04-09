@@ -11,6 +11,7 @@
 #include <vector>
 #include "global.h"
 #include "dataHandler.h"
+#include <time.h>
 
 #define ILLEAGAL 0
 #define LEAGAL 1
@@ -77,6 +78,9 @@ std::vector<CourierSubPath> travelingCourier(
     const std::vector<IntersectionIdx>& depots,
     const float turn_penalty) {
 
+    srand(time(NULL));
+    
+    
     std::clock_t begin = clock();
     std::vector <IntersectionIdx> result;       //the vector to store the current best travel sequence
     std::vector <IntersectionIdx> ids;          //the vector of all deliveries and depots intersections in the order initialized  below
@@ -291,7 +295,7 @@ CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result,
         targetsPickup.push_back(deliveries[j].pickUp);
     }
 
-
+    
     int currentNode = deliveries.size() * 2 + depotId;  //convert the first depot into the index of ids
 
     std::vector <int> legalIds = initializeLegalIds(deliveries.size(), depots.size());
