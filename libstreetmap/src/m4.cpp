@@ -127,7 +127,6 @@ std::vector<CourierSubPath> travelingCourier(
     //#pragma omp parallel for
     for (int i = 0; i < depots.size(); i++) {
         CalculateResult calcResult =
-                //calculate(currentBestTime, result, deliveries, depots, ids, turn_penalty, i, 1.0);
                 calculatePreload(currentBestTime, result, resultIndex, deliveries, depots, ids, i, preCalculate, 1.0);
         if (calcResult.bestTime < currentBestTime) {
             currentBestTime = calcResult.bestTime;
@@ -142,32 +141,10 @@ std::vector<CourierSubPath> travelingCourier(
             firstNode = k;
         }
     }
-    //Have a 10% to 40% chance of taking the second smallest travel time
-    std::cout << "Current best time: " << currentBestTime << "\n";
 
-
-    for (int k = 0; k < 100; k++) {    
-        cResult = //calculate(currentBestTime, result, deliveries, depots, ids, turn_penalty, first  Running    M4_PubNode, 0.9 - 0.1 * k);
-            calculatePreload(currentBestTime, result, resultIndex, deliveries, depots, ids, firstNode, preCalculate, 0.9);
-
-        
-        if (cResult.bestTime < currentBestTime) {
-            currentBestTime = cResult.bestTime;
-            result = cResult.result;
-            resultIndex = cResult.resultIdxIndex;
-        }
-        
-        std::clock_t current = clock();
-
-        if (double(current - begin) / CLOCKS_PER_SEC + cResult.cpuTime * 2 > 30) {
-            break;
-        }
-    }
-    
-    std::clock_t currentFin = clock();
-    std::cout << "Next best time: " << currentBestTime << "    Time elapsed: " << double(currentFin - begin) / CLOCKS_PER_SEC <<  "\n";
-    //perturbation (1-opt)
     bool continueOpt = true;
+    
+    //perturbation (1-opt) for the current best solution
     for (int i = 0; i < deliveries.size() *2; i ++) {
         if (continueOpt) {
             for (int k = 0; k < 3; k ++) {
@@ -197,6 +174,62 @@ std::vector<CourierSubPath> travelingCourier(
             }
         }
     }
+    //Have a 10% to 40% chance of taking the second smallest travel time
+    std::cout << "Current best time: " << currentBestTime << "\n";
+
+
+    for (int randomK = 0; randomK < 100; randomK++) {    
+        if (continueOpt) {
+            cResult = 
+                calculatePreload(currentBestTime, result, resultIndex, deliveries, depots, ids, firstNode, preCalculate, 0.9);
+            
+            double currentBestTimeTemp = cResult.bestTime;
+            std::vector <IntersectionIdx>  resultTemp = cResult.result;
+            std::vector <int> resultIndexTemp = cResult.resultIdxIndex;
+            
+            //User perturbation to fine tune the random solution even if it is not the current best
+            //perturbation (1-opt)
+            for (int i = 0; i < deliveries.size() *2; i ++) {
+                if (continueOpt) {
+                    for (int k = 0; k < 3; k ++) {
+                        if (continueOpt) {
+                            cResult = 
+                                perturbationPrecalculated(currentBestTimeTemp, resultTemp, deliveries, resultIndexTemp, i, preCalculateOrigOrder, ids);
+                            //std::cout << "Current pertubation + "<<i<<" iteration: " << k << "  Current cpu time: " << cResult.cpuTime << " CurrentBestTime: " << cResult.bestTime << "\n";
+                            std::clock_t current = clock();
+
+                            if (double(current - begin) / CLOCKS_PER_SEC < 45) {
+                                continueOpt = true;
+                            } else {
+                                continueOpt = false;
+                            }
+
+                            if (currentBestTimeTemp > cResult.bestTime) {
+                                currentBestTimeTemp = cResult.bestTime;
+                                resultTemp = cResult.result;
+                                resultIndexTemp = cResult.resultIdxIndex;
+                            } else {
+                                break;
+                            }
+
+                        } else { 
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (currentBestTimeTemp < currentBestTime) {
+                currentBestTime = currentBestTimeTemp;
+                result = resultTemp;
+                resultIndex = resultIndexTemp;
+            }
+        }
+    }
+    
+    std::clock_t currentFin = clock();
+    std::cout << "Next best time: " << currentBestTime << "    Time elapsed: " << double(currentFin - begin) / CLOCKS_PER_SEC <<  "\n";
+    
     
     //-------------------------------------------   end of precalc -----------------------------------------------------
     //----------------------------------------BELOW IS WITHOUT PRECALCULATION--------------------------------------------
