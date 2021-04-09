@@ -19,7 +19,7 @@
 
 CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result, 
         std::vector <DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, 
-        std::vector <IntersectionIdx> ids, double turn_penalty, int depotId, double randomLimit);
+        std::vector <IntersectionIdx> ids, double turn_penalty, int depotIdx, double randomLimit);
 
 CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> result, 
         std::vector<DeliveryInf> deliveries, std::vector <IntersectionIdx>, double turn_penalty, int intervals);
@@ -292,7 +292,9 @@ CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> resul
 //Calculate the best path to deliver all packages
 CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result, 
         std::vector <DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, 
-        std::vector <IntersectionIdx> ids, double turn_penalty, int depotId, double randomLimit) {
+        std::vector <IntersectionIdx> ids, double turn_penalty, int depotIdx, double randomLimit) {
+    
+    
     std::clock_t begin = clock();
     std::vector <IntersectionIdx> targetsPickup;
     int nextIdx = -1;
@@ -304,9 +306,9 @@ CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result,
     //std::vector <WavePoint> rstPickup;
     
     
-    //rstPickup = multidestDijkstraOpt(depots[depotId], targetsPickup, turn_penalty, 2);
+    //rstPickup = multidestDijkstraOpt(depots[depotIdx], targetsPickup, turn_penalty, 2);
     double minTime = 999999999;
-    int currentNode = deliveries.size() * 2 + depotId;
+    int currentNode = deliveries.size() * 2 + depotIdx;
     std::vector <int> legalIds = initializeLegalIds(deliveries.size(), depots.size());
     bool allDelivered = isAllDelivered(legalIds, deliveries.size());
     double travelTimeTotal = 0;
