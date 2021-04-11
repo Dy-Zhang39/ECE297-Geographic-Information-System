@@ -20,7 +20,6 @@
  */
 #include <iostream>
 #include "m1.h"
-#include "m4.h"
 #include "m3.h"
 #include "StreetsDatabaseAPI.h"
 #include "global.h"     //include all the global variable
@@ -145,6 +144,7 @@ bool loadMap(std::string map_streets_database_filename) {
     initializeFeatureBounding();//pre-load the bounding boxes of features
     loadSubways();
 
+
     //std::vector <StreetSegmentIdx> rTemp = findPathBetweenIntersections(49067, 7136,16);
     //double tTemp = computePathTravelTime(rTemp, 15.00);
     //std::cout << tTemp << " --Time \n";
@@ -178,6 +178,7 @@ bool loadMap(std::string map_streets_database_filename) {
     depots = {20, 77402, 92258};    
     tt = travelingCourier(deliveries, depots, turn_penalty);
     */
+
         
     std::clock_t end = clock();
     double loadAlready = double(end - start) / CLOCKS_PER_SEC;

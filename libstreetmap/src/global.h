@@ -15,7 +15,8 @@ struct PathNode {
 
 struct CalculateResult {
     double bestTime;                        //the time that need to travel according to the result vector
-    std::vector <IntersectionIdx> result;
+    std::vector <IntersectionIdx> result;   //the travel order of deliveries and depots
+    std::vector <int> resultIdxIndex;       //the index of ids in the result vector
     double cpuTime;                         //the time that to complete this calculate or perturbation function
 };
 
@@ -118,7 +119,7 @@ public:
 class WavePoint {
 public:
     //virtual ~WavePoint();
-    IntersectionIdx idx;
+    int idx;                //index of the node. In m3, intersectionIdx is stored, in m4, the index of ids is stored
     double heuristicTime;
     
     friend bool operator < (const WavePoint& lhs, const WavePoint& rhs);
