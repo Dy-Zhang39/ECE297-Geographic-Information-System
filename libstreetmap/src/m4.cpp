@@ -16,10 +16,13 @@
 #define ILLEAGAL 0
 #define LEAGAL 1
 #define VISTED 2
+
+
 struct PreCalResult {
-    std::vector<WavePoint> result;
-    std::vector<WavePoint> resultOrignalOrder;
+    std::vector<WavePoint> result;              //the result of the multi-dest Dijkstra calculation sorted by travel time
+    std::vector<WavePoint> resultOrignalOrder;  //the result of the multi-dest Dijkstra calculation sorted by ids order
 };
+
 /*
  * Calculate the full travel sequence assuming starting from one of the depots
  * @param bestTime: current best time to pickup and drop off all packages before running this function
@@ -34,10 +37,11 @@ struct PreCalResult {
  * @param randomLimit: used to generate random number 
  * (e.g. 1.0 means always choose the best next node, 0.9 means 10% of the chance to choose the second best next nod)
  */
-CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result, 
+//NOT USED WHEN PRECALCULATION IS IMPLEMENTED
+/*CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result, 
         std::vector <DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, 
         std::vector <IntersectionIdx> ids, double turn_penalty, int depotIdx, double randomLimit);
-
+*/
 /*
  * Perturbation to improve the current solution
  * @param bestTime: current best time to pickup and drop off all packages before running this function
@@ -47,9 +51,10 @@ CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result,
  * @param intervals: the interval between the position of the two nodes to be swapped
  *        (e.g. to swap result[0] and result[2], interval is 2)
  */
-CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> result, 
+//NOT USED WHEN PRECALCULATION IS IMPLEMENTED
+/*CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> result, 
         std::vector<DeliveryInf> deliveries, std::vector <IntersectionIdx>, double turn_penalty, int intervals);
-
+*/
 /*
  * Search for the best path to multiple destinations using Dijkstra Algorithm
  * @param intersect_id_start: starting point
@@ -59,7 +64,8 @@ CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> resul
  *        (e.g., if numToFind = 2, the best path of two destinations that takes the shortest time will be found; 
  *         if numToFind = dest.size(), best paths for all destinations will be returned)
  */
-std::vector <WavePoint> multidestDijkstraOpt(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty, int numToFind);
+//NOT USED WHEN PRECALCULATION IS IMPLEMENTED
+//std::vector <WavePoint> multidestDijkstraOpt(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty, int numToFind);
 
 /*
  * Initializes the vector of legal ids.  This vector is used to determine whether an intersection is legal for travel
@@ -76,12 +82,56 @@ std::vector <int> initializeLegalIds(int deliverSize, int depotSize);
  */
 bool isAllDelivered(std::vector <int> legalIds, int deliverySize);
 
+/*
+ * Calculate the full travel sequence assuming starting from one of the depots
+ * @param bestTime: current best time to pickup and drop off all packages before running this function
+ * @param result: a list of the intersectionIdx represents the sequence of the travel
+ * @param resultIndex:  the index of the global ids vector representing the sequence of travel
+ * @param deliveries: a list deliveries to pickup and drop off
+ * @param depots: a list of depots given
+ * @param ids: a vector of all deliveries and depots intersections in the order of 
+ *        pickUp1-dropOff1-pickUp2-dropOff2-...-pickUp[n]-dropOff[n]-depot1-...-depot[n]
+ *        The purpose of this vector is to quickly locate the intersection ID and validate it
+ * @param depotId: the number of depot IDs according to the sequence of the depots vector provided
+ * @param preCalculate: the vector storing all information from any start point to any end point 
+ *          e.g preCalculate[i][j], i stands for the ids index of the start point, 
+ *              j is the order according to the travel time. If j is 0, that means it is the best path from ids[i] to the next point
+ * @param randomLimit: used to generate random number 
+ * (e.g. 1.0 means always choose the best next node, 0.9 means 10% of the chance to choose the second best next node)
+ * @return CalculateResult: stores the best time, result (intersectionIdx) and resultIdxIndex(index of the ids)
+ * 
+ */
 CalculateResult calculatePreload(double bestTime, std::vector <IntersectionIdx> result, std::vector <int> resultIndex,
         std::vector <DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, 
         std::vector <IntersectionIdx> ids, int depotId, std::vector<std::vector<WavePoint>> preCalculate, double randomLimit);
+
+/*
+ * Perturbation to improve the current solution using pre-calculated information
+ * @param bestTime: current best time to pickup and drop off all packages before running this function
+ * @param result: current best travel sequence before running this function
+ * @param deliveries: a list deliveries to pickup and drop off
+ * @param resultIndex: the index of the global ids vector representing the sequence of travel
+ * @param intervals: the interval between the position of the two nodes to be swapped
+ *        (e.g. to swap result[0] and result[2], interval is 2)
+ * @param preCalculate: the vector storing all information from any start point to any end point 
+ *          e.g preCalculate[i][j], i stands for the ids index of the start point, 
+ *              j is the ids index of the end point
+ * @return CalculateResult: stores the best time, result (intersectionIdx) and resultIdxIndex(index of the ids)
+ */
 CalculateResult perturbationPrecalculated(double bestTime, std::vector<IntersectionIdx> result, 
         std::vector<DeliveryInf> deliveries, std::vector <int> resultIndex, 
         int intervals, std::vector<std::vector<WavePoint>> preCalculate, std::vector <IntersectionIdx> ids);
+
+/*
+ * Search for the best path to multiple destinations using Dijkstra Algorithm
+ * @param intersect_id_start: starting point
+ * @param dest: a list of destinations
+ * @param turn_penalty: turn penalty in seconds
+ * @param numToFind: the number of best paths to be found
+ *        (e.g., if numToFind = 2, the best path of two destinations that takes the shortest time will be found; 
+ *         if numToFind = dest.size(), best paths for all destinations will be returned)
+ * @return struct of PreCalResult including the vector sorted by travel time and ids order
+ */
 PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty,  int numToFind);
 
 std::vector<CourierSubPath> travelingCourier(
@@ -89,9 +139,8 @@ std::vector<CourierSubPath> travelingCourier(
     const std::vector<IntersectionIdx>& depots,
     const float turn_penalty) {
 
-    srand(time(NULL));
-    
-    
+    double remainingTimeBud = 45;
+
     std::clock_t begin = clock();
     std::vector <IntersectionIdx> result;       //the vector to store the current best travel sequence
     std::vector <IntersectionIdx> ids;          //the vector of all deliveries and depots intersections in the order initialized  below
@@ -117,21 +166,23 @@ std::vector<CourierSubPath> travelingCourier(
     preCalculate.resize(ids.size());
     preCalculateOrigOrder.resize(ids.size());
     
+    //Pre-calculation
     #pragma omp parallel for
     for (int i = 0; i < ids.size(); i++) {
         PreCalResult costs = multidestDijkstra(ids[i], ids, turn_penalty, ids.size());
         preCalculate[i] = costs.result;
         preCalculateOrigOrder[i] = costs.resultOrignalOrder;
     }
-    
-    CalculateResult cResult;// = calculate(currentBestTime, result, deliveries, depots, ids, turn_penalty, firstNode, 1.0);
-    std::vector <int> resultIndex;
 
+    std::clock_t preCalcFin = clock();
+    remainingTimeBud  -= double(preCalcFin - begin) / CLOCKS_PER_SEC / 4;
+    CalculateResult cResult;
+    std::vector <int> resultIndex;
     //Loop through all depots using greedy algorithm of finding shortest next path
+    //NEED TO IMPROVE - multi-thread not working, might need to do perturbation for each solution
     //#pragma omp parallel for
     for (int i = 0; i < depots.size(); i++) {
         CalculateResult calcResult =
-                //calculate(currentBestTime, result, deliveries, depots, ids, turn_penalty, i, 1.0);
                 calculatePreload(currentBestTime, result, resultIndex, deliveries, depots, ids, i, preCalculate, 1.0);
         if (calcResult.bestTime < currentBestTime) {
             currentBestTime = calcResult.bestTime;
@@ -139,31 +190,165 @@ std::vector<CourierSubPath> travelingCourier(
             resultIndex = calcResult.resultIdxIndex;
         }
     }
+    bool continueOpt = true;   
+    int firstNode = resultIndex[0] - deliveries.size() * 2;
+    std::clock_t currentSimple = clock();
+    std::cout << "Simple best time: " << currentBestTime << "    Time remained: " << remainingTimeBud - double(currentSimple - preCalcFin) / CLOCKS_PER_SEC <<  "\n";
+
+    //Stop the perturbation if the time reaches 90% of the total budget (45s)
+    if (double(currentSimple - preCalcFin) / CLOCKS_PER_SEC < (remainingTimeBud - 15)) {
     
-    IntersectionIdx firstNode = 0;
-    for (int k = 0; k < depots.size(); k++) {
-        if (depots[k] == result[0]) {
-            firstNode = k;
+        //perturbation to improve the current best solution
+        for (int i = 0; i < deliveries.size() *2; i ++) {       //try all the possible intervals of perturbation
+            std::clock_t current = clock();
+            //Stop the perturbation if the time reaches 90% of the total budget (45s)
+            if (double(current - preCalcFin) / CLOCKS_PER_SEC < remainingTimeBud) {
+                continueOpt = true;
+            } else {
+                continueOpt = false;
+            }
+
+            if (continueOpt) {
+                for (int k = 0; k < 10; k ++) {                  //iterations to run for the same interval
+                    if (continueOpt) {
+                        cResult = 
+                            perturbationPrecalculated(currentBestTime, result, deliveries, resultIndex, i, preCalculateOrigOrder, ids);
+
+
+                        // If the new solution is better than the current one
+                        if (currentBestTime > cResult.bestTime) {   // Update the current one with the new.
+                            currentBestTime = cResult.bestTime;
+                            result = cResult.result;
+                            resultIndex = cResult.resultIdxIndex;
+                        } else {    // Otherwise exit the loop
+                            break;
+                        }
+
+                    } else { 
+                        break;
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+
+    } else {
+        // perturbation using the current best solution 
+        for (int k = 0; k < 10; k ++) {
+            std::clock_t current = clock();
+
+            if (double(current - preCalcFin) / CLOCKS_PER_SEC < remainingTimeBud) {
+                continueOpt = true;
+            } else {
+                continueOpt = false;
+            }
+                        
+            if (continueOpt) {
+                cResult = 
+                    perturbationPrecalculated(currentBestTime, result, deliveries, resultIndex, firstNode, preCalculateOrigOrder, ids);
+
+
+                // If the new solution is better than the current one
+                if (currentBestTime > cResult.bestTime) {   // Update the current one with the new.
+                    currentBestTime = cResult.bestTime;
+                    result = cResult.result;
+                    resultIndex = cResult.resultIdxIndex;
+                } else {    // Otherwise exit the loop
+                    break;
+                }
+
+            } else { 
+                break;
+            }
         }
     }
-    //Have a 10% to 40% chance of taking the second smallest travel time
-    std::cout << "Current best time: " << currentBestTime << "\n";
+    std::clock_t currentNext = clock();
+    std::cout << "Current best time: " << currentBestTime << "    Time remained: " << remainingTimeBud - double(currentNext - preCalcFin) / CLOCKS_PER_SEC <<  "\n";
 
+    //Have a 10% chance of taking the second smallest travel time. Using the current solution's first node as the starting point
+    //firstNode = resultIndex[0] - deliveries.size() * 2;
 
-    for (int k = 0; k < 40; k++) {    
-        cResult = //calculate(currentBestTime, result, deliveries, depots, ids, turn_penalty, firstNode, 0.9 - 0.1 * k);
-            calculatePreload(currentBestTime, result, resultIndex, deliveries, depots, ids, firstNode, preCalculate, 0.9);
+    int iterationCount = 0;
+    //1000 iterations using the same random ratio.
+    //problem: multi-thread not working due to check of time limit. Might be able to solve it. NEED TO IMPROVE
+    for (int randomK = 0; randomK < 10000; randomK++) {    
+        std::clock_t currentRandom = clock();
+        //Stop the perturbation if the time reaches 90% of the total budget (45s)
+        if (double(currentRandom - preCalcFin) / CLOCKS_PER_SEC < remainingTimeBud) {
+            continueOpt = true;
+            iterationCount = randomK;
+        } else {
+            continueOpt = false;
+        }
+        if (continueOpt) {
+            if (iterationCount > 5000) {
+                cResult = 
+                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.93);
+            } else if (iterationCount > 100) {
+                cResult = 
+                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.92);
+            } else if (iterationCount > 20) {
+                cResult = 
+                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.91);
+            } else {
+                cResult = 
+                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.9);
+            }
 
-        
-        if (cResult.bestTime < currentBestTime) {
-            currentBestTime = cResult.bestTime;
-            result = cResult.result;
-            resultIndex = cResult.resultIdxIndex;
+            double currentBestTimeTemp = cResult.bestTime;
+            std::vector <IntersectionIdx>  resultTemp = cResult.result;
+            std::vector <int> resultIndexTemp = cResult.resultIdxIndex;
+            
+            //User perturbation to fine tune the random solution even if it is not the current best
+            //perturbation
+            for (int i = 0; i < deliveries.size() *2; i ++) {
+                if (continueOpt) {
+                    for (int k = 0; k < 10; k ++) {
+                        std::clock_t current = clock();
+
+                        if (double(current - preCalcFin) / CLOCKS_PER_SEC < remainingTimeBud) {
+                            continueOpt = true;
+                        } else {
+                            continueOpt = false;
+                        }
+                        
+                        if (continueOpt) {
+                            cResult = 
+                                perturbationPrecalculated(currentBestTimeTemp, resultTemp, deliveries, resultIndexTemp, i, preCalculateOrigOrder, ids);
+
+                            if (currentBestTimeTemp > cResult.bestTime) {
+                                currentBestTimeTemp = cResult.bestTime;
+                                resultTemp = cResult.result;
+                                resultIndexTemp = cResult.resultIdxIndex;
+                            } else {
+                                break;
+                            }
+
+                        } else { 
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (currentBestTimeTemp < currentBestTime) {
+                currentBestTime = currentBestTimeTemp;
+                result = resultTemp;
+                resultIndex = resultIndexTemp;
+            }
+        } else {
+            break;
         }
     }
     
+    //Other improvements might be considered
+    //2-opt perturbation
+    //simulation annealing
+    //2-opt w/ changing order between the two exchange points
     std::clock_t currentFin = clock();
-    std::cout << "Next best time: " << currentBestTime << "    Time elapsed: " << double(currentFin - begin) / CLOCKS_PER_SEC <<  "\n";
+    std::cout << "Next best time after " << iterationCount <<" iterations: " << currentBestTime << "    Time remaining: " << remainingTimeBud - double(currentFin - preCalcFin) / CLOCKS_PER_SEC <<  "\n";
+    
     
     //-------------------------------------------   end of precalc -----------------------------------------------------
     //----------------------------------------BELOW IS WITHOUT PRECALCULATION--------------------------------------------
@@ -269,13 +454,13 @@ std::vector<CourierSubPath> travelingCourier(
     
     std::cout << "From: " << depots[0] << " ---> ";
     std::clock_t end = clock();
-    double totalTime = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout<<"total cpu time: " << totalTime << " Total Travel Time: " << totalCourierTime << "  Estimated: " << currentBestTime << "\n";
+    remainingTimeBud -= double(end - preCalcFin) / CLOCKS_PER_SEC;
+    std::cout<<"remaining cpu time: " << remainingTimeBud << " Total Travel Time: " << totalCourierTime << "  Estimated: " << currentBestTime << "\n";
     return courierPath;
     
 } 
-
-CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> result, 
+/*NOT USED WHEN PRECALCULATION IS IMPLEMENTED*/
+/*CalculateResult perturbation(double bestTime, std::vector<IntersectionIdx> result, 
         std::vector<DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, double turn_penalty, int intervals) {
     std::clock_t begin = clock();
     
@@ -456,37 +641,6 @@ CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result,
     return cResult;
 }
 
-// Check whether all has been delivered already or not.
-bool isAllDelivered(std::vector <int> legalIds, int deliverySize) {
-                            
-    bool allDelivered = true;
-    for (int k = 0; k < deliverySize; k++) {
-        if (legalIds[k * 2] != VISTED || legalIds[k*2 + 1] != VISTED) {
-            allDelivered = false;
-            break;
-        }
-    }
-
-    return allDelivered;
-}
-
-// Initialize legalIds
-std::vector <int> initializeLegalIds(int deliverSize, int depotSize) {
-    std::vector <int> legalIds;
-    legalIds.clear();
-    
-    for (int i = 0; i < deliverSize; i++) {
-        legalIds.push_back(1);
-        legalIds.push_back(0);
-    }
-    
-    for (int i = 0; i < depotSize; i++) {
-        legalIds.push_back(0);
-    }
-    
-    return legalIds;
-}
-
 //Multi-Dijkstra to find a best path to a list of destination
 std::vector <WavePoint> multidestDijkstraOpt(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty, int numToFind) {
     std::priority_queue<WavePoint, std::vector<WavePoint>, std::greater<std::vector<WavePoint>::value_type> > wavePoints;
@@ -638,10 +792,42 @@ std::vector <WavePoint> multidestDijkstraOpt(IntersectionIdx intersect_id_start,
     
     return results;
 }
+ * 
+ * */
 
-// Pre-calculation code.
 
+// Check whether all has been delivered already or not.
+bool isAllDelivered(std::vector <int> legalIds, int deliverySize) {
+                            
+    bool allDelivered = true;
+    for (int k = 0; k < deliverySize; k++) {
+        if (legalIds[k * 2] != VISTED || legalIds[k*2 + 1] != VISTED) {
+            allDelivered = false;
+            break;
+        }
+    }
 
+    return allDelivered;
+}
+
+// Initialize legalIds
+std::vector <int> initializeLegalIds(int deliverSize, int depotSize) {
+    std::vector <int> legalIds;
+    legalIds.clear();
+    
+    for (int i = 0; i < deliverSize; i++) {
+        legalIds.push_back(1);
+        legalIds.push_back(0);
+    }
+    
+    for (int i = 0; i < depotSize; i++) {
+        legalIds.push_back(0);
+    }
+    
+    return legalIds;
+}
+
+//------------------- Pre-calculation code.---------------------------
 CalculateResult perturbationPrecalculated(double bestTime, std::vector<IntersectionIdx> result, 
         std::vector<DeliveryInf> deliveries, std::vector <int> resultIndex, 
         int intervals, std::vector<std::vector<WavePoint>> preCalculate, std::vector <IntersectionIdx> ids) {
@@ -650,24 +836,20 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
     if (deliveries.size() * 2 > intervals + 3) {
         for (int i = 2; i < result.size() - 1 - intervals; i++) {
             bool valid = true;
-            for (int j = 0; j < deliveries.size(); j++) {
-                for (int k0 = i -1 ; k0 < i + intervals; k0++) {
-                    if (deliveries[j].pickUp == result[k0] ) {
-                        for (int k = k0 + 1; k < i + intervals + 1; k++) {
-                            //If the dropOff will appear before the current corresponding pickup after swapping, the swap is invalid
-                            if (deliveries[j].dropOff == result[k]) {
-                                valid = false;
-                            }
-                        }  
-                    }
+            for (int k0 = i -1 ; k0 < i + intervals; k0++) {
+                if (resultIndex[k0] % 2  == 0) {
+                    for (int k = k0 + 1; k < i + intervals + 1; k++) {
+                        //If the dropOff will appear before the current corresponding pickup after swapping, the swap is invalid
+                        if (resultIndex[k] - 1 == resultIndex[k0]) {
+                            valid = false;
+                        }
+                    }  
                 }
             }
 
             //If the swap is valid
             if (valid) {
-                double originalTime = 0;
-                double newTime = 0;
-                double oTime = 0, nTime = 0;
+                double originalTime = 0, newTime = 0;
 
                 for (int j = i - 2; j < i + intervals + 1; j ++) {
                     int k = j;
@@ -681,16 +863,14 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                         k0 = i -1;
                     }
 
+                    //get the travel time from the pre-calculated vector
                     originalTime += preCalculate[resultIndex[j]][resultIndex[ j+ 1]].heuristicTime;
-                    oTime += computePathTravelTime(findPathBetweenIntersections(result[j], result[j + 1], 15), 15);
                     
                     if (preCalculate[resultIndex[k]].size() > resultIndex[k0] +1) {
                         newTime += preCalculate[resultIndex[k]][resultIndex[k0]].heuristicTime;
                     } else {
                         newTime = 9999999;
                     }
-                    
-                    nTime += computePathTravelTime(findPathBetweenIntersections(ids[resultIndex[k]], ids[resultIndex[k0]], 15), 15);
                 }
 
                 //Update the result and bestTime if the newTime is shorter
@@ -704,15 +884,33 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                     bestTime = bestTime - originalTime + newTime;
                 }
             }
+
         }
 
-        double minTime = 99999999;
-        //Find the depot with the least travel time from the last drop off point
+        //Get the start point and end point travel time of the current solution
+        double minTime = preCalculate[resultIndex[resultIndex.size() - 2]][resultIndex[resultIndex.size() - 1]].heuristicTime;
+        double minStartTime = preCalculate[resultIndex[0]][resultIndex[1]].heuristicTime;
+        
+        double originalLastTime = minTime;
+        double originalFirstTime = minStartTime;
+
+        //Find the depot with the least travel time from the last drop off point and first pickup point
         for (int i = deliveries.size() *2; i < ids.size(); i ++) {
-            if (minTime > preCalculate[result[result.size() - 2]][i].idx) {
-                minTime = preCalculate[result[result.size() - 2]][i].heuristicTime;
+            if (minTime > preCalculate[resultIndex[resultIndex.size() - 2]][i].heuristicTime) {
+                minTime = preCalculate[resultIndex[resultIndex.size() - 2]][i].heuristicTime;
+                result[result.size() - 1] = ids[i];
+                resultIndex[result.size() - 1] = i;
             }
-        }
+            
+            if (minStartTime > preCalculate[i][resultIndex[1]].heuristicTime){
+                minStartTime = preCalculate[i][resultIndex[1]].heuristicTime;
+                result[0] = ids[i];
+                resultIndex[0] = i;
+            }
+        }   
+        //Update the best time after optimizing first and last points
+        bestTime = bestTime - originalLastTime - originalFirstTime + minTime + minStartTime;
+
     }
     
     CalculateResult cResult;
@@ -724,48 +922,50 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
     return cResult;
 }
 
-
-
 //Calculate the best path to deliver all packages
 CalculateResult calculatePreload(double bestTime, std::vector <IntersectionIdx> result, std::vector <int> resultIndex, 
         std::vector <DeliveryInf> deliveries, std::vector <IntersectionIdx> depots, 
         std::vector <IntersectionIdx> ids, int depotId, std::vector<std::vector<WavePoint>> preCalculate, double randomLimit) {
     std::clock_t begin = clock();
-    std::vector <IntersectionIdx> targetsPickup;
     int nextIdx = -1;
 
-    for (int j = 0; j < deliveries.size(); j++) {
-        targetsPickup.push_back(deliveries[j].pickUp);
-    }
-
     double minTime;
-    int currentNode = deliveries.size() * 2 + depotId;
+    int currentNode = deliveries.size() * 2 + depotId;      //the ids index of starting depot
+    
     std::vector <int> legalIds = initializeLegalIds(deliveries.size(), depots.size());
     bool allDelivered = isAllDelivered(legalIds, deliveries.size());
+    
     double travelTimeTotal = 0;
     bool canFind = true;
+    
     std::vector <IntersectionIdx> resultTemp;
-    std::vector <IntersectionIdx> resultTempIndex;
+    std::vector <int> resultTempIndex;
     resultTempIndex.push_back(currentNode);
     resultTemp.push_back(ids[currentNode]);
+    
     while (!allDelivered && canFind) {
         if (preCalculate[currentNode].size() > 1) {
-            int startPoint = -1;
+            std::vector<int> startPoint;
+            int numLegalFound = 0;
+            //Find the first two legal points in the sorted preCalculate vector
             for (int k = 0; k < preCalculate[currentNode].size(); k++) {
                 if (legalIds[preCalculate[currentNode][k].idx] == 1 && preCalculate[currentNode][k].idx < deliveries.size() * 2) {
-                    startPoint = k; 
-                    break;
+                    startPoint.push_back(k); 
+                    numLegalFound ++;
+                    if (numLegalFound > 1) break;
                 }
             }
-            if (startPoint >= 0 && preCalculate[currentNode][startPoint].idx < deliveries.size() * 2) {
+            
+            //Choose the best/second best result based on the possibility provided
+            if (startPoint.size() > 0 && preCalculate[currentNode][startPoint[0]].idx < deliveries.size() * 2) {
                
-                if (rand() % 1000 > randomLimit * 1000 && preCalculate[currentNode].size() > startPoint + 1 
-                        && preCalculate[currentNode][startPoint + 1].idx < deliveries.size() * 2) {
-                    minTime = preCalculate[currentNode][startPoint + 1].heuristicTime;
-                    nextIdx = preCalculate[currentNode][startPoint + 1].idx;
+                if (rand() % 1000 > randomLimit * 1000 && startPoint.size() > 1 && preCalculate[currentNode].size() > startPoint[1] 
+                        && preCalculate[currentNode][startPoint[1]].idx < deliveries.size() * 2) {
+                    minTime = preCalculate[currentNode][startPoint[1]].heuristicTime;
+                    nextIdx = preCalculate[currentNode][startPoint[1]].idx;
                 } else {
-                    minTime = preCalculate[currentNode][startPoint].heuristicTime;
-                    nextIdx = preCalculate[currentNode][startPoint].idx;
+                    minTime = preCalculate[currentNode][startPoint[0]].heuristicTime;
+                    nextIdx = preCalculate[currentNode][startPoint[0]].idx;
                 }
                 
                 if (nextIdx >= deliveries.size() * 2) std::cout << "Warning: reach depot which should not be \n";
@@ -773,7 +973,7 @@ CalculateResult calculatePreload(double bestTime, std::vector <IntersectionIdx> 
                 travelTimeTotal += minTime;
                 resultTemp.push_back(ids[nextIdx]);
                 resultTempIndex.push_back(nextIdx);
-                //std::cout << "     " << ids[nextIdx] << " nextidx= " << nextIdx << " tmp size: " << resultTemp.size() << "size: " << resultTempIndex.size() << "\n";
+
                 //Update legality status according to type of site reached
                 if (nextIdx % 2 == 0) {         //a pickup site
                     legalIds[nextIdx + 1] = 1;
@@ -783,7 +983,13 @@ CalculateResult calculatePreload(double bestTime, std::vector <IntersectionIdx> 
                 }
 
                 currentNode = nextIdx;
-                allDelivered = isAllDelivered(legalIds, deliveries.size());
+                //allDelivered = isAllDelivered(legalIds, deliveries.size());
+                //std::cout << resultTemp.size() << "," << deliveries.size() + 1 << std::endl;
+                if (resultTemp.size() == deliveries.size() * 2 + 1){
+                    allDelivered = true;
+                }else{
+                    allDelivered = false;
+                }
             } else {
                 canFind = false;
             }
@@ -826,7 +1032,6 @@ CalculateResult calculatePreload(double bestTime, std::vector <IntersectionIdx> 
 }
 
 //Multi-Dijkstra to find a best path to a list of destination
-//numToFind means how many the first number of shortest paths to be found
 PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty, int numToFind) {
     std::priority_queue<WavePoint, std::vector<WavePoint>, std::greater<std::vector<WavePoint>::value_type> > wavePoints;
     std::vector <PathNode> allIntersections;
@@ -930,7 +1135,7 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
                 int totalFoundBest = 0;
 
                 for (int j = 0; j <= dest.size(); j++) {
-
+                    
                     if (thisNode.travelTime > timeToReach[j]) {
                         totalFoundBest ++;
                     } else { 
@@ -958,12 +1163,14 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     }
     
     PreCalResult finalResult;
-    // Sort the output
+    
+    //Store the result in original order
     std::vector<WavePoint> resultOrignalOrder;
     for (int i = 0; i < pathFound.size(); i++) {
         resultOrignalOrder.push_back(WavePoint(i, timeToReach[i]));
     }
-        // Sort the output
+    
+    // Sort the output using priority queue
     std::priority_queue<WavePoint, std::vector<WavePoint>, std::greater<std::vector<WavePoint>::value_type> > result;
     for (int i = 0; i < pathFound.size(); i++) {
         if (pathFound[i]) {
