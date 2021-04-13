@@ -12,6 +12,7 @@
 #include "global.h"
 #include "dataHandler.h"
 #include <chrono>
+#include <time.h>
 #define ILLEAGAL 0
 #define LEAGAL 1
 #define VISTED 2
@@ -140,16 +141,17 @@ std::vector<CourierSubPath> travelingCourier(
     double remainingTimeBud = 44;
     //std::clock_t begin = clock();
     auto const begin = std::chrono::high_resolution_clock::now();
+
     std::vector <IntersectionIdx> result;       //the vector to store the current best travel sequence
     std::vector <IntersectionIdx> ids;          //the vector of all deliveries and depots intersections in the order initialized  below
     std::vector <int> legalIds;                 //the vector that is used to determine whether an intersection is legal for travel
     
     //Initialize the ids vector
+    //store all delivery intersecton in ids
     for (int i = 0; i < deliveries.size(); i++) {
         ids.push_back(deliveries[i].pickUp);
         ids.push_back(deliveries[i].dropOff);
     }
-    
     for (int i = 0; i < depots.size(); i++) {
         ids.push_back(depots[i]);
     }
@@ -354,6 +356,7 @@ std::vector<CourierSubPath> travelingCourier(
     if (deliveries.size() * 2 > intervals + 3) {
         for (int i = 2; i < result.size() - 1 - intervals; i++) {
             bool valid = true;
+            
             for (int j = 0; j < deliveries.size(); j++) {
                 for (int k0 = i -1 ; k0 < i + intervals; k0++) {
                     if (deliveries[j].pickUp == result[k0] ) {
@@ -437,7 +440,7 @@ CalculateResult calculate(double bestTime, std::vector <IntersectionIdx> result,
         targetsPickup.push_back(deliveries[j].pickUp);
     }
 
-
+    
     int currentNode = deliveries.size() * 2 + depotId;  //convert the first depot into the index of ids
 
     std::vector <int> legalIds = initializeLegalIds(deliveries.size(), depots.size());
@@ -686,8 +689,8 @@ std::vector <WavePoint> multidestDijkstraOpt(IntersectionIdx intersect_id_start,
 bool isAllDelivered(std::vector <int> legalIds, int deliverySize) {
                             
     bool allDelivered = true;
-    for (int k = 0; k < deliverySize; k++) {
-        if (legalIds[k * 2] != VISTED || legalIds[k*2 + 1] != VISTED) {
+    for (int k = 0; k < 2*deliverySize; k++) {
+        if (legalIds[k] != VISTED) {
             allDelivered = false;
             break;
         }
@@ -869,7 +872,13 @@ CalculateResult calculatePreload(double bestTime, std::vector <IntersectionIdx> 
                 }
 
                 currentNode = nextIdx;
-                allDelivered = isAllDelivered(legalIds, deliveries.size());
+                //allDelivered = isAllDelivered(legalIds, deliveries.size());
+                //std::cout << resultTemp.size() << "," << deliveries.size() + 1 << std::endl;
+                if (resultTemp.size() == deliveries.size() * 2 + 1){
+                    allDelivered = true;
+                }else{
+                    allDelivered = false;
+                }
             } else {
                 canFind = false;
             }
