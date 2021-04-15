@@ -18,6 +18,7 @@ struct CalculateResult {
     std::vector <IntersectionIdx> result;   //the travel order of deliveries and depots
     std::vector <int> resultIdxIndex;       //the index of ids in the result vector
     double cpuTime;                         //the time that to complete this calculate or perturbation function
+    double currentTemperature;              //temperature used for simulated annealing
 };
 
 struct intersectionData {
