@@ -517,8 +517,13 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
         std::vector<DeliveryInf> deliveries, std::vector <int> resultIndex, 
         int intervals, std::vector<std::vector<WavePoint>> preCalculate, std::vector <IntersectionIdx> ids) {
     std::clock_t begin = clock();
+    
+    std::vector<std::vector<IntersectionIdx>> betterResults;
+    std::vector<std::vector <int>> betterResultsIdx;
+    std::vector<double> betterTime;
+    
     //Check the swap validation
-    if (deliveries.size() > 1) {
+    if (deliveries.size() * 2 > intervals + 3) {
         for (int i = 2; i < result.size() - 1 - intervals; i++) {
             bool valid = true;
             
@@ -565,7 +570,90 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
             //If the swap is valid
             if (valid) {
                 double originalTime = 0, newTime = 0;
+                
+                int newStartDepotIdx = -1, newEndDepotIdx = -1;
+                
+                int firstSwap = i - 1;
+                int secondSwap = i + intervals;
+                
+                int previousFirstSwap = firstSwap - 1;                
+                int afterFirstSwap = firstSwap + 1;
+                
+                int previousSecondSwap = secondSwap - 1;               
+                int afterSecondSwap = secondSwap + 1;
 
+                //previous location of first swap to the location of first swap
+                originalTime += preCalculate[resultIndex[previousFirstSwap]][resultIndex[firstSwap]].heuristicTime;
+                
+                //when two swap are right beside each other
+                if (afterFirstSwap == secondSwap && previousSecondSwap == firstSwap){
+                    originalTime += preCalculate[resultIndex[firstSwap]][resultIndex[secondSwap]].heuristicTime;
+                }else{
+                    
+                    //location of first swap to the location after first swap
+                    originalTime += preCalculate[resultIndex[firstSwap]][resultIndex[afterFirstSwap]].heuristicTime;
+                    
+                    //previous location of second swap to second swap
+                    originalTime += preCalculate[resultIndex[previousSecondSwap]][resultIndex[secondSwap]].heuristicTime;
+                }
+                
+                //location of second swap to the next location of second swap
+                originalTime += preCalculate[resultIndex[secondSwap]][resultIndex[afterSecondSwap]].heuristicTime;
+
+                
+                //calculate the new time if two locations are swapped
+                
+                //if previous location of the first swap is a depot
+                //find the nearest depot to the second swap
+                if (previousFirstSwap == 0){
+
+                    //check every depot to the second swap
+                    double minTime = INT_MAX;
+                    for (int depotIdx = deliveries.size() *2; depotIdx < ids.size(); depotIdx ++) {
+                        
+                        if (minTime > preCalculate[depotIdx][resultIndex[secondSwap]].heuristicTime) {
+                            minTime = preCalculate[depotIdx][resultIndex[secondSwap]].heuristicTime;
+                            newStartDepotIdx = depotIdx;
+                        }
+                    }
+
+                    newTime += minTime;
+                }else{
+                    newTime += preCalculate[resultIndex[previousFirstSwap]][resultIndex[secondSwap]].heuristicTime;
+                }
+                
+                //std::cout << preCalculate[resultIndex[secondSwap]][resultIndex[afterFirstSwap]].heuristicTime << std::endl; 
+                
+                //if two swapping element are right beside each other
+                if (afterFirstSwap == secondSwap && previousSecondSwap == firstSwap){
+                    newTime += preCalculate[resultIndex[secondSwap]][resultIndex[firstSwap]].heuristicTime;
+                }else{
+                    newTime += preCalculate[resultIndex[secondSwap]][resultIndex[afterFirstSwap]].heuristicTime;
+                    newTime += preCalculate[resultIndex[previousSecondSwap]][resultIndex[firstSwap]].heuristicTime;
+                }
+                
+                //if the next location of the second swap is a depot
+                //find the nearest depot to the first swap after swapping
+                if (afterSecondSwap == result.size() - 1){
+
+                    double minTime = INT_MAX;
+
+                    for (int depotIdx = deliveries.size() * 2; depotIdx < ids.size(); depotIdx ++){
+
+                        if (minTime > preCalculate[resultIndex[firstSwap]][depotIdx].heuristicTime){
+                            minTime = preCalculate[resultIndex[firstSwap]][depotIdx].heuristicTime;
+                            newEndDepotIdx = depotIdx;
+                        }
+                    }
+
+                    newTime += minTime;
+
+                }else{
+                    newTime +=  preCalculate[resultIndex[firstSwap]][resultIndex[afterSecondSwap]].heuristicTime;
+                }
+                
+                
+                /*
                 for (int j = i - 2; j < i + intervals + 1; j ++) {
                     int k = j;
                     int k0 = j + 1;
@@ -586,10 +674,39 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                     } else {
                         newTime = 9999999;
                     }
-                }
+                }*/
 
                 //Update the result and bestTime if the newTime is shorter
                 if (originalTime > newTime) {
+                    
+                    std::vector<IntersectionIdx> tempResult(result);
+                    std::vector<int> tempResultIdx(resultIndex);
+                    double tempBetterTime;
+                    
+                    //if the starting depot is changes due to swapping
+                    if (newStartDepotIdx != -1){
+                        tempResultIdx[0] = newStartDepotIdx;
+                        tempResult[0] = ids[newStartDepotIdx];
+                    }
+                    
+                    if (newEndDepotIdx != -1){
+                        tempResultIdx[result.size() - 1] = newEndDepotIdx;
+                        tempResult[result.size() - 1] = ids[newEndDepotIdx];
+                    }
+                    
+                    tempResultIdx[i - 1] = resultIndex[i + intervals];
+                    tempResultIdx[i + intervals]  = resultIndex[i - 1];
+                    
+                    tempResult[i - 1] = result[i + intervals];
+                    tempResult[i + intervals]  = result[i - 1];
+                    
+                    
+                    tempBetterTime = bestTime - originalTime + newTime;
+                    
+                    betterResults.push_back(tempResult);
+                    betterResultsIdx.push_back(tempResultIdx);
+                    betterTime.push_back(tempBetterTime);
+                    /*
                     int tmp = result[i - 1];
                     int tmpIdx = resultIndex[i - 1];
                     result[i -1] = result[i + intervals];
@@ -598,11 +715,23 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                     resultIndex[i + intervals] = tmpIdx;
                     bestTime = bestTime - originalTime + newTime;
                     //std::cout << intervals << "Swapping" << i - 1 << ", " << i + intervals << std::endl;
+                     */
                 }
             }
 
         }
-
+        
+        
+        
+        for (int idx = 0; idx < betterTime.size(); idx++){
+            if (betterTime[idx] < bestTime){
+                bestTime = betterTime[idx];
+                result = betterResults[idx];
+                resultIndex =  betterResultsIdx[idx];
+            }
+        }
+        
+        /*
         //Get the start point and end point travel time of the current solution
         double minTime = preCalculate[resultIndex[resultIndex.size() - 2]][resultIndex[resultIndex.size() - 1]].heuristicTime;
         double minStartTime = preCalculate[resultIndex[0]][resultIndex[1]].heuristicTime;
@@ -626,7 +755,7 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
         }   
         //Update the best time after optimizing first and last points
         bestTime = bestTime - originalLastTime - originalFirstTime + minTime + minStartTime;
-
+         */
     }
     
     CalculateResult cResult;
