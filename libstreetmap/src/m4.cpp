@@ -175,10 +175,10 @@ std::vector<CourierSubPath> travelingCourier(
         preCalculateOrigOrder[i] = costs.resultOrignalOrder;
     }
     
-    std::cout << "Pre calculation is finished"<<std::endl;
     auto preCalcFin = std::chrono::high_resolution_clock::now();
     
     remainingTimeBud  -= (std::chrono::duration_cast<std::chrono::duration<double>>(preCalcFin - begin)).count();
+    std::cout << "Pre calculation is finished: " << currentBestTime << "    Time remained: " << remainingTimeBud<<  "\n";
     CalculateResult cResult;
     std::vector <int> resultIndex;
     //Loop through all depots using greedy algorithm of finding shortest next path
@@ -206,12 +206,20 @@ std::vector<CourierSubPath> travelingCourier(
         }*/
     }
     
+    for (int i = 0; i < bestTimesDepots.size(); i++){
+        if (bestTimesDepots[i] < currentBestTime) {
+            currentBestTime = bestTimesDepots[i];
+            result = bestResults[i];
+            resultIndex = bestResultsIdx[i];
+        }
+    }
     
     bool continueOpt = true;   
     //int firstNode = resultIndex[0] - deliveries.size() * 2;
     std::cout<<"Using Clock"  << std::endl;
     auto currentSimple = std::chrono::high_resolution_clock::now();
     std::cout << "Simple best time: " << currentBestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count() <<  "\n";
+    
     /*
     #pragma omp parallel for
     for (int depot = 0; depot < bestTimesDepots.size(); depot++) {
@@ -261,20 +269,62 @@ std::vector<CourierSubPath> travelingCourier(
         } 
     }*/
     
-    for (int i = 0; i < bestTimesDepots.size(); i++){
-        if (bestTimesDepots[i] < currentBestTime) {
-            currentBestTime = bestTimesDepots[i];
-            result = bestResults[i];
-            resultIndex = bestResultsIdx[i];
-        }
-    }
     
     
     //Stop the perturbation if the time reaches 90% of the total budget (45s)
-    if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count() < (remainingTimeBud - 15)) {
     
+    if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count() < (remainingTimeBud)) {
+        
+        //while does not reach the local minimum and still have time
+        while (continueOpt){
+            std::vector<CalculateResult> betterTimes;
+
+            for (int i = 0; i < deliveries.size() - 2 && continueOpt; i++) { //try all the possible intervals of perturbation
+                auto current = std::chrono::high_resolution_clock::now();
+                //Stop the perturbation if the time reaches 90% of the total budget (45s)
+                if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - preCalcFin)).count() < remainingTimeBud) {
+                    continueOpt = true;
+                } else {
+                    continueOpt = false;
+                    std::cout<<"Time out" << std::endl;
+                }
+
+                if (continueOpt) {
+                    
+                    
+                    cResult = perturbationPrecalculated(currentBestTime, result, deliveries, resultIndex, i, preCalculateOrigOrder, ids);
+
+
+                    // If the new solution is better than the current one
+                    if (currentBestTime > cResult.bestTime) { // Update the current one with the new.
+                        betterTimes.push_back(cResult);                        
+                        //std::cout << "New Best Time: " << currentBestTime << std::endl;
+                    } 
+
+                    
+                    
+                }
+            }
+            
+            if (betterTimes.size() != 0){
+                
+                for (int better = 0; better < betterTimes.size(); better++){
+                    if (currentBestTime > betterTimes[better].bestTime){
+                        currentBestTime = betterTimes[better].bestTime;
+                        result = betterTimes[better].result;
+                        resultIndex = betterTimes[better].resultIdxIndex;                        
+                    }
+                    
+                }
+                
+            }else{
+                continueOpt = false;
+                std::cout << "reach local minimum" << std::endl;
+            }
+        }
+        /*
         //perturbation to improve the current best solution
-        for (int i = 0; i < 5; i ++) {       //try all the possible intervals of perturbation
+        for (int i = 0; i < deliveries.size() - 2; i ++) {       //try all the possible intervals of perturbation
             auto current = std::chrono::high_resolution_clock::now();
             //Stop the perturbation if the time reaches 90% of the total budget (45s)
             if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - preCalcFin)).count() < remainingTimeBud) {
@@ -295,6 +345,7 @@ std::vector<CourierSubPath> travelingCourier(
                             currentBestTime = cResult.bestTime;
                             result = cResult.result;
                             resultIndex = cResult.resultIdxIndex;
+                            //std::cout << "New Best Time: " << currentBestTime << std::endl;
                         } else {    // Otherwise exit the loop
                             break;
                         }
@@ -306,9 +357,11 @@ std::vector<CourierSubPath> travelingCourier(
             } else {
                 break;
             }
-        }
+        }*/
 
-    } 
+    }else{
+        std::cout << "did not do perturbation" << std::endl;
+    }
      
     auto currentNext = std::chrono::high_resolution_clock::now();
     std::cout << "Current best time: " << currentBestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentNext - preCalcFin)).count() <<  "\n";
@@ -320,13 +373,15 @@ std::vector<CourierSubPath> travelingCourier(
     //1000 iterations using the same random ratio.
     //problem: multi-thread not working due to check of time limit. Might be able to solve it. NEED TO IMPROVE
     //#pragma omp parallel for
-
-    for (int randomK = 0; randomK < 50000; randomK++) {    
+    
+    while (true){
+    //for (int randomK = 0; randomK < 50000; randomK++) {    
         auto currentRandom = std::chrono::high_resolution_clock::now();
         //Stop the perturbation if the time reaches 90% of the total budget (45s)
         if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - preCalcFin)).count() < remainingTimeBud) {
             continueOpt = true;
-            iterationCount = randomK;
+            //iterationCount = randomK;
+            iterationCount++;
         } else {
             continueOpt = false;
         }
@@ -466,7 +521,37 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
     if (deliveries.size() > 1) {
         for (int i = 2; i < result.size() - 1 - intervals; i++) {
             bool valid = true;
-            for (int k0 = i -1 ; k0 < i + intervals; k0++) {
+            
+            bool checkFirst = false, checkSecond = false;
+            int firstElement = resultIndex[i - 1];
+            int secondElement = resultIndex[i + intervals];
+            //if first swap element is a pick up
+            if (firstElement% 2 == 0){
+                checkFirst = true;
+            }
+
+            //if second swap element is a drop off
+            if (secondElement % 2 == 1){
+                checkSecond = true;
+            }
+
+            if (checkFirst || checkSecond){
+                    
+                //also need to check to last swapping element to prevent the case of swapping pick up A and drop off A
+                for (int locationBetween = i; locationBetween < i + intervals + 1 && valid; locationBetween ++){
+
+                    //drop off appear before pick up
+                    if (resultIndex[locationBetween] - 1 == firstElement){
+                        valid = false;
+                    }
+
+                    if (resultIndex[locationBetween] + 1 == secondElement){
+                        valid = false;
+                    }
+                }
+            }
+            
+            /*for (int k0 = i -1 ; k0 < i + intervals; k0++) {
                 if (resultIndex[k0] % 2  == 0) {
                     for (int k = k0 + 1; k < i + intervals + 1; k++) {
                         //If the dropOff will appear before the current corresponding pickup after swapping, the swap is invalid
@@ -475,7 +560,7 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                         }
                     }  
                 }
-            }
+            }*/
 
             //If the swap is valid
             if (valid) {
@@ -512,6 +597,7 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                     resultIndex[i -1] = resultIndex[i + intervals];
                     resultIndex[i + intervals] = tmpIdx;
                     bestTime = bestTime - originalTime + newTime;
+                    //std::cout << intervals << "Swapping" << i - 1 << ", " << i + intervals << std::endl;
                 }
             }
 
