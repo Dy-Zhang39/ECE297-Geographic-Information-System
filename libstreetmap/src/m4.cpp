@@ -174,8 +174,9 @@ std::vector<CourierSubPath> travelingCourier(
     std::cout << "Simple best time: " << currentBestTime << "    Time remained: " 
             << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count() <<  "\n";
 
+    //regular perturbation (without simulation annealing since the temperature is set to 0)
     currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
-        35 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - begin)).count(), 5, 0);
+        35 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - begin)).count(), 5, 999);
     currentBestTime = currentSolution.bestTime;
  
     auto currentNext = std::chrono::high_resolution_clock::now();
@@ -188,10 +189,10 @@ std::vector<CourierSubPath> travelingCourier(
     //1000 iterations using the same random ratio.
     //problem: multi-thread not working due to check of time limit. Might be able to solve it. NEED TO IMPROVE
     //#pragma omp parallel for
-    for (int randomK = 0; randomK < 500000; randomK++) {    
+    for (int randomK = 0; randomK < 100000; randomK++) {    
         auto currentRandom = std::chrono::high_resolution_clock::now();
         //Stop the perturbation if the time reaches 90% of the total budget (45s)
-        if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - preCalcFin)).count() < remainingTimeBud) {
+        if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - preCalcFin)).count() < remainingTimeBud - 1) {
             continueOpt = true;
             iterationCount = randomK;
         } else {
@@ -200,10 +201,10 @@ std::vector<CourierSubPath> travelingCourier(
         if (continueOpt) {
             if (iterationCount > 50000) {
                 cResult = 
-                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, randomK % depots.size(), preCalculate, 0.90);
+                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, randomK % depots.size(), preCalculate, 0.93);
             } else if (iterationCount > 5000) {
                 cResult = 
-                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.93);
+                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, randomK % depots.size(), preCalculate, 0.92);
             } else if (iterationCount > 100) {
                 cResult = 
                     calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.92);
@@ -226,7 +227,7 @@ std::vector<CourierSubPath> travelingCourier(
                         for (int k = 0; k < 1000; k ++) {
                             auto current = std::chrono::high_resolution_clock::now();
 
-                            if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - preCalcFin)).count() < remainingTimeBud) {
+                            if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - preCalcFin)).count() < remainingTimeBud - 1) {
                                 continueOpt = true;
                             } else {
                                 continueOpt = false;
@@ -273,10 +274,10 @@ std::vector<CourierSubPath> travelingCourier(
     std::cout << "Next best time after " << iterationCount <<" iterations: " << currentBestTime << "    Time remaining: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - preCalcFin)).count() <<  "\n";
     
     // If enough time start simulated annealing
-    if (45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count() > 2) {
+    if (45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count() > 0) {
         std::cout << "-----------------Start annealing-------------\n";
         currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
-            45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count(), 5, 99);
+            45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count(), deliveries.size(), 99);
     }
     std::vector <CourierSubPath> courierPath;
     double totalCourierTime = 0;
