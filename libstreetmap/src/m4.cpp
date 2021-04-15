@@ -18,6 +18,7 @@
 #define LEAGAL 1
 #define VISTED 2
 double temperature = 999999;
+double tempDropRate = 0.95;
 
 struct PreCalResult {
     std::vector<WavePoint> result;              //the result of the multi-dest Dijkstra calculation sorted by travel time
@@ -157,7 +158,6 @@ std::vector<CourierSubPath> travelingCourier(
     CalculateResult currentSolution;
     bool continueOpt = true;
     //Loop through all depots using greedy algorithm of finding shortest next path
-    //#pragma omp parallel for
     for (int depot = 0; depot < depots.size(); depot++) {
         CalculateResult calcResult =
                 calculatePreload(currentBestTime, result, resultIndex, deliveries, depots, ids, depot, preCalculate, 1.0);
@@ -176,20 +176,17 @@ std::vector<CourierSubPath> travelingCourier(
 
     //regular perturbation (without simulation annealing since the temperature is set to 0)
     currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
-        35 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - begin)).count(), 5, 999);
+        35 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - begin)).count(), 5, 0);
     currentBestTime = currentSolution.bestTime;
  
     auto currentNext = std::chrono::high_resolution_clock::now();
     std::cout << "Current best time: " << currentBestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentNext - preCalcFin)).count() <<  "\n";
+    int iterationCount = 0;
 
     //Have a 10% chance of taking the second smallest travel time. Using the current solution's first node as the starting point
-    //firstNode = resultIndex[0] - deliveries.size() * 2;
-
-    int iterationCount = 0;
-    //1000 iterations using the same random ratio.
+    //250000 iterations using the same random ratio.
     //problem: multi-thread not working due to check of time limit. Might be able to solve it. NEED TO IMPROVE
-    //#pragma omp parallel for
-    for (int randomK = 0; randomK < 100000; randomK++) {    
+    for (int randomK = 0; randomK < 250000; randomK++) {    
         auto currentRandom = std::chrono::high_resolution_clock::now();
         //Stop the perturbation if the time reaches 90% of the total budget (45s)
         if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - preCalcFin)).count() < remainingTimeBud - 1) {
@@ -202,9 +199,9 @@ std::vector<CourierSubPath> travelingCourier(
             if (iterationCount > 50000) {
                 cResult = 
                     calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, randomK % depots.size(), preCalculate, 0.93);
-            } else if (iterationCount > 5000) {
+            } else if (iterationCount > 5500) {
                 cResult = 
-                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, randomK % depots.size(), preCalculate, 0.92);
+                    calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.92);
             } else if (iterationCount > 100) {
                 cResult = 
                     calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.92);
@@ -216,68 +213,33 @@ std::vector<CourierSubPath> travelingCourier(
                     calculatePreload(9999999, {}, resultIndex, deliveries, depots, ids, resultIndex[0] - deliveries.size() * 2, preCalculate, 0.9);
             }
 
-            double currentBestTimeTemp = cResult.bestTime;
+            //double currentBestTimeTemp = cResult.bestTime;
             std::vector <IntersectionIdx>  resultTemp = cResult.result;
             std::vector <int> resultIndexTemp = cResult.resultIdxIndex;
             
             if (resultTemp.size() > 0) {
                 //User perturbation to fine tune the random solution even if it is not the current best
-                for (int i = 0; i < 5; i ++) {
-                    if (continueOpt) {
-                        for (int k = 0; k < 1000; k ++) {
-                            auto current = std::chrono::high_resolution_clock::now();
-
-                            if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - preCalcFin)).count() < remainingTimeBud - 1) {
-                                continueOpt = true;
-                            } else {
-                                continueOpt = false;
-                            }
-
-                            if (continueOpt) {
-                                cResult = 
-                                    perturbationPrecalculated(currentBestTimeTemp, resultTemp, deliveries, resultIndexTemp, i, preCalculateOrigOrder, ids);
-
-                                if (currentBestTimeTemp > cResult.bestTime) {
-                                    currentBestTimeTemp = cResult.bestTime;
-                                    resultTemp = cResult.result;
-                                    resultIndexTemp = cResult.resultIdxIndex;
-                                } else {
-                                    break;
-                                }
-
-                            } else { 
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (currentBestTimeTemp < currentBestTime) {
-                    currentBestTime = currentBestTimeTemp;
-                    result = resultTemp;
-                    resultIndex = resultIndexTemp;
-                }
+                cResult = simulatedAnnealing(cResult, deliveries, preCalculateOrigOrder, ids, 
+                    44 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - begin)).count(), 5, 9);
+                
+                if (cResult.bestTime < currentSolution.bestTime) currentSolution = cResult;
             }
         } else {
             break;
         }
     }
     
-    currentSolution.bestTime = currentBestTime;
-    currentSolution.result = result;
-    currentSolution.resultIdxIndex = resultIndex;
-    //Other improvements might be considered
     //2-opt perturbation
-    //simulation annealing
     //2-opt w/ changing order between the two exchange points
     auto currentFin = std::chrono::high_resolution_clock::now();
-    std::cout << "Next best time after " << iterationCount <<" iterations: " << currentBestTime << "    Time remaining: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - preCalcFin)).count() <<  "\n";
+    std::cout << "Next best time after " << iterationCount <<" iterations: " << currentSolution.bestTime << "    Time remaining: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - preCalcFin)).count() <<  "\n";
     
     // If enough time start simulated annealing
     if (45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count() > 0) {
         std::cout << "-----------------Start annealing-------------\n";
+        tempDropRate = 0.95;
         currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
-            45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count(), deliveries.size(), 99);
+            45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count(), deliveries.size() - 2, 9);
     }
     std::vector <CourierSubPath> courierPath;
     double totalCourierTime = 0;
@@ -295,7 +257,7 @@ std::vector<CourierSubPath> travelingCourier(
         }
     }
     
-    std::cout << "From: " << depots[0] << " ---> ";
+    std::cout << temperature << "   From: " << depots[0] << " ---> ";
     auto end = std::chrono::high_resolution_clock::now();
     remainingTimeBud -= (std::chrono::duration_cast<std::chrono::duration<double>>(end - preCalcFin)).count();
     std::cout<<"remaining cpu time: " << remainingTimeBud << " Total Travel Time: " << totalCourierTime << "  Estimated: " << currentSolution.bestTime << "\n";
@@ -681,13 +643,18 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
     std::vector <int> resultIndexTemp = currentSolution.resultIdxIndex;
     CalculateResult cResult;
     bool continueOpt = true;
+    //int iterations = 0;
     for (int i = 0; i < maxIntervals; i++) {
+        //resultTemp = currentSolution.result;
+        //resultIndexTemp = currentSolution.resultIdxIndex;
         if (continueOpt) {
             temperature = startTemp;        //set the initial temperature
+            //iterations = 0;
             for (int k = 0; k < 100000; k ++) {
                 auto current = std::chrono::high_resolution_clock::now();
                 if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() < remainTimeBud) {
                     continueOpt = true;
+                    //iterations = k;
                 } else {
                     continueOpt = false;
                 }
@@ -703,8 +670,14 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
                     }
                     
                     //Continue to perturbation even if the result is worse when the temperature is greater than the threshold
-                    if (currentBestTimeTemp == cResult.bestTime || (currentBestTimeTemp < cResult.bestTime && temperature > 0.00000000001)) {
+                    if (currentBestTimeTemp == cResult.bestTime || 
+                            (currentBestTimeTemp < cResult.bestTime && temperature > 0.0000001)) {
                         break;
+                    } else {
+                        temperature *= tempDropRate;
+                        currentBestTimeTemp = cResult.bestTime;
+                        resultTemp = cResult.result;
+                        resultIndexTemp = cResult.resultIdxIndex;
                     }
                 } else { 
                     break;
@@ -712,7 +685,6 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
             }
         }
     }
-
     if (currentBestTimeTemp < currentSolution.bestTime) {
         currentSolution.bestTime = currentBestTimeTemp;
         currentSolution.result = resultTemp;
@@ -778,7 +750,7 @@ CalculateResult perturbationPrecalculated(double bestTime, std::vector<Intersect
                     resultIndex[i -1] = resultIndex[i + intervals];
                     resultIndex[i + intervals] = tmpIdx;
                     bestTime = bestTime - originalTime + newTime;
-                    temperature *=0.999;
+                    temperature *= tempDropRate;
                 }
             }
 
