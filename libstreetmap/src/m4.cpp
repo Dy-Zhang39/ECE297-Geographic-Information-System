@@ -1092,3 +1092,56 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
 }
 
 
+CalculateResult simulatedAnnealing(CalculateResult currentSolution,
+        std::vector<DeliveryInf> deliveries, std::vector<std::vector<WavePoint>> preCalculate,
+        std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp) {
+    
+    srand((unsigned) time(NULL));
+    double newTime = -1;
+    auto start = std::chrono::high_resolution_clock::now();
+    double currentBestTimeTemp = currentSolution.bestTime;
+    std::vector <IntersectionIdx> resultTemp = currentSolution.result;
+    std::vector <int> resultIndexTemp = currentSolution.resultIdxIndex;
+    CalculateResult cResult;
+
+    double temperature = startTemp; //set the initial temperature
+
+    for (int i = 0; i < maxIntervals; i++) {//question: why the i is needed, is there a relative good result that can be used for a simple perturbation?
+        //consider than to stop, not necessary for temp reduce to zero, how many times no update then stop?
+        while (//condition to stop SA) {
+            auto current = std::chrono::high_resolution_clock::now();
+            //no time, break
+            if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() > remainTimeBud) {
+                break;
+            }
+            //!!!!maybe need a small perturbation that is fast!
+            cResult =
+                    perturbationPrecalculated(currentBestTimeTemp, resultTemp, deliveries, resultIndexTemp, i, preCalculate, ids);
+            newTime = cResult.bestTime;
+            //random number 0-1
+            double randomNumb = (float) rand() / RAND_MAX;
+
+            if (newTime < currentBestTimeTemp || randomNumb < exp(-(newTime - currentBestTimeTemp) / temperature)) {
+                //store the SA result in a tempratory varible
+                currentBestTimeTemp = cResult.bestTime;
+                resultTemp = cResult.result;
+                resultIndexTemp = cResult.resultIdxIndex;
+            }
+            //question: do not get what is this for?
+            //Continue to perturbation even if the result is worse when the temperature is greater than the threshold
+            if (currentBestTimeTemp == cResult.bestTime || (currentBestTimeTemp < cResult.bestTime && simulatedAnnealing > 0.00000000001)) {
+                break;
+            }
+
+
+        }
+    }
+    //compare to the result before SA, if improve, then update
+    if (currentBestTimeTemp < currentSolution.bestTime) {
+        currentSolution.bestTime = currentBestTimeTemp;
+        currentSolution.result = resultTemp;
+        currentSolution.resultIdxIndex = resultIndexTemp;
+    }
+
+    return currentSolution;
+}
