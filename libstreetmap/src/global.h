@@ -19,7 +19,17 @@ struct CalculateResult {
     std::vector <int> resultIdxIndex;       //the index of ids in the result vector
     double cpuTime;                         //the time that to complete this calculate or perturbation function
     double currentTemperature;              //temperature used for simulated annealing
+//    inline CalculateResult operator=(CalculateResult& rhs){
+//        this->bestTime=rhs.bestTime;
+//    this->cpuTime=rhs.cpuTime;
+//    this->currentTemperature=rhs.currentTemperature;
+//    this->result=rhs.result;
+//    this->resultIdxIndex=rhs.resultIdxIndex;
+//    return *this;
+//    }
 };
+
+
 
 struct intersectionData {
   LatLon position;

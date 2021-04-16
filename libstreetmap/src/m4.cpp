@@ -264,14 +264,16 @@ std::vector<CourierSubPath> travelingCourier(
 
 
     //regular perturbation (without simulation annealing since the temperature is set to 0)
+    /*dy test
     currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
         35 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - begin)).count(), 5, 0);
     currentBestTime = currentSolution.bestTime;
  
     auto currentNext = std::chrono::high_resolution_clock::now();
     std::cout << "Current best time: " << currentBestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentNext - preCalcFin)).count() <<  "\n";
+    
+     dy end*/
     int iterationCount = 0;
-
     //Have a 10% chance of taking the second smallest travel time. Using the current solution's first node as the starting point
     //250000 iterations using the same random ratio.
 
@@ -282,7 +284,7 @@ std::vector<CourierSubPath> travelingCourier(
     //while (true){
     //for (int randomK = 0; randomK < 50000; randomK++) {    
 
-   
+   /*dy start
     CalculateResult cResult;
     bool continueOptRandom = true;
     tempDropRate = 0.99;
@@ -323,6 +325,7 @@ std::vector<CourierSubPath> travelingCourier(
             break;
         }
     }
+    dy end */
     
     //2-opt perturbation
     //2-opt w/ changing order between the two exchange points
@@ -332,14 +335,23 @@ std::vector<CourierSubPath> travelingCourier(
     // If enough time start simulated annealing
     if (45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count() > 0) {
         std::cout << "-----------------Start annealing-------------\n";
-        CalculateResult resultSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
+        
+        /*CalculateResult resultSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
             45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count(), deliveries.size() - 2, 0);
+        
         tempDropRate = 0.99;
+         */
+        
         currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
             45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count(), deliveries.size() - 2, 9);
-        
+      /*dy start
         if (currentSolution.bestTime > resultSolution.bestTime) currentSolution = resultSolution;
+       * dy end*/
     }
+       
+    
+    
+    
     std::vector <CourierSubPath> courierPath;
     double totalCourierTime = 0;
     //result = currentSolution.result;
@@ -912,46 +924,68 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
     srand((unsigned) time(NULL));
     double newTime = -1;
     auto start = std::chrono::high_resolution_clock::now();
-    double currentBestTimeTemp = currentSolution.bestTime;
-    std::vector <IntersectionIdx> resultTemp = currentSolution.result;
-    std::vector <int> resultIndexTemp = currentSolution.resultIdxIndex;
-    CalculateResult cResult;
+
+    CalculateResult cResult = currentSolution;
+    CalculateResult oldResult = currentSolution;
+    CalculateResult bestResult = currentSolution;
 
 
-    for (int i = 0; i < maxIntervals; i++) {//question: why the i is needed, is there a relative good result that can be used for a simple perturbation?
-        //consider than to stop, not necessary for temp reduce to zero, how many times no update then stop?
-        double temperature = startTemp;
-        while (count) {
-            auto current = std::chrono::high_resolution_clock::now();
-            //no time, break
-            if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() > remainTimeBud) {
-                break;
-            }
-            //!!!!maybe need a small perturbation that is fast!
-            cResult =
-                    perturbationPrecalculated(currentSolution, deliveries, i, preCalculate, ids);
-            newTime = cResult.bestTime;
-            //random number 0-1
-            double randomNumb = (float) rand() / RAND_MAX;
 
-            if (newTime < currentBestTimeTemp || randomNumb < exp(-(newTime - currentBestTimeTemp) / temperature)) {
-                //store the SA result in a tempratory varible
-                currentBestTimeTemp = cResult.bestTime;
-                resultTemp = cResult.result;
-                resultIndexTemp = cResult.resultIdxIndex;
-
-                count = numberOfNoUpdates;
-            }
-            count--;
-            temperature=temperature*0.95;
-
+    //   for (int i = 0; i < maxIntervals; i++) {//question: why the i is needed, is there a relative good result that can be used for a simple perturbation?
+    //consider than to stop, not necessary for temp reduce to zero, how many times no update then stop?
+    double temperature = 100;
+    while (1) {
+        if(temperature==0){
+            std::cout<<"####TEMP DONE"<<std::endl;
+            break;
         }
+        if(count==0){
+            std::cout<<"####COUNT DONE"<<std::endl;
+            break;
+        }
+        auto current = std::chrono::high_resolution_clock::now();
+        std::cout<<"time budget: "<<remainTimeBud<<std::endl<<"time passed: "<<(std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count()<<std::endl;
+        //no time, break
+        if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() > remainTimeBud) {
+            std::cout<<"####TIME DONE"<<std::endl;
+            break;
+        }
+        //!!!!maybe need a small perturbation that is fast!
+
+        cResult =
+                perturbationPrecalculated(oldResult, deliveries, 3, preCalculate, ids);
+
+
+        newTime = cResult.bestTime;
+        //problem: current door is always one: possible problem always find the beeter solution 
+        //random number 0-1
+        double randomNumb = (float) rand() / RAND_MAX;
+        double door = exp(-(newTime - oldResult.bestTime) / temperature);
+        
+        std::cout<<"random number: "<<randomNumb<<" door: "<<door<<std::endl;
+        if (newTime < oldResult.bestTime || randomNumb < door) {
+            //store the SA result in a tempratory varible
+            oldResult = cResult;
+            if (oldResult.bestTime < bestResult.bestTime) {
+                bestResult = oldResult;
+                //check para
+            std::cout << bestResult.bestTime << " / ";
+            std::cout << "current temp is: "<<temperature <<" degree"<< std::endl;
+            }
+            
+            count = numberOfNoUpdates;
+        }
+        count--;
+        temperature = temperature -0.01;
+
+
     }
+    //}
     //compare to the result before SA, if improve, then update
-    if (currentBestTimeTemp < currentSolution.bestTime) {
-        currentSolution.bestTime = currentBestTimeTemp;
-        currentSolution.result = resultTemp;
-        currentSolution.resultIdxIndex = resultIndexTemp;
+    if (bestResult.bestTime < currentSolution.bestTime) {
+        return bestResult;
+    }else{
+        std::cout<<"-----------------FAILED!!-----------------------"<<std::endl;
     }
 
     return currentSolution;
