@@ -153,6 +153,8 @@ std::vector<CourierSubPath> travelingCourier(
         PreCalResult costs = multidestDijkstra(ids[i], ids, turn_penalty, ids.size());
         preCalculate[i] = costs.result;
         preCalculateOrigOrder[i] = costs.resultOrignalOrder;
+        //auto current = std::chrono::high_resolution_clock::now();
+        //std::cout << "Time it takes" << (std::chrono::duration_cast<std::chrono::duration<double>>(current - begin)).count() << std::endl;
     }
     
     auto preCalcFin = std::chrono::high_resolution_clock::now();
@@ -172,15 +174,22 @@ std::vector<CourierSubPath> travelingCourier(
     std::vector<std::vector <int>> bestResultsIdx(depots.size());
     std::vector<std::vector <IntersectionIdx>> bestResults(depots.size());
     
+    std::cout << "Number of depots: " << depots.size() << std::endl;
     #pragma omp parallel for
     for (int i = 0; i < depots.size(); i++) {
         
         CalculateResult calcResult =
                 calculatePreload(bestTimesDepots[i], currentSolution.result, currentSolution.resultIdxIndex, deliveries, depots, ids, i, preCalculate, 1.0);
+        
+        auto current = std::chrono::high_resolution_clock::now();
+        std::cout << "Time Remaining: " << 35 - (std::chrono::duration_cast<std::chrono::duration<double>>(current - begin)).count() << std::endl;
+        simulatedAnnealing(calcResult, deliveries, preCalculateOrigOrder, ids, 
+        35 - (std::chrono::duration_cast<std::chrono::duration<double>>(current - begin)).count(), 5, 0);
         if (calcResult.bestTime < bestTimesDepots[i]){
             bestTimesDepots[i] = calcResult.bestTime;
             bestResults[i] = calcResult.result;
             bestResultsIdx[i] = calcResult.resultIdxIndex;
+            
         }
     }
     
@@ -264,8 +273,8 @@ std::vector<CourierSubPath> travelingCourier(
 
 
     //regular perturbation (without simulation annealing since the temperature is set to 0)
-    currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
-        35 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - begin)).count(), 5, 0);
+    //currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
+        //35 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - begin)).count(), 5, 0);
     currentBestTime = currentSolution.bestTime;
  
     auto currentNext = std::chrono::high_resolution_clock::now();
@@ -865,13 +874,19 @@ CalculateResult calculatePreload(double bestTime, std::vector <IntersectionIdx> 
 //Multi-Dijkstra to find a best path to a list of destination
 PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty, int numToFind) {
     std::priority_queue<WavePoint, std::vector<WavePoint>, std::greater<std::vector<WavePoint>::value_type> > wavePoints;
-    std::vector <PathNode> allIntersections;
     
-    std::vector <bool> pathFound;
-    std::vector <double> timeToReach;
     int totalIntersections = getNumIntersections();
-    timeToReach.clear();
-
+    
+    PathNode temp;
+    temp.travelTime = -1;
+    temp.lastIntersection = -1;
+    std::vector <PathNode> allIntersections (totalIntersections, temp);
+    std::vector <bool> pathFound(dest.size(), false);
+    std::vector <double> timeToReach(dest.size(), 9999999999);
+    
+    
+    //timeToReach.clear();
+    /*
     // initialize allIntersections vector
     allIntersections.resize(totalIntersections);
     
@@ -883,7 +898,7 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     for (int i = 0; i < allIntersections.size(); i ++) {
         allIntersections[i].lastIntersection = -1;
         allIntersections[i].travelTime = -1;
-    }
+    }*/
     
     // Prepare the variables for the start optDistanceinterseoptDistancection.
     PathNode node;
