@@ -408,59 +408,116 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
     std::vector <IntersectionIdx>  resultTemp = currentSolution.result;
     std::vector <int> resultIndexTemp = currentSolution.resultIdxIndex;
 
-
+    
     CalculateResult cResult = currentSolution;
     bool continueOpt = true;
 
-    for (int i = 0; i < maxIntervals; i++) {
-        if (continueOpt) {
-            cResult.currentTemperature = startTemp;        //set the initial temperature
+        
+    //if not annealing, find the best solution by keeping the current solution same
+    //until it reach the local minimum
+    if(startTemp == 0){
+        
+        //while does not reach the local minimum and still have time
+        while (continueOpt) {
+            std::vector<CalculateResult> betterTimes;
 
-
-            for (int k = 0; k < 100000; k ++) {
+            for (int i = 0; i < deliveries.size() - 2 && continueOpt; i++) { //try all the possible intervals of perturbation
                 auto current = std::chrono::high_resolution_clock::now();
+                //Stop the perturbation if the time reaches 90% of the total budget (45s)
                 if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() < remainTimeBud) {
                     continueOpt = true;
-
-
-
                 } else {
                     continueOpt = false;
+                    std::cout << "Time out" << std::endl;
                 }
 
                 if (continueOpt) {
-                    cResult = 
 
-                        perturbationPrecalculated(cResult, deliveries, i, preCalculate, ids);
+                    cResult = perturbationPrecalculated(currentSolution, deliveries, i, preCalculate, ids);
 
-                    if (currentBestTimeTemp > cResult.bestTime) {
-                        currentBestTimeTemp = cResult.bestTime;
-                        resultTemp = cResult.result;
-                        resultIndexTemp = cResult.resultIdxIndex;
+
+                    // If the new solution is better than the current one
+                    if (currentSolution.bestTime > cResult.bestTime) { // Update the current one with the new.
+                        betterTimes.push_back(cResult);
+                        //std::cout << "New Best Time: " << currentBestTime << std::endl;
                     }
-                    
-                    //Continue to perturbation even if the result is worse when the temperature is greater than the threshold
-                    if (currentBestTimeTemp == cResult.bestTime || 
-                            (currentBestTimeTemp < cResult.bestTime && cResult.currentTemperature > 0.0000001)) {
-                        break;
+
+
+
+                }
+            }
+
+            if (betterTimes.size() != 0) {
+
+                for (int better = 0; better < betterTimes.size(); better++) {
+                    if (currentSolution.bestTime > betterTimes[better].bestTime) {
+                        currentSolution.bestTime = betterTimes[better].bestTime;
+                        currentSolution.result = betterTimes[better].result;
+                        currentSolution.resultIdxIndex = betterTimes[better].resultIdxIndex;
+                    }
+
+                }
+
+            } else {
+                continueOpt = false;
+                std::cout << "reach local minimum" << std::endl;
+            }
+        }
+       
+    }
+    //if it is simulation annealing the solution will change every time when called perturbation
+    else{
+        for (int i = 0; i < maxIntervals; i++) {
+            if (continueOpt) {
+                cResult.currentTemperature = startTemp; //set the initial temperature
+
+
+                for (int k = 0; k < 100000; k++) {
+                    auto current = std::chrono::high_resolution_clock::now();
+                    if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() < remainTimeBud) {
+                        continueOpt = true;
+
+
+
                     } else {
-                        cResult.currentTemperature *= tempDropRate;
-
-                        currentBestTimeTemp = cResult.bestTime;
-                        resultTemp = cResult.result;
-                        resultIndexTemp = cResult.resultIdxIndex;
+                        continueOpt = false;
                     }
-                } else { 
-                    break;
+
+                    if (continueOpt) {
+                        cResult =
+
+                                perturbationPrecalculated(cResult, deliveries, i, preCalculate, ids);
+
+                        if (currentBestTimeTemp > cResult.bestTime) {
+                            currentBestTimeTemp = cResult.bestTime;
+                            resultTemp = cResult.result;
+                            resultIndexTemp = cResult.resultIdxIndex;
+                        }
+
+                        //Continue to perturbation even if the result is worse when the temperature is greater than the threshold
+                        if (currentBestTimeTemp == cResult.bestTime ||
+                                (currentBestTimeTemp < cResult.bestTime && cResult.currentTemperature > 0.0000001)) {
+                            break;
+                        } else {
+                            cResult.currentTemperature *= tempDropRate;
+
+                            currentBestTimeTemp = cResult.bestTime;
+                            resultTemp = cResult.result;
+                            resultIndexTemp = cResult.resultIdxIndex;
+                        }
+                    } else {
+                        break;
+                    }
                 }
             }
         }
+        if (currentBestTimeTemp < currentSolution.bestTime) {
+            currentSolution.bestTime = currentBestTimeTemp;
+            currentSolution.result = resultTemp;
+            currentSolution.resultIdxIndex = resultIndexTemp;
+        }
     }
-    if (currentBestTimeTemp < currentSolution.bestTime) {
-        currentSolution.bestTime = currentBestTimeTemp;
-        currentSolution.result = resultTemp;
-        currentSolution.resultIdxIndex = resultIndexTemp;
-    }
+    
     
     return currentSolution;
 }
