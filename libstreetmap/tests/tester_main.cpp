@@ -1,33 +1,28 @@
-/* 
- * Copyright 2021 University of Toronto
- *
- * Permission is hereby granted, to use this software and associated 
- * documentation files (the "Software") in course work at the University 
- * of Toronto, or for personal use. Other uses are prohibited, in 
- * particular the distribution of the Software either publicly or to third 
- * parties.
- *
- * The above copyright notice and this permission notice shall be included in 
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-#include <iostream>
 #include <UnitTest++/UnitTest++.h>
 
-/*
- * This is the main that drives running
- * unit tests.
- */
-int main(int /*argc*/, char** /*argv*/) {
+#include "m1.h"
+#include "m2.h"
+extern void set_disable_event_loop (bool new_setting);
+
+std::string map_name = "/cad2/ece297s/public/maps/toronto_canada.streets.bin";
+
+int main(int argc, char** argv) {
+    //Disable interactive graphics
+    set_disable_event_loop(true);
+
+    bool load_success = loadMap(map_name);
+
+    if(!load_success) {
+        std::cout << "ERROR: Could not load map file: '" << map_name << "'!";
+        std::cout << " Subsequent tests will likely fail." << std::endl;
+        //Don't abort tests, since we still want to show that all
+        //tests fail.
+    }
+
     //Run the unit tests
     int num_failures = UnitTest::RunAllTests();
-   
+
+    closeMap();
+
     return num_failures;
 }
