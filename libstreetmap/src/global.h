@@ -11,6 +11,7 @@ struct PathNode {
     double travelTime;      //travel time between starting point to the current point
     double distance;        //distance between this cureent point and the destination
     IntersectionIdx lastIntersection;
+    StreetIdx streetId;     //The streetID travel from last
 };
 
 struct CalculateResult {
