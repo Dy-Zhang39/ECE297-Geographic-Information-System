@@ -11,6 +11,7 @@
 #include <vector>
 #include "global.h"
 #include "dataHandler.h"
+#include "drawMap.h"
 #include <chrono>
 #include <climits>
 #include <time.h>
@@ -110,6 +111,26 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
         std::vector<DeliveryInf> deliveries,std::vector<std::vector<WavePoint>> preCalculate, 
         std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp);
 
+/*
+ * Simulation annealing
+ * @param solution: the current best solution to perturbate
+ * @param firstIdx: the end index of first segment in solution
+ * @param secondIdx: the end index of second segment in solution
+ * @param preCalculateOriginalOrder e.g preCalculate[i][j], i stands for the ids index of the start point, 
+ *              j is the order according to the travel time. If j is 0, that means it is the best path from ids[i] to the next point
+ * @param ids: a vector of all deliveries and depots intersections in the order of 
+ *        pickUp1-dropOff1-pickUp2-dropOff2-...-pickUp[n]-dropOff[n]-depot1-...-depot[n]
+ * @return CalculateResult: stores the best time, result (intersectionIdx) and resultIdxIndex(index of the ids)
+ */
+CalculateResult twoOptSingle (const CalculateResult& solution, int firstIdx, int secondIdx, 
+                       const std::vector <IntersectionIdx> & ids, const std::vector<std::vector<WavePoint>> & preCalculateOriginalOrder);
+
+CalculateResult twoOptNonChangingSolution(const CalculateResult& currentSolution, const std::vector <IntersectionIdx> & ids, 
+        const std::vector<std::vector<WavePoint>> & preCalculateOriginalOrder);
+
+CalculateResult findLocalMinWithTwoOpt (const CalculateResult& currentSolution, const std::vector <IntersectionIdx> & ids, 
+        const std::vector<std::vector<WavePoint>> & preCalculateOriginalOrder, double reaminingTime);
+        
 std::vector<CourierSubPath> travelingCourier(
     const std::vector<DeliveryInf>& deliveries,
     const std::vector<IntersectionIdx>& depots,
@@ -170,21 +191,22 @@ std::vector<CourierSubPath> travelingCourier(
     //Loop through all depots using greedy algorithm of finding shortest next path
 
     //NEED TO IMPROVE - multi-thread not working, might need to do perturbation for each solution
+    
     std::vector<double> bestTimesDepots(depots.size(), INT_MAX);
     std::vector<std::vector <int>> bestResultsIdx(depots.size());
     std::vector<std::vector <IntersectionIdx>> bestResults(depots.size());
     
-    std::cout << "Number of depots: " << depots.size() << std::endl;
-    #pragma omp parallel for
+    //std::cout << "Number of depots: " << depots.size() << std::endl;
+    //#pragma omp parallel for
     for (int i = 0; i < depots.size(); i++) {
         
         CalculateResult calcResult =
                 calculatePreload(bestTimesDepots[i], currentSolution.result, currentSolution.resultIdxIndex, deliveries, depots, ids, i, preCalculate, 1.0);
         
         auto current = std::chrono::high_resolution_clock::now();
-        std::cout << "Time Remaining: " << 35 - (std::chrono::duration_cast<std::chrono::duration<double>>(current - begin)).count() << std::endl;
+        //std::cout << "Time Remaining: " << 35 - (std::chrono::duration_cast<std::chrono::duration<double>>(current - begin)).count() << std::endl;
         simulatedAnnealing(calcResult, deliveries, preCalculateOrigOrder, ids, 
-        35 - (std::chrono::duration_cast<std::chrono::duration<double>>(current - begin)).count(), 5, 0);
+        30 - (std::chrono::duration_cast<std::chrono::duration<double>>(current - begin)).count(), 5, 0);
         if (calcResult.bestTime < bestTimesDepots[i]){
             bestTimesDepots[i] = calcResult.bestTime;
             bestResults[i] = calcResult.result;
@@ -202,6 +224,7 @@ std::vector<CourierSubPath> travelingCourier(
     }
     
 
+    
 
     //bool continueOpt = true;   
     //int firstNode = resultIndex[0] - deliveries.size() * 2;
@@ -209,68 +232,12 @@ std::vector<CourierSubPath> travelingCourier(
     auto currentSimple = std::chrono::high_resolution_clock::now();
     std::cout << "Simple best time: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count() <<  "\n";
     
-   
-    
-    
-    
-    //Stop the perturbation if the time reaches 90% of the total budget (45s)
     /*
-    if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count() < (remainingTimeBud)) {
-        
-        //while does not reach the local minimum and still have time
-        while (continueOpt){
-            std::vector<CalculateResult> betterTimes;
-
-            for (int i = 0; i < deliveries.size() - 2 && continueOpt; i++) { //try all the possible intervals of perturbation
-                auto current = std::chrono::high_resolution_clock::now();
-                //Stop the perturbation if the time reaches 90% of the total budget (45s)
-                if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - preCalcFin)).count() < remainingTimeBud) {
-                    continueOpt = true;
-                } else {
-                    continueOpt = false;
-                    std::cout<<"Time out" << std::endl;
-                }
-
-                if (continueOpt) {
-                    
-                    
-                    cResult = perturbationPrecalculated(currentBestTime, result, deliveries, resultIndex, i, preCalculateOrigOrder, ids);
-
-
-                    // If the new solution is better than the current one
-                    if (currentBestTime > cResult.bestTime) { // Update the current one with the new.
-                        betterTimes.push_back(cResult);                        
-                        //std::cout << "New Best Time: " << currentBestTime << std::endl;
-                    } 
-
-                    
-                    
-                }
-            }
-            
-            if (betterTimes.size() != 0){
-                
-                for (int better = 0; better < betterTimes.size(); better++){
-                    if (currentBestTime > betterTimes[better].bestTime){
-                        currentBestTime = betterTimes[better].bestTime;
-                        result = betterTimes[better].result;
-                        resultIndex = betterTimes[better].resultIdxIndex;                        
-                    }
-                    
-                }
-                
-            }else{
-                continueOpt = false;
-                std::cout << "reach local minimum" << std::endl;
-            }
-        }
- 
-
-    }else{
-        std::cout << "did not do perturbation" << std::endl;
-    }
-    */
-
+    currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
+    
+    auto twoOpt = std::chrono::high_resolution_clock::now();
+    std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
+     */
 
     //regular perturbation (without simulation annealing since the temperature is set to 0)
     //currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
@@ -365,6 +332,11 @@ std::vector<CourierSubPath> travelingCourier(
         }
     }
     
+    currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
+    
+    auto twoOpt = std::chrono::high_resolution_clock::now();
+    std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
+    
     std::cout << "   From: " << depots[0] << " ---> ";
     auto end = std::chrono::high_resolution_clock::now();
     remainingTimeBud -= (std::chrono::duration_cast<std::chrono::duration<double>>(end - preCalcFin)).count();
@@ -420,7 +392,7 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
     
     CalculateResult cResult = currentSolution;
     bool continueOpt = true;
-
+    currentSolution.currentTemperature = startTemp;
         
     //if not annealing, find the best solution by keeping the current solution same
     //until it reach the local minimum
@@ -1036,4 +1008,234 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     return finalResult;
 }
 
+CalculateResult twoOptSingle (const CalculateResult& solution, int firstIdx, int secondIdx, 
+                       const std::vector <IntersectionIdx> & ids, const std::vector<std::vector<WavePoint>> & preCalculateOriginalOrder){
+    
+    CalculateResult bestSolution(solution);
+    
+    
+    if (solution.resultIdxIndex.size() < 3){
+        return bestSolution;
+    }
+    
+    if (firstIdx >= solution.resultIdxIndex.size() || secondIdx >= solution.resultIdxIndex.size() || firstIdx >= secondIdx){
+        std::cout << "Invalid input in two opt function" <<std::endl;
+        exit (EXIT_FAILURE);
+    }
+    
+    std::vector <int> firstSeg = {solution.resultIdxIndex.begin() + 1, solution.resultIdxIndex.begin() + firstIdx + 1};
+    std::vector <int> firstSegReverse(firstSeg.rbegin(), firstSeg.rend());
+    
+    std::vector <int> secondSeg = {solution.resultIdxIndex.begin() + firstIdx + 1, solution.resultIdxIndex.begin() + secondIdx + 1};
+    std::vector <int> secondSegReverse(secondSeg.rbegin(), secondSeg.rend());
+    
+    std::vector <int> thirdSeg = {solution.resultIdxIndex.begin() + secondIdx + 1, solution.resultIdxIndex.end() - 1};
+    std::vector <int> thirdSegReverse(thirdSeg.rbegin(), thirdSeg.rend());
+    
+    std::vector <std::vector <int>> options = {firstSeg, secondSeg , thirdSeg , firstSegReverse, secondSegReverse, thirdSegReverse};
+    
+    for (int option1 = 0; option1 < options.size(); option1++){
+        bool firstValid = true;
+        std::vector <int> firstNewSeg = options[option1];
+        
+        //first element of the solution can not be a drop off
+        if (firstNewSeg[0] % 2 == 1){
+            firstValid = false;
+        }
+        
+        if (firstValid) {
+            
+            //choose second segment
+            for (int option2 = 0; option2 < options.size(); option2 ++) {
 
+                bool secondValid = true;
+                std::vector <int> secondNewSeg = options[option2];
+                
+                //can not use the same segment twice
+                if (option2 % 3 == option1 % 3) {
+                    secondValid = false;
+                }
+                
+                if (secondValid){
+                    
+                    //choose third segment
+                    for (int option3 = 0; option3 < options.size(); option3 ++){
+                        
+                        bool thirdValid = true;
+                        std::vector <int> thirdNewSeg = options[option3];
+                        
+                        if (option3 % 3 == option1 % 3 || option3 % 3 == option2 % 3){
+                            thirdValid = false;
+                            
+                        }
+                        //the last location can not be a pick up
+                        else if (thirdNewSeg[thirdNewSeg.size() - 1] % 2 == 0){
+                            thirdValid = false;
+                        }
+                        
+                        if (thirdValid){
+                            
+                            bool finalCheck = true;
+                            
+                            std::vector <int> newSolution(options[option1]);
+                            addVectorToVector(newSolution, options[option2]);
+                            addVectorToVector(newSolution, options[option3]);
+                            
+                            if (newSolution.size() % 2 != 0){
+                                std::cout << "New 2 opt solution has a non even solution" << std::endl;
+                                exit(EXIT_FAILURE);
+                            }
+                            
+                            std::vector <bool> legal(newSolution.size() / 2, false);
+                            double newTotalTime = 0;
+                            for (int location = 0; location < newSolution.size() && finalCheck; location++){
+                                
+                                int idIdx = newSolution[location];
+                                
+                                //if the location is a pick up
+                                if (idIdx % 2 == 0){
+                                    
+                                    if (idIdx / 2 >= legal.size()){
+                                        std::cout << "In two Opt a pick up location's index in ids is outside of pick up range" << std::endl;
+                                        exit(EXIT_FAILURE);
+                                    }
+                                    
+                                    legal[idIdx / 2] = true;
+                                }else if (idIdx % 2 == 1 && legal[idIdx / 2] == false){
+                                    finalCheck = false;
+                                }
+                                
+                                //find the travel from current location to the next location
+                                if (finalCheck && location != newSolution.size() - 1){
+                                    
+                                    int nextIdIdx = newSolution[location + 1];
+                                    newTotalTime += preCalculateOriginalOrder[idIdx][nextIdIdx].heuristicTime;
+                                }
+                            }
+                            
+                            //the solution is valid
+                            if (finalCheck){
+                                
+                                double bestStartDepotTime = INT_MAX;
+                                int startDepotIdx = -1, endDepotIdx = -1;
+                                double bestEndDepotTime = INT_MAX;
+                                
+                                for (int depot = newSolution.size(); depot < preCalculateOriginalOrder.size(); depot++){
+                                    
+                                    //find closest starting depot
+                                    if (preCalculateOriginalOrder[depot][newSolution[0]].heuristicTime < bestStartDepotTime){
+                                        
+                                        startDepotIdx = depot;
+                                        bestStartDepotTime = preCalculateOriginalOrder[depot][newSolution[0]].heuristicTime;
+                                    }
+                                    
+                                    //find closest ending depot
+                                    if (preCalculateOriginalOrder[newSolution[newSolution.size() - 1]][depot].heuristicTime < bestEndDepotTime){
+                                        
+                                        endDepotIdx = depot;
+                                        bestEndDepotTime = preCalculateOriginalOrder[newSolution[newSolution.size() - 1]][depot].heuristicTime;
+                                    }
+                                }
+                                
+                                if (startDepotIdx == -1 && endDepotIdx == -1){
+                                    std::cout << "Did not find the depot in 2 opt solution" << std::endl;
+                                    exit(EXIT_FAILURE);
+                                }
+                                
+                                newTotalTime += bestStartDepotTime;
+                                newTotalTime += bestEndDepotTime;
+                                newSolution.insert(newSolution.begin(), startDepotIdx);
+                                newSolution.push_back(endDepotIdx);
+                                
+                                if (newTotalTime < solution.bestTime){
+                                    CalculateResult newResult;
+                                    newResult.bestTime = newTotalTime;
+                                    newResult.resultIdxIndex = newSolution;
+                                    bestSolution = newResult;
+                                }
+                                
+                            }
+                            
+                        }
+                    }
+                    
+                }
+            }
+        }
+    }
+    
+    
+    //if the solution changes
+    if (bestSolution.bestTime != solution.bestTime){
+        
+        bestSolution.currentTemperature = 0;
+        bestSolution.cpuTime = 0;
+        
+        for (int idx = 0; idx < bestSolution.resultIdxIndex.size(); idx++){
+            
+            bestSolution.result.push_back(ids[bestSolution.resultIdxIndex[idx]]);
+        }
+    }
+    return bestSolution;
+}
+
+
+CalculateResult twoOptNonChangingSolution(const CalculateResult& currentSolution, const std::vector <IntersectionIdx> & ids, 
+        const std::vector<std::vector<WavePoint>> & preCalculateOriginalOrder){
+    
+    if (currentSolution.resultIdxIndex.size() < 5){
+        return currentSolution;
+    }
+    
+    CalculateResult bestSolution = currentSolution;
+ 
+    //the first segment must have at least one location and also the second and third segment must have one location
+    for (int firstIdx = 1; firstIdx < currentSolution.resultIdxIndex.size() - 3; firstIdx ++){
+        
+        for (int secondIdx = firstIdx + 1; secondIdx < currentSolution.resultIdxIndex.size() -2; secondIdx++){
+            
+            auto newSolution = twoOptSingle(currentSolution, firstIdx, secondIdx, ids, preCalculateOriginalOrder);
+            
+            if (newSolution.bestTime < bestSolution.bestTime){
+                bestSolution = newSolution;
+            }
+        }
+    }
+    
+    return bestSolution;
+}
+
+CalculateResult findLocalMinWithTwoOpt (const CalculateResult& currentSolution, const std::vector <IntersectionIdx> & ids, 
+        const std::vector<std::vector<WavePoint>> & preCalculateOriginalOrder, double remainingTime){
+    
+    if (currentSolution.resultIdxIndex.size() < 5){
+        return currentSolution;
+    }
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    bool continueOpt = true;
+    
+    CalculateResult bestSolution = currentSolution;
+    
+    do{
+        
+        auto newSolution = twoOptNonChangingSolution(bestSolution, ids, preCalculateOriginalOrder);
+        
+        if (newSolution.bestTime < bestSolution.bestTime){
+            bestSolution = newSolution;
+        }else{
+            std::cout << "Reach Local Minimum in two opt" << std::endl;
+            continueOpt = false;
+        }
+        
+        auto current = std::chrono::high_resolution_clock::now();
+        
+        if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() > remainingTime - 5){
+            std::cout << "Time out in two opt" << std::endl;
+            continueOpt = false;
+        }
+    }while (continueOpt);
+    
+    return bestSolution;
+}
