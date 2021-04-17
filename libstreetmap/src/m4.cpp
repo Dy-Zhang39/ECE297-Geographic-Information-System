@@ -217,7 +217,7 @@ std::vector<CourierSubPath> travelingCourier(
     //5000000 iterations using the same random ratio.
 
 
-
+/*
     CalculateResult cResult;
     bool continueOptRandom = true;
     tempDropRate = 0.9;
@@ -257,7 +257,7 @@ std::vector<CourierSubPath> travelingCourier(
             }
         }
     }
-
+*/
 
     //2-opt perturbation
     //2-opt w/ changing order between the two exchange points
@@ -381,7 +381,7 @@ auto start = std::chrono::high_resolution_clock::now();
     
     return currentSolution;
 }
-
+/*dy
 CalculateResult simulatedAnnealing(CalculateResult currentSolution, 
         std::vector<DeliveryInf> deliveries,std::vector<std::vector<WavePoint>> preCalculate, 
         std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp) {
@@ -453,7 +453,8 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
     
     return currentSolution;
 }
-
+ * dy end
+*/
 //------------------- Pre-calculation code.---------------------------
 CalculateResult perturbationPrecalculated(CalculateResult solution, std::vector<DeliveryInf> deliveries, 
         int intervals, std::vector<std::vector<WavePoint>> preCalculate, std::vector <IntersectionIdx> ids) {
