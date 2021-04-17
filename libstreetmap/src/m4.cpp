@@ -161,7 +161,7 @@ std::vector<CourierSubPath> travelingCourier(
     //Pre-calculation
     #pragma omp parallel for
     for (int i = 0; i < ids.size(); i++) {
-        PreCalResult costs = multidestDijkstra(ids[i], ids, turn_penalty, 2 * deliveries.size());
+        PreCalResult costs = multidestDijkstra(ids[i], ids, turn_penalty, ids.size());
         preCalculate[i] = costs.result;
         preCalculateOrigOrder[i] = costs.resultOrignalOrder;
         //auto current = std::chrono::high_resolution_clock::now();
@@ -233,7 +233,7 @@ std::vector<CourierSubPath> travelingCourier(
                     calculatePreload(INT_MAX, {}, currentSolution.resultIdxIndex, deliveries, depots, ids, randomK % depots.size(), preCalculate, 0.92);
             } else if (iterationCount > 5000) {
                 cResult = 
-                    calculatePreload(INT_MAX, {}, currentSolution.resultIdxIndex, deliveries, depots, ids, currentSolution.resultIdxIndex[0] - deliveries.size() * 2, preCalculate, 0.92);
+                    calculatePreload(INT_MAX, {}, currentSolution.resultIdxIndex, deliveries, depots, ids, randomK % depots.size(), preCalculate, 0.92);
             } else {
                 cResult = 
                     calculatePreload(INT_MAX, {}, currentSolution.resultIdxIndex, deliveries, depots, ids, currentSolution.resultIdxIndex[0] - deliveries.size() * 2, preCalculate, 0.92);
@@ -322,6 +322,7 @@ auto start = std::chrono::high_resolution_clock::now();
     
     CalculateResult cResult = currentSolution;
     bool continueOpt = true;
+    currentSolution.currentTemperature = startTemp;
 
     //while does not reach the local minimum and still have time
     while (continueOpt) {
@@ -363,8 +364,6 @@ auto start = std::chrono::high_resolution_clock::now();
             continueOpt = false;
         }
     }
-    
-    currentSolution.currentTemperature = startTemp;
     
     return currentSolution;
 }
@@ -857,6 +856,8 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
                         allIntersections[nextNode] = thisNode;
                         wavePoints.push(WavePoint(nextNode, thisNode.travelTime)); 
                     }
+                } else {
+                    allDestFound = true;
                 }
             }
         }
