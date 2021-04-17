@@ -105,7 +105,6 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
         std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp);
 
 /*
-<<<<<<< HEAD
  * Simulation annealing
  * @param solution: the current best solution to perturbate
  * @param firstIdx: the end index of first segment in solution
@@ -261,7 +260,7 @@ std::vector<CourierSubPath> travelingCourier(
     CalculateResult cResult;
     bool continueOptRandom = true;
     tempDropRate = 0.9;
-    for (int randomK = 0; randomK < 500000; randomK++) {    
+    for (int randomK = 0; randomK < 5000; randomK++) {    
         auto currentRandom = std::chrono::high_resolution_clock::now();
         //Stop the perturbation if the time reaches 90% of the total budget (45s)
         if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - preCalcFin)).count() < remainingTimeBud - 1) {
@@ -314,6 +313,13 @@ std::vector<CourierSubPath> travelingCourier(
         
         if (currentSolution.bestTime > resultSolution.bestTime) currentSolution = resultSolution;
     }
+    if (45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count() > 0) {
+        currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
+
+        auto twoOpt = std::chrono::high_resolution_clock::now();
+        std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
+    }
+
     std::vector <CourierSubPath> courierPath;
     double totalCourierTime = 0;
 
@@ -330,10 +336,6 @@ std::vector<CourierSubPath> travelingCourier(
         }
     }
     
-    currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
-    
-    auto twoOpt = std::chrono::high_resolution_clock::now();
-    std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
     
     std::cout << "   From: " << depots[0] << " ---> ";
     auto end = std::chrono::high_resolution_clock::now();
