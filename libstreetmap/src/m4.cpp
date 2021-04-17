@@ -953,17 +953,18 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
         //!!!!maybe need a small perturbation that is fast!
 
         cResult =
-                perturbationPrecalculated(oldResult, deliveries, 3, preCalculate, ids);
+                perturbationPrecalculated(oldResult, deliveries, 1, preCalculate, ids);
 
 
         newTime = cResult.bestTime;
         //problem: current door is always one: possible problem always find the beeter solution 
         //random number 0-1
         double randomNumb = (float) rand() / RAND_MAX;
-        double door = exp(-(newTime - oldResult.bestTime) / temperature);
+        //double door = exp(-(newTime - oldResult.bestTime) / temperature);
+        std::cout<<"New time: "<<newTime<<"previous time: "<<oldResult.bestTime<<std::endl;
+        std::cout<<"random number: "<<randomNumb<<" door: "<<exp(-(newTime - oldResult.bestTime) / temperature)<<std::endl;
         
-        std::cout<<"random number: "<<randomNumb<<" door: "<<door<<std::endl;
-        if (newTime < oldResult.bestTime || randomNumb < door) {
+        if (newTime < oldResult.bestTime || randomNumb < exp(-(newTime - oldResult.bestTime) / temperature)) {
             //store the SA result in a tempratory varible
             oldResult = cResult;
             if (oldResult.bestTime < bestResult.bestTime) {
