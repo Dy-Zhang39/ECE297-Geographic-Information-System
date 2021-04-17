@@ -242,12 +242,12 @@ std::vector<CourierSubPath> travelingCourier(
     auto currentSimple = std::chrono::high_resolution_clock::now();
     std::cout << "Simple best time: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count() <<  "\n";
     
-    /*
-    currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
     
-    auto twoOpt = std::chrono::high_resolution_clock::now();
-    std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
-     */
+    //currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
+    
+    //auto twoOpt = std::chrono::high_resolution_clock::now();
+    //std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
+     
 
 
     currentBestTime = currentSolution.bestTime;
@@ -261,7 +261,7 @@ std::vector<CourierSubPath> travelingCourier(
     CalculateResult cResult;
     bool continueOptRandom = true;
     tempDropRate = 0.9;
-    for (int randomK = 0; randomK < 500000; randomK++) {    
+    for (int randomK = 0; randomK < 5000; randomK++) {    
         auto currentRandom = std::chrono::high_resolution_clock::now();
         //Stop the perturbation if the time reaches 90% of the total budget (45s)
         if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - preCalcFin)).count() < remainingTimeBud - 1) {
@@ -314,9 +314,17 @@ std::vector<CourierSubPath> travelingCourier(
         
         if (currentSolution.bestTime > resultSolution.bestTime) currentSolution = resultSolution;
     }
+    
+    
+    std::cout << "Simulation Annealing: " << currentSolution.bestTime << std::endl;
+    
+    currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
+    auto twoOpt = std::chrono::high_resolution_clock::now();
+    std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
+    
     std::vector <CourierSubPath> courierPath;
     double totalCourierTime = 0;
-
+    
     if (currentSolution.result.size() > 1) {        //if a solution exists
         
         for (IntersectionIdx idx = 1; idx < currentSolution.result.size(); idx++) {
@@ -330,10 +338,7 @@ std::vector<CourierSubPath> travelingCourier(
         }
     }
     
-    currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
-    
-    auto twoOpt = std::chrono::high_resolution_clock::now();
-    std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
+   
     
     std::cout << "   From: " << depots[0] << " ---> ";
     auto end = std::chrono::high_resolution_clock::now();
@@ -1122,7 +1127,7 @@ CalculateResult twoOptNonChangingSolution(const CalculateResult& currentSolution
     CalculateResult bestSolution = currentSolution;
  
     //the first segment must have at least one location and also the second and third segment must have one location
-    for (int firstIdx = 1; firstIdx < currentSolution.resultIdxIndex.size() - 3; firstIdx ++){
+    for (int firstIdx = 1; firstIdx < currentSolution.resultIdxIndex.size()/2; firstIdx ++){
         
         for (int secondIdx = firstIdx + 1; secondIdx < currentSolution.resultIdxIndex.size() -2; secondIdx++){
             
@@ -1162,7 +1167,7 @@ CalculateResult findLocalMinWithTwoOpt (const CalculateResult& currentSolution, 
         }
         
         auto current = std::chrono::high_resolution_clock::now();
-        
+        std::cout << (std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() << std::endl;
         if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() > remainingTime - 5){
             std::cout << "Time out in two opt" << std::endl;
             continueOpt = false;
