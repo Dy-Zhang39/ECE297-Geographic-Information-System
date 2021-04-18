@@ -105,7 +105,6 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
         std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp);
 
 /*
-<<<<<<< HEAD
  * Simulation annealing
  * @param solution: the current best solution to perturbate
  * @param firstIdx: the end index of first segment in solution
@@ -314,14 +313,19 @@ std::vector<CourierSubPath> travelingCourier(
         
         if (currentSolution.bestTime > resultSolution.bestTime) currentSolution = resultSolution;
     }
+
     
     
     std::cout << "Simulation Annealing: " << currentSolution.bestTime << std::endl;
     
-    currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
-    auto twoOpt = std::chrono::high_resolution_clock::now();
-    std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
-    
+
+    if (45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count() > 0) {
+        currentSolution = findLocalMinWithTwoOpt(currentSolution, ids, preCalculateOrigOrder, remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentSimple - preCalcFin)).count());
+
+        auto twoOpt = std::chrono::high_resolution_clock::now();
+        std::cout << "best time after Two opt: " << currentSolution.bestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(twoOpt - preCalcFin)).count() <<  "\n";
+    }
+
     std::vector <CourierSubPath> courierPath;
     double totalCourierTime = 0;
     
@@ -338,7 +342,7 @@ std::vector<CourierSubPath> travelingCourier(
         }
     }
     
-   
+
     
     std::cout << "   From: " << depots[0] << " ---> ";
     auto end = std::chrono::high_resolution_clock::now();
@@ -797,15 +801,20 @@ CalculateResult calculatePreload(double bestTime, std::vector <IntersectionIdx> 
 PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <IntersectionIdx> dest, double turn_penalty, int numToFind) {
     std::priority_queue<WavePoint, std::vector<WavePoint>, std::greater<std::vector<WavePoint>::value_type> > wavePoints;
     
+    auto start = std::chrono::high_resolution_clock::now();
     int totalIntersections = getNumIntersections();
     
     PathNode temp;
     temp.travelTime = -1;
     temp.lastIntersection = -1;
     std::vector <PathNode> allIntersections (totalIntersections, temp);
-    std::vector <bool> pathFound(dest.size(), false);
-    std::vector <double> timeToReach(dest.size(), 9999999999);
+    //std::vector <bool> pathFound(dest.size(), false);
+    std::vector <bool> pathFound(totalIntersections, false);
+    std::vector <bool> desiredDestination (totalIntersections, false);
+    std::vector <double> timeToReach(totalIntersections, 9999999999);
+    //std::vector <double> timeToReach(dest.size(), 9999999999);
     
+    int totalFoundBest = 0;
     // Prepare the variables for the start optDistanceinterseoptDistancection.
     PathNode node;
     
@@ -814,14 +823,28 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     node.distance = 0;
     node.lastIntersection = -2;
     node.streetId = -1;
+    //set up a easy access to determine whether the location is one of our destination
+    for (int idx = 0; idx < dest.size(); idx++) {
+
+        desiredDestination[dest[idx]] = true;
+    }
     
+    // If any destination is the same as from point, mark this as reached already
+    for (int j = 0; j < dest.size(); j++) {
+        if (intersect_id_start == dest[j]) {
+            pathFound[dest[j]] = true;
+            timeToReach[dest[j]] = 0;
+        }
+    }
+    
+    /*
     // If any destination is the same as from point, mark this as reached already
     for (int j = 0; j < dest.size(); j++) {
         if (intersect_id_start == dest[j] || intersect_id_start == dest[j]) {
             pathFound[j] = true;
             timeToReach[j] = 0;
         }
-    }
+    }*/
 
     if (intersect_id_start < allIntersections.size()) 
         allIntersections[intersect_id_start] = node;
@@ -830,6 +853,10 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     wavePoints.push(WavePoint(intersect_id_start, 0));
     bool allDestFound = false;
     
+    auto current = std::chrono::high_resolution_clock::now();
+    //std::cout << "Initializing Variable" <<(std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() << std::endl;
+    
+    start = std::chrono::high_resolution_clock::now();
     while (!wavePoints.empty() && !allDestFound) {
 
         //Find next nodes to explore and remove it from wavePoints
@@ -884,7 +911,27 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
                         thisNode.travelTime = findStreetSegmentTravelTime(adjacentSegments[i]);
                     }
                 }
+                
+                if (desiredDestination[nextNode] == true) {
 
+                    if (thisNode.travelTime < timeToReach[nextNode]) {
+
+                        if (segmentInfo.to == nextNode || segmentInfo.from == nextNode) {
+                            
+                            if (pathFound[nextNode] == false){
+                                totalFoundBest++;
+                                pathFound[nextNode] = true;
+                            }
+                            
+                            if (timeToReach[nextNode] > thisNode.travelTime)
+                                timeToReach[nextNode] = thisNode.travelTime;
+                        }
+                    }
+
+
+                }
+                
+                /*
                 int totalFoundBest = 0;
 
                 for (int j = 0; j < dest.size(); j++) {
@@ -899,7 +946,7 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
                                 timeToReach[j] = thisNode.travelTime;
                         }
                     }                  
-                }
+                }*/
                 
                 if (totalFoundBest < numToFind) {
                     // If the intersection has not been reached before or 
@@ -917,21 +964,37 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
         }
     }
     
+    current = std::chrono::high_resolution_clock::now();
+    //std::cout << "algorithm takes: " <<(std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() << std::endl;
+    
+    start = std::chrono::high_resolution_clock::now();
     PreCalResult finalResult;
     
     //Store the result in original order
     std::vector<WavePoint> resultOrignalOrder;
+    for (int idx = 0; idx < dest.size(); idx++) {
+        resultOrignalOrder.push_back(WavePoint(idx, timeToReach[dest[idx]]));
+    }
+    
+    /*
     for (int i = 0; i < pathFound.size(); i++) {
         resultOrignalOrder.push_back(WavePoint(i, timeToReach[i]));
-    }
+    }*/
     
     // Sort the output using priority queue
     std::priority_queue<WavePoint, std::vector<WavePoint>, std::greater<std::vector<WavePoint>::value_type> > result;
+    for (int idx = 0; idx < dest.size(); idx++) {
+        if (pathFound[dest[idx]]) {
+            result.push(WavePoint(idx, timeToReach[dest[idx]]));
+        }
+
+    }
+    /*
     for (int i = 0; i < pathFound.size(); i++) {
         if (pathFound[i]) {
             result.push(WavePoint(i, timeToReach[i]));
         }
-    }
+    }*/
     
     std::vector<WavePoint> results;
 
@@ -942,6 +1005,8 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     
     finalResult.result = results;
     finalResult.resultOrignalOrder = resultOrignalOrder;
+    current = std::chrono::high_resolution_clock::now();
+    //std::cout << "Finalizing Result" <<(std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() << std::endl;
     return finalResult;
 }
 
