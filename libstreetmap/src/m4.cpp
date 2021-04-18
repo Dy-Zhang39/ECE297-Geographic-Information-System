@@ -256,16 +256,11 @@ std::vector<CourierSubPath> travelingCourier(
     //5000000 iterations using the same random ratio.
 
 
-/*
     CalculateResult cResult;
     bool continueOptRandom = true;
     tempDropRate = 0.9;
-<<<<<<< HEAD
-    //500000 trial and error
-    for (int randomK = 0; randomK < 500000; randomK++) {    
-=======
+
     for (int randomK = 0; randomK < 5000; randomK++) {    
->>>>>>> f45c12acd0602935a8f0c992dff9a343e4bad510
         auto currentRandom = std::chrono::high_resolution_clock::now();
         //Stop the perturbation if the time reaches 90% of the total budget (45s)
         if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - preCalcFin)).count() < remainingTimeBud - 1) {
@@ -300,7 +295,6 @@ std::vector<CourierSubPath> travelingCourier(
             }
         }
     }
-*/
 
     //2-opt perturbation
     //2-opt w/ changing order between the two exchange points
@@ -436,7 +430,7 @@ auto start = std::chrono::high_resolution_clock::now();
     
     return currentSolution;
 }
-/*dy
+
 CalculateResult simulatedAnnealing(CalculateResult currentSolution, 
         std::vector<DeliveryInf> deliveries,std::vector<std::vector<WavePoint>> preCalculate, 
         std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp) {
@@ -508,8 +502,7 @@ CalculateResult simulatedAnnealing(CalculateResult currentSolution,
     
     return currentSolution;
 }
- * dy end
-*/
+
 //------------------- Pre-calculation code.---------------------------
 CalculateResult perturbationPrecalculated(CalculateResult solution, std::vector<DeliveryInf> deliveries, 
         int intervals, std::vector<std::vector<WavePoint>> preCalculate, std::vector <IntersectionIdx> ids) {
@@ -987,12 +980,7 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     for (int idx = 0; idx < dest.size(); idx++) {
         resultOrignalOrder.push_back(WavePoint(idx, timeToReach[dest[idx]]));
     }
-    
-    /*
-    for (int i = 0; i < pathFound.size(); i++) {
-        resultOrignalOrder.push_back(WavePoint(i, timeToReach[i]));
-    }*/
-    
+
     // Sort the output using priority queue
     std::priority_queue<WavePoint, std::vector<WavePoint>, std::greater<std::vector<WavePoint>::value_type> > result;
     for (int idx = 0; idx < dest.size(); idx++) {
@@ -1001,12 +989,7 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
         }
 
     }
-    /*
-    for (int i = 0; i < pathFound.size(); i++) {
-        if (pathFound[i]) {
-            result.push(WavePoint(i, timeToReach[i]));
-        }
-    }*/
+
     
     std::vector<WavePoint> results;
 
@@ -1020,85 +1003,6 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     current = std::chrono::high_resolution_clock::now();
     //std::cout << "Finalizing Result" <<(std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() << std::endl;
     return finalResult;
-}
-CalculateResult simulatedAnnealing(CalculateResult currentSolution,
-        std::vector<DeliveryInf> deliveries, std::vector<std::vector<WavePoint>> preCalculate,
-        std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp) {
-    //prameter need to be adjust
-    int numberOfNoUpdates=3;
-    //double temperature = startTemp; //set the initial temperature
-    
-    int count=numberOfNoUpdates;
-    
-    srand((unsigned) time(NULL));
-    double newTime = -1;
-    auto start = std::chrono::high_resolution_clock::now();
-
-    CalculateResult cResult = currentSolution;
-    CalculateResult oldResult = currentSolution;
-    CalculateResult bestResult = currentSolution;
-
-
-
-    //   for (int i = 0; i < maxIntervals; i++) {//question: why the i is needed, is there a relative good result that can be used for a simple perturbation?
-    //consider than to stop, not necessary for temp reduce to zero, how many times no update then stop?
-    double temperature = 100;
-    while (1) {
-        if(temperature==0){
-            std::cout<<"####TEMP DONE"<<std::endl;
-            break;
-        }
-        if(count==0){
-            std::cout<<"####COUNT DONE"<<std::endl;
-            break;
-        }
-        auto current = std::chrono::high_resolution_clock::now();
-        std::cout<<"time budget: "<<remainTimeBud<<std::endl<<"time passed: "<<(std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count()<<std::endl;
-        //no time, break
-        if ((std::chrono::duration_cast<std::chrono::duration<double>>(current - start)).count() > remainTimeBud) {
-            std::cout<<"####TIME DONE"<<std::endl;
-            break;
-        }
-        //!!!!maybe need a small perturbation that is fast!
-        
-        cResult =
-                perturbationPrecalculated(oldResult, deliveries, rand()%maxIntervals, preCalculate, ids);
-
-
-        newTime = cResult.bestTime;
-        //problem: current door is always one: possible problem always find the beeter solution 
-        //random number 0-1
-        double randomNumb = (float) rand() / RAND_MAX;
-        //double door = exp(-(newTime - oldResult.bestTime) / temperature);
-        std::cout<<"New time: "<<newTime<<"previous time: "<<oldResult.bestTime<<std::endl;
-        std::cout<<"random number: "<<randomNumb<<" door: "<<exp(-(newTime - oldResult.bestTime) / temperature)<<std::endl;
-        
-        if (newTime < oldResult.bestTime || randomNumb < exp(-(newTime - oldResult.bestTime) / temperature)) {
-            //store the SA result in a tempratory varible
-            oldResult = cResult;
-            if (oldResult.bestTime < bestResult.bestTime) {
-                bestResult = oldResult;
-                //check para
-            std::cout << bestResult.bestTime << " / ";
-            std::cout << "current temp is: "<<temperature <<" degree"<< std::endl;
-            }
-            
-            count = numberOfNoUpdates;
-        }
-        count--;
-        temperature = temperature -0.01;
-
-
-    }
-    //}
-    //compare to the result before SA, if improve, then update
-    if (bestResult.bestTime < currentSolution.bestTime) {
-        return bestResult;
-    }else{
-        std::cout<<"-----------------FAILED!!-----------------------"<<std::endl;
-    }
-
-    return currentSolution;
 }
 
 CalculateResult twoOptSingle (const CalculateResult& solution, int firstIdx, int secondIdx, 
