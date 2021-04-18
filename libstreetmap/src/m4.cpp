@@ -182,7 +182,7 @@ std::vector<CourierSubPath> travelingCourier(
     preCalculateOrigOrder.resize(ids.size());
     CalculateResult currentSolution;
     currentSolution.bestTime = INT_MAX;
-    double currentBestTime = INT_MAX;
+    //double currentBestTime = INT_MAX;
     
     //Pre-calculation
     #pragma omp parallel for
