@@ -100,6 +100,7 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
  * @param startTemp: the starting temperature of annealing
  * @return CalculateResult: stores the best time, result (intersectionIdx) and resultIdxIndex(index of the ids)
  */
+
 CalculateResult simulatedAnnealing(CalculateResult currentSolution, 
         std::vector<DeliveryInf> deliveries,std::vector<std::vector<WavePoint>> preCalculate, 
         std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp);
@@ -252,18 +253,18 @@ std::vector<CourierSubPath> travelingCourier(
      
 
 
-    currentBestTime = currentSolution.bestTime;
- 
-    auto currentNext = std::chrono::high_resolution_clock::now();
-    std::cout << "Current best time: " << currentBestTime << "    Time remained: " << remainingTimeBud - (std::chrono::duration_cast<std::chrono::duration<double>>(currentNext - preCalcFin)).count() <<  "\n";
-    int iterationCount = 0;
 
+    int iterationCount = 0;
     //Have a 10% chance of taking the second smallest travel time. Using the current solution's first node as the starting point
-    //250000 iterations using the same random ratio.
+    //5000000 iterations using the same random ratio.
+
+
     CalculateResult cResult;
     bool continueOptRandom = true;
     tempDropRate = 0.9;
+
     for (int randomK = 0; randomK < 500000; randomK++) {    
+
         auto currentRandom = std::chrono::high_resolution_clock::now();
         //Stop the perturbation if the time reaches 90% of the total budget (45s)
         if ((std::chrono::duration_cast<std::chrono::duration<double>>(currentRandom - preCalcFin)).count() < remainingTimeBud - 11) {
@@ -298,8 +299,7 @@ std::vector<CourierSubPath> travelingCourier(
             }
         }
     }
- 
-    
+
     //2-opt perturbation
     //2-opt w/ changing order between the two exchange points
     auto currentFin = std::chrono::high_resolution_clock::now();
@@ -307,15 +307,19 @@ std::vector<CourierSubPath> travelingCourier(
     
     // If enough time start simulated annealing
     if (45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count() > 0) {
+
         std::cout << "-----------------Final Pertabation-------------\n";
         CalculateResult resultSolution = pertubateLocalMinima(currentSolution, deliveries, preCalculateOrigOrder, ids, 
             45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count(), deliveries.size() - 2, 0);
         tempDropRate = 0.9;
+        
         currentSolution = simulatedAnnealing(currentSolution, deliveries, preCalculateOrigOrder, ids, 
             45 - (std::chrono::duration_cast<std::chrono::duration<double>>(currentFin - begin)).count(), deliveries.size() - 2, 9);
-        
+     
         if (currentSolution.bestTime > resultSolution.bestTime) currentSolution = resultSolution;
+       
     }
+
 
     
     
@@ -374,6 +378,8 @@ std::vector <int> initializeLegalIds(int deliverSize, int depotSize) {
     
     return legalIds;
 }
+
+
 
 CalculateResult pertubateLocalMinima(CalculateResult currentSolution, 
         std::vector<DeliveryInf> deliveries,std::vector<std::vector<WavePoint>> preCalculate, 
@@ -981,12 +987,7 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
     for (int idx = 0; idx < dest.size(); idx++) {
         resultOrignalOrder.push_back(WavePoint(idx, timeToReach[dest[idx]]));
     }
-    
-    /*
-    for (int i = 0; i < pathFound.size(); i++) {
-        resultOrignalOrder.push_back(WavePoint(i, timeToReach[i]));
-    }*/
-    
+
     // Sort the output using priority queue
     std::priority_queue<WavePoint, std::vector<WavePoint>, std::greater<std::vector<WavePoint>::value_type> > result;
     for (int idx = 0; idx < dest.size(); idx++) {
@@ -995,12 +996,7 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
         }
 
     }
-    /*
-    for (int i = 0; i < pathFound.size(); i++) {
-        if (pathFound[i]) {
-            result.push(WavePoint(i, timeToReach[i]));
-        }
-    }*/
+
     
     std::vector<WavePoint> results;
 
@@ -1055,6 +1051,7 @@ CalculateResult twoOptSingle (const CalculateResult& solution, int firstIdx, int
             
             //choose second segment
             for (int option2 = 0; option2 < options.size(); option2 ++) {
+
 
                 bool secondValid = true;
                 std::vector <int> secondNewSeg = options[option2];
