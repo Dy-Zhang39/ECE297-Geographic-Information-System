@@ -100,13 +100,9 @@ PreCalResult multidestDijkstra(IntersectionIdx intersect_id_start, std::vector <
  * @param startTemp: the starting temperature of annealing
  * @return CalculateResult: stores the best time, result (intersectionIdx) and resultIdxIndex(index of the ids)
  */
-/*
+
 CalculateResult simulatedAnnealing(CalculateResult currentSolution, 
         std::vector<DeliveryInf> deliveries,std::vector<std::vector<WavePoint>> preCalculate, 
-        std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp);
-*/
-CalculateResult simulatedAnnealing(CalculateResult currentSolution,
-        std::vector<DeliveryInf> deliveries, std::vector<std::vector<WavePoint>> preCalculate,
         std::vector <IntersectionIdx> ids, double remainTimeBud, int maxIntervals, double startTemp);
 
 /*
